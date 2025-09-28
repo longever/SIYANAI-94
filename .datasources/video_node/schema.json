@@ -1,0 +1,73 @@
+
+{
+  "name": "video_node",
+  "title": "视频节点",
+  "schemas": [
+    {
+      "name": "title",
+      "title": "节点标题",
+      "type": "String"
+    },
+    {
+      "name": "text",
+      "title": "节点文本内容",
+      "type": "MultiLineString"
+    },
+    {
+      "name": "generationType",
+      "title": "生成方式",
+      "type": "String"
+    },
+    {
+      "name": "provider",
+      "title": "AI服务商",
+      "type": "String"
+    },
+    {
+      "name": "shotType",
+      "title": "镜头景别",
+      "type": "String"
+    },
+    {
+      "name": "transition",
+      "title": "转场效果",
+      "type": "String"
+    },
+    {
+      "name": "colorStyle",
+      "title": "色彩风格",
+      "type": "String"
+    },
+    {
+      "name": "duration",
+      "title": "节点时长(秒)",
+      "type": "Number"
+    },
+    {
+      "name": "assets",
+      "title": "素材配置",
+      "type": "Object"
+    },
+    {
+      "name": "customParams",
+      "title": "自定义参数",
+      "type": "Object"
+    },
+    {
+      "name": "orderIndex",
+      "title": "排序索引",
+      "type": "Number"
+    },
+    {
+      "name": "projectId",
+      "title": "所属项目ID",
+      "type": "String"
+    },
+    {
+      "name": "status",
+      "title": "节点状态",
+      "type": "String"
+    }
+  ]
+}
+  

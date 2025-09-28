@@ -1,0 +1,88 @@
+
+{
+  "name": "script_template",
+  "title": "脚本模板",
+  "schemas": [
+    {
+      "name": "name",
+      "title": "模板名称",
+      "type": "String"
+    },
+    {
+      "name": "description",
+      "title": "模板描述",
+      "type": "MultiLineString"
+    },
+    {
+      "name": "defaultNodes",
+      "title": "默认节点配置",
+      "type": "Array",
+      "items": {
+        "type": "Object",
+        "schemas": [
+          {
+            "name": "type",
+            "title": "节点类型",
+            "type": "String"
+          },
+          {
+            "name": "title",
+            "title": "节点标题",
+            "type": "String"
+          },
+          {
+            "name": "text",
+            "title": "节点文本内容",
+            "type": "MultiLineString"
+          },
+          {
+            "name": "params",
+            "title": "节点参数",
+            "type": "Object",
+            "schemas": [
+              {
+                "name": "shotSize",
+                "title": "镜头景别",
+                "type": "String"
+              },
+              {
+                "name": "transition",
+                "title": "转场效果",
+                "type": "String"
+              },
+              {
+                "name": "colorStyle",
+                "title": "色彩风格",
+                "type": "String"
+              },
+              {
+                "name": "duration",
+                "title": "节点时长",
+                "type": "Number"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "category",
+      "title": "模板分类",
+      "type": "String"
+    },
+    {
+      "name": "tags",
+      "title": "标签",
+      "type": "Array",
+      "items": {
+        "type": "String"
+      }
+    },
+    {
+      "name": "isActive",
+      "title": "是否启用",
+      "type": "Boolean"
+    }
+  ]
+}
+  

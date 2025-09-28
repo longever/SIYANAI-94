@@ -1,0 +1,232 @@
+
+[
+  {
+    "_id": "template_001",
+    "name": "产品发布会脚本",
+    "description": "适用于企业产品发布会的标准脚本模板，包含开场、产品展示、使用场景和总结四个部分",
+    "category": "企业宣传",
+    "tags": ["产品发布", "企业宣传", "商务", "正式"],
+    "nodes": [
+      {
+        "title": "开场介绍",
+        "text": "欢迎来到我们的产品发布会，今天我们将为您介绍全新的[产品名称]",
+        "generationType": "digital_human",
+        "provider": "tongyi",
+        "shotType": "medium",
+        "transition": "fade",
+        "colorStyle": "cinematic",
+        "duration": 15,
+        "assets": {
+          "image": {
+            "type": "avatar",
+            "category": "business"
+          }
+        }
+      },
+      {
+        "title": "产品展示",
+        "text": "这款产品具有[核心功能]特点，能够[解决问题]",
+        "generationType": "text2video",
+        "provider": "tongyi",
+        "shotType": "wide",
+        "transition": "slide",
+        "colorStyle": "vibrant",
+        "duration": 20,
+        "assets": {}
+      },
+      {
+        "title": "使用场景",
+        "text": "在实际应用中，这款产品能够帮助用户[具体场景]",
+        "generationType": "image2video",
+        "provider": "baidu",
+        "shotType": "close",
+        "transition": "zoom",
+        "colorStyle": "cinematic",
+        "duration": 18,
+        "assets": {
+          "image": {
+            "type": "scene",
+            "category": "office"
+          }
+        }
+      },
+      {
+        "title": "总结呼吁",
+        "text": "感谢您的关注，[产品名称]将为您带来全新的体验！",
+        "generationType": "digital_human",
+        "provider": "digital_api",
+        "shotType": "extreme_close",
+        "transition": "fade",
+        "colorStyle": "vibrant",
+        "duration": 12,
+        "assets": {
+          "image": {
+            "type": "avatar",
+            "category": "friendly"
+          }
+        }
+      }
+    ],
+    "defaultSettings": {
+      "resolution": "1920x1080",
+      "fps": 30,
+      "audio": {
+        "backgroundMusic": "corporate",
+        "volume": 0.3
+      }
+    },
+    "thumbnail": "https://example.com/templates/product-launch-thumb.jpg",
+    "usageCount": 156,
+    "author": "系统管理员",
+    "isPublic": true,
+    "difficulty": "初级",
+    "createdAt": 1727400000000,
+    "updatedAt": 1727400000000
+  },
+  {
+    "_id": "template_002",
+    "name": "教育科普脚本",
+    "description": "适合知识分享和教育内容的脚本模板，结构清晰，易于理解",
+    "category": "教育培训",
+    "tags": ["教育", "科普", "知识分享", "学习"],
+    "nodes": [
+      {
+        "title": "问题引入",
+        "text": "您是否曾经想过[问题主题]？今天我们就来深入探讨这个话题",
+        "generationType": "digital_human",
+        "provider": "tongyi",
+        "shotType": "medium",
+        "transition": "fade",
+        "colorStyle": "cinematic",
+        "duration": 12,
+        "assets": {
+          "image": {
+            "type": "avatar",
+            "category": "teacher"
+          }
+        }
+      },
+      {
+        "title": "知识讲解",
+        "text": "[知识点1]是理解这个问题的关键，让我们从基础开始...",
+        "generationType": "text2video",
+        "provider": "tongyi",
+        "shotType": "wide",
+        "transition": "slide",
+        "colorStyle": "educational",
+        "duration": 25,
+        "assets": {}
+      },
+      {
+        "title": "案例分析",
+        "text": "让我们通过一个实际案例来更好地理解这个概念",
+        "generationType": "image2video",
+        "provider": "baidu",
+        "shotType": "close",
+        "transition": "zoom",
+        "colorStyle": "cinematic",
+        "duration": 20,
+        "assets": {
+          "image": {
+            "type": "example",
+            "category": "demonstration"
+          }
+        }
+      },
+      {
+        "title": "总结回顾",
+        "text": "今天我们学习了[总结要点]，希望这些知识对您有所帮助",
+        "generationType": "digital_human",
+        "provider": "tongyi",
+        "shotType": "medium",
+        "transition": "fade",
+        "colorStyle": "cinematic",
+        "duration": 15,
+        "assets": {
+          "image": {
+            "type": "avatar",
+            "category": "teacher"
+          }
+        }
+      }
+    ],
+    "defaultSettings": {
+      "resolution": "1920x1080",
+      "fps": 30,
+      "audio": {
+        "backgroundMusic": "calm",
+        "volume": 0.2
+      }
+    },
+    "thumbnail": "https://example.com/templates/education-thumb.jpg",
+    "usageCount": 89,
+    "author": "教育专家",
+    "isPublic": true,
+    "difficulty": "中级",
+    "createdAt": 1727403600000,
+    "updatedAt": 1727403600000
+  },
+  {
+    "_id": "template_003",
+    "name": "社交媒体短视频",
+    "description": "适合抖音、快手等平台的快节奏短视频脚本模板",
+    "category": "社交媒体",
+    "tags": ["短视频", "社交媒体", "快节奏", "病毒传播"],
+    "nodes": [
+      {
+        "title": "开场钩子",
+        "text": "3秒钟告诉你[惊人发现]！",
+        "generationType": "text2video",
+        "provider": "tongyi",
+        "shotType": "extreme_close",
+        "transition": "fade",
+        "colorStyle": "vibrant",
+        "duration": 8,
+        "assets": {}
+      },
+      {
+        "title": "核心内容",
+        "text": "重点来了！[核心信息]就是这么简单",
+        "generationType": "text2video",
+        "provider": "baidu",
+        "shotType": "medium",
+        "transition": "zoom",
+        "colorStyle": "vibrant",
+        "duration": 12,
+        "assets": {}
+      },
+      {
+        "title": "互动结尾",
+        "text": "你觉得怎么样？评论区告诉我！",
+        "generationType": "digital_human",
+        "provider": "tongyi",
+        "shotType": "close",
+        "transition": "fade",
+        "colorStyle": "vibrant",
+        "duration": 10,
+        "assets": {
+          "image": {
+            "type": "avatar",
+            "category": "casual"
+          }
+        }
+      }
+    ],
+    "defaultSettings": {
+      "resolution": "1080x1920",
+      "fps": 30,
+      "audio": {
+        "backgroundMusic": "trending",
+        "volume": 0.4
+      }
+    },
+    "thumbnail": "https://example.com/templates/social-media-thumb.jpg",
+    "usageCount": 234,
+    "author": "内容创作者",
+    "isPublic": true,
+    "difficulty": "初级",
+    "createdAt": 1727407200000,
+    "updatedAt": 1727407200000
+  }
+]
+  

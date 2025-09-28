@@ -1,0 +1,127 @@
+
+[
+  {
+    "_id": "template_product_promo",
+    "name": "产品宣传模板",
+    "description": "适用于产品发布、功能介绍、营销推广等场景的标准化脚本模板。包含产品展示、功能亮点、使用场景和购买引导四个核心环节，帮助用户快速创建专业级产品宣传视频。",
+    "category": "营销推广",
+    "tags": ["产品", "宣传", "营销", "商业"],
+    "isActive": true,
+    "defaultNodes": [
+      {
+        "type": "digital_human",
+        "title": "开场介绍",
+        "text": "大家好，今天为大家介绍一款革命性的产品...",
+        "params": {
+          "shotSize": "medium",
+          "transition": "fade",
+          "colorStyle": "cinematic",
+          "duration": 8
+        }
+      },
+      {
+        "type": "text2video",
+        "title": "产品亮点展示",
+        "text": "产品核心功能与优势展示，突出解决用户痛点的关键特性",
+        "params": {
+          "shotSize": "wide",
+          "transition": "slide",
+          "colorStyle": "vibrant",
+          "duration": 12
+        }
+      },
+      {
+        "type": "image2video",
+        "title": "使用场景演示",
+        "text": "真实场景下的产品使用演示，展示实际应用效果",
+        "params": {
+          "shotSize": "close",
+          "transition": "zoom",
+          "colorStyle": "vibrant",
+          "duration": 10
+        }
+      },
+      {
+        "type": "text2video",
+        "title": "购买引导",
+        "text": "立即行动，享受限时优惠，点击链接了解更多详情",
+        "params": {
+          "shotSize": "medium",
+          "transition": "fade",
+          "colorStyle": "cinematic",
+          "duration": 6
+        }
+      }
+    ],
+    "createdAt": 1727481600000,
+    "updatedAt": 1727481600000
+  },
+  {
+    "_id": "template_education_course",
+    "name": "教学课程模板",
+    "description": "专为在线教育、知识分享、技能培训设计的结构化脚本模板。通过引入问题、知识讲解、案例分析和总结回顾四个步骤，打造逻辑清晰、易于理解的教学内容。",
+    "category": "教育培训",
+    "tags": ["教育", "课程", "知识", "培训"],
+    "isActive": true,
+    "defaultNodes": [
+      {
+        "type": "digital_human",
+        "title": "课程引入",
+        "text": "同学们好，今天我们将学习一个重要的知识点...",
+        "params": {
+          "shotSize": "medium",
+          "transition": "fade",
+          "colorStyle": "cinematic",
+          "duration": 6
+        }
+      },
+      {
+        "type": "text2video",
+        "title": "问题引入",
+        "text": "通过实际案例引出问题，激发学习兴趣",
+        "params": {
+          "shotSize": "wide",
+          "transition": "slide",
+          "colorStyle": "moody",
+          "duration": 8
+        }
+      },
+      {
+        "type": "text2video",
+        "title": "知识讲解",
+        "text": "系统讲解核心概念、原理和方法，配合图表说明",
+        "params": {
+          "shotSize": "wide",
+          "transition": "slide",
+          "colorStyle": "moody",
+          "duration": 15
+        }
+      },
+      {
+        "type": "image2video",
+        "title": "案例分析",
+        "text": "通过具体案例演示知识点的实际应用",
+        "params": {
+          "shotSize": "close",
+          "transition": "zoom",
+          "colorStyle": "cinematic",
+          "duration": 10
+        }
+      },
+      {
+        "type": "digital_human",
+        "title": "总结回顾",
+        "text": "今天我们学习了...，希望大家掌握这些要点",
+        "params": {
+          "shotSize": "medium",
+          "transition": "fade",
+          "colorStyle": "cinematic",
+          "duration": 6
+        }
+      }
+    ],
+    "createdAt": 1727481600000,
+    "updatedAt": 1727481600000
+  }
+]
+  

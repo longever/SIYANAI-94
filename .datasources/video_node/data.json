@@ -1,0 +1,128 @@
+
+[
+  {
+    "_id": "node_001",
+    "title": "开场介绍",
+    "text": "欢迎来到我们的产品发布会，今天我们将为您介绍全新的AI视频创作工具",
+    "generationType": "digital_human",
+    "provider": "tongyi",
+    "shotType": "medium",
+    "transition": "fade",
+    "colorStyle": "cinematic",
+    "duration": 15,
+    "assets": {
+      "image": {
+        "id": "img_avatar_001",
+        "name": "商务数字人形象",
+        "url": "https://example.com/avatars/business-avatar.jpg"
+      },
+      "audio": null,
+      "subtitle": null
+    },
+    "customParams": {
+      "voice": "professional_male",
+      "background": "office"
+    },
+    "orderIndex": 0,
+    "projectId": "project_001",
+    "status": "pending",
+    "createdAt": 1727481600000,
+    "updatedAt": 1727481600000
+  },
+  {
+    "_id": "node_002",
+    "title": "产品展示",
+    "text": "这款AI视频创作工具支持文生视频、图生视频和数字人三种模式，让您轻松创作专业级视频内容",
+    "generationType": "text2video",
+    "provider": "tongyi",
+    "shotType": "wide",
+    "transition": "slide",
+    "colorStyle": "vibrant",
+    "duration": 20,
+    "assets": {
+      "image": null,
+      "audio": null,
+      "subtitle": {
+        "id": "sub_001",
+        "name": "产品功能字幕",
+        "content": "支持多种AI生成模式"
+      }
+    },
+    "customParams": {
+      "resolution": "1920x1080",
+      "fps": 30
+    },
+    "orderIndex": 1,
+    "projectId": "project_001",
+    "status": "processing",
+    "createdAt": 1727481660000,
+    "updatedAt": 1727481660000
+  },
+  {
+    "_id": "node_003",
+    "title": "使用场景",
+    "text": "无论是企业宣传、教育培训还是社交媒体内容，都能快速生成高质量视频",
+    "generationType": "image2video",
+    "provider": "baidu",
+    "shotType": "close",
+    "transition": "zoom",
+    "colorStyle": "cinematic",
+    "duration": 18,
+    "assets": {
+      "image": {
+        "id": "img_scene_001",
+        "name": "办公场景",
+        "url": "https://example.com/scenes/office-scene.jpg"
+      },
+      "audio": {
+        "id": "audio_001",
+        "name": "轻快背景音乐",
+        "url": "https://example.com/audio/upbeat-music.mp3"
+      },
+      "subtitle": null
+    },
+    "customParams": {
+      "motionIntensity": 0.7,
+      "cameraMovement": "pan"
+    },
+    "orderIndex": 2,
+    "projectId": "project_001",
+    "status": "completed",
+    "createdAt": 1727481720000,
+    "updatedAt": 1727481720000
+  },
+  {
+    "_id": "node_004",
+    "title": "总结呼吁",
+    "text": "立即开始您的AI视频创作之旅，体验前所未有的创作效率！",
+    "generationType": "digital_human",
+    "provider": "digital_api",
+    "shotType": "extreme_close",
+    "transition": "fade",
+    "colorStyle": "vibrant",
+    "duration": 12,
+    "assets": {
+      "image": {
+        "id": "img_avatar_002",
+        "name": "亲和数字人形象",
+        "url": "https://example.com/avatars/friendly-avatar.jpg"
+      },
+      "audio": null,
+      "subtitle": {
+        "id": "sub_002",
+        "name": "行动呼吁字幕",
+        "content": "立即开始创作！"
+      }
+    },
+    "customParams": {
+      "voice": "friendly_female",
+      "emotion": "enthusiastic"
+    },
+    "orderIndex": 3,
+    "projectId": "project_001",
+    "status": "pending",
+    "createdAt": 1727481780000,
+    "updatedAt": 1727481780000
+  }
+]
+  

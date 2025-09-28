@@ -1,0 +1,69 @@
+
+{
+  "name": "script_template",
+  "title": "脚本模板",
+  "schemas": [
+    {
+      "name": "name",
+      "title": "模板名称",
+      "type": "String"
+    },
+    {
+      "name": "description",
+      "title": "模板描述",
+      "type": "MultiLineString"
+    },
+    {
+      "name": "category",
+      "title": "模板分类",
+      "type": "String"
+    },
+    {
+      "name": "tags",
+      "title": "标签",
+      "type": "Array",
+      "items": {
+        "type": "String"
+      }
+    },
+    {
+      "name": "nodes",
+      "title": "节点配置",
+      "type": "Array",
+      "items": {
+        "type": "Object"
+      }
+    },
+    {
+      "name": "defaultSettings",
+      "title": "默认设置",
+      "type": "Object"
+    },
+    {
+      "name": "thumbnail",
+      "title": "缩略图",
+      "type": "Image"
+    },
+    {
+      "name": "usageCount",
+      "title": "使用次数",
+      "type": "Number"
+    },
+    {
+      "name": "author",
+      "title": "作者",
+      "type": "String"
+    },
+    {
+      "name": "isPublic",
+      "title": "是否公开",
+      "type": "Boolean"
+    },
+    {
+      "name": "difficulty",
+      "title": "难度等级",
+      "type": "String"
+    }
+  ]
+}
+  
