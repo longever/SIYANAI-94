@@ -345,37 +345,37 @@ export default function CreatePage(props) {
                   <Plus className="w-4 h-4 mr-2" />
                   添加第一个节点
                 </Button>
-              </div> : nodes.map((node, index) => <Card key={node.id} className="mb-4">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="flex items-center space-x-2">
-                          {getNodeIcon(node.type)}
-                          <span className="font-medium">{node.title}</span>
+              </div> : nodes.map((node, index) => <Collapsible key={node.id} open={expandedNodes[node.id]} onOpenChange={(open) => setExpandedNodes(prev => ({
+                  ...prev,
+                  [node.id]: open
+                }))}>
+                  <Card className="mb-4">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="flex items-center space-x-2">
+                            {getNodeIcon(node.type)}
+                            <span className="font-medium">{node.title}</span>
+                          </div>
+                          <Badge variant="outline">{getProviderName(node.provider)}</Badge>
                         </div>
-                        <Badge variant="outline">{getProviderName(node.provider)}</Badge>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <Button variant="ghost" size="sm" onClick={() => duplicateNode(node.id)}>
-                          <Copy className="w-3 h-3" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => deleteNode(node.id)}>
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                        <CollapsibleTrigger asChild>
-                          <Button variant="ghost" size="sm" onClick={() => setExpandedNodes(prev => ({
-                      ...prev,
-                      [node.id]: !prev[node.id]
-                    }))}>
-                            {expandedNodes[node.id] ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                        
+                        <div className="flex items-center space-x-2">
+                          <Button variant="ghost" size="sm" onClick={() => duplicateNode(node.id)}>
+                            <Copy className="w-3 h-3" />
                           </Button>
-                        </CollapsibleTrigger>
+                          <Button variant="ghost" size="sm" onClick={() => deleteNode(node.id)}>
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                          <CollapsibleTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              {expandedNodes[node.id] ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                            </Button>
+                          </CollapsibleTrigger>
+                        </div>
                       </div>
-                    </div>
-                  </CardHeader>
-                  
-                  <Collapsible open={expandedNodes[node.id]}>
+                    </CardHeader>
+                    
                     <CollapsibleContent>
                       <CardContent className="space-y-4">
                         {/* 基本信息 */}
@@ -545,8 +545,8 @@ export default function CreatePage(props) {
                         </div>
                       </CardContent>
                     </CollapsibleContent>
-                  </Collapsible>
-                </Card>)}
+                  </Card>
+                </Collapsible>)}
           </div>
         </div>
 
@@ -568,4 +568,3 @@ export default function CreatePage(props) {
       {/* 节点配置模态框 */}
       {selectedNode && <NodeConfigurationModal node={selectedNode} isOpen={!!selectedNode} onClose={() => setSelectedNode(null)} onUpdate={updateNode} />}
     </div>;
-}
