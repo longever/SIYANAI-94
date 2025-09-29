@@ -41,6 +41,7 @@ export function AssetLibrary({
   const [selectedAssets, setSelectedAssets] = useState([]);
   const [previewAsset, setPreviewAsset] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [filters, setFilters] = useState({
     type: 'all',
     tags: [],
@@ -69,8 +70,28 @@ export function AssetLibrary({
           getCount: true
         }
       });
-      setAssets(result.records || []);
-      setFilteredAssets(result.records || []);
+
+      // 获取下载URL
+      const assetsWithUrls = await Promise.all((result.records || []).map(async asset => {
+        try {
+          const urlResult = await $w.cloud.callFunction({
+            name: 'getAssetDownloadUrl',
+            data: {
+              assetId: asset._id
+            }
+          });
+          return {
+            ...asset,
+            url: urlResult.downloadUrl || asset.fileUrl,
+            thumbnail: asset.type === 'image' ? urlResult.downloadUrl || asset.fileUrl : null
+          };
+        } catch (error) {
+          console.error('获取URL失败:', error);
+          return asset;
+        }
+      }));
+      setAssets(assetsWithUrls);
+      setFilteredAssets(assetsWithUrls);
     } catch (error) {
       toast({
         title: '加载失败',
@@ -82,62 +103,116 @@ export function AssetLibrary({
     }
   };
 
-  // 处理文件上传 - 使用云函数
+  // 处理文件上传 - 使用云函数上传到云存储
   const handleFileUpload = async files => {
     if (!files || files.length === 0) return;
     setUploading(true);
+    setUploadProgress(0);
     try {
-      const formData = new FormData();
+      const uploadedAssets = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileType = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'other';
 
-      // 添加所有文件到FormData
-      Array.from(files).forEach((file, index) => {
-        formData.append('file', file);
-        formData.append(`filename_${index}`, file.name);
-      });
-
-      // 调用云函数上传
-      const result = await $w.cloud.callFunction({
-        name: 'uploadAsset',
-        data: formData
-      });
-      if (result.code === 0) {
-        toast({
-          title: '上传成功',
-          description: `成功上传 ${files.length} 个文件`
+        // 读取文件为base64
+        const base64Data = await new Promise(resolve => {
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target.result.split(',')[1]);
+          reader.readAsDataURL(file);
         });
-        await loadAssets(); // 刷新列表
-      } else {
-        throw new Error(result.message || '上传失败');
+
+        // 调用云函数上传到云存储
+        const uploadResult = await $w.cloud.callFunction({
+          name: 'uploadAsset',
+          data: {
+            filename: file.name,
+            fileContent: base64Data,
+            mimeType: file.type,
+            size: file.size
+          }
+        });
+        if (uploadResult.code === 0) {
+          // 创建素材记录
+          const assetData = {
+            name: file.name,
+            type: fileType,
+            size: file.size,
+            mime_type: file.type,
+            fileUrl: uploadResult.fileID,
+            tags: [],
+            usage_count: 0,
+            download_count: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          const createResult = await $w.cloud.callDataSource({
+            dataSourceName: 'asset_library',
+            methodName: 'wedaCreateV2',
+            params: {
+              data: assetData
+            }
+          });
+          if (createResult.id) {
+            uploadedAssets.push({
+              ...assetData,
+              _id: createResult.id
+            });
+          }
+        }
+        setUploadProgress((i + 1) / files.length * 100);
       }
+      toast({
+        title: '上传成功',
+        description: `成功上传 ${uploadedAssets.length} 个文件`
+      });
+      await loadAssets();
     } catch (error) {
       toast({
         title: '上传失败',
-        description: error.message,
+        description: error.message || '上传过程中出现错误',
         variant: 'destructive'
       });
     } finally {
       setUploading(false);
+      setUploadProgress(0);
     }
   };
 
-  // 删除素材 - 使用云函数
+  // 删除素材 - 同时删除云存储文件
   const handleDeleteAsset = async assetId => {
     try {
-      const result = await $w.cloud.callFunction({
-        name: 'deleteAsset',
-        data: {
-          assetId
+      const asset = assets.find(a => a._id === assetId);
+      if (!asset) return;
+
+      // 先删除云存储文件
+      if (asset.fileUrl) {
+        await $w.cloud.callFunction({
+          name: 'deleteAsset',
+          data: {
+            assetId
+          }
+        });
+      }
+
+      // 再删除数据库记录
+      await $w.cloud.callDataSource({
+        dataSourceName: 'asset_library',
+        methodName: 'wedaDeleteV2',
+        params: {
+          filter: {
+            where: {
+              _id: {
+                $eq: assetId
+              }
+            }
+          }
         }
       });
-      if (result.success) {
-        toast({
-          title: '删除成功',
-          description: '素材已删除'
-        });
-        await loadAssets(); // 刷新列表
-      } else {
-        throw new Error(result.error || '删除失败');
-      }
+      toast({
+        title: '删除成功',
+        description: '素材已删除'
+      });
+      await loadAssets();
     } catch (error) {
       toast({
         title: '删除失败',
@@ -151,18 +226,11 @@ export function AssetLibrary({
   const handleBatchDelete = async () => {
     if (selectedAssets.length === 0) return;
     try {
-      // 并行删除所有选中的素材
-      const deletePromises = selectedAssets.map(assetId => $w.cloud.callFunction({
-        name: 'deleteAsset',
-        data: {
-          assetId
-        }
-      }));
-      const results = await Promise.allSettled(deletePromises);
-      const successCount = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+      const deletePromises = selectedAssets.map(assetId => handleDeleteAsset(assetId));
+      await Promise.allSettled(deletePromises);
       toast({
         title: '删除完成',
-        description: `成功删除 ${successCount}/${selectedAssets.length} 个素材`
+        description: `成功删除 ${selectedAssets.length} 个素材`
       });
       setSelectedAssets([]);
       await loadAssets();
@@ -175,7 +243,7 @@ export function AssetLibrary({
     }
   };
 
-  // 获取下载URL - 使用云函数
+  // 下载素材
   const handleDownloadAsset = async asset => {
     try {
       const result = await $w.cloud.callFunction({
@@ -212,8 +280,6 @@ export function AssetLibrary({
           title: '下载开始',
           description: '文件下载已开始'
         });
-      } else {
-        throw new Error(result.error || '获取下载链接失败');
       }
     } catch (error) {
       toast({
@@ -222,36 +288,6 @@ export function AssetLibrary({
         variant: 'destructive'
       });
     }
-  };
-
-  // 批量下载
-  const handleBatchDownload = async () => {
-    const selectedFiles = assets.filter(asset => selectedAssets.includes(asset._id));
-    for (const asset of selectedFiles) {
-      try {
-        const result = await $w.cloud.callFunction({
-          name: 'getAssetDownloadUrl',
-          data: {
-            assetId: asset._id
-          }
-        });
-        if (result.downloadUrl) {
-          const link = document.createElement('a');
-          link.href = result.downloadUrl;
-          link.download = asset.name;
-          link.click();
-
-          // 延迟一下避免浏览器限制
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      } catch (error) {
-        console.error(`下载 ${asset.name} 失败:`, error);
-      }
-    }
-    toast({
-      title: '批量下载',
-      description: `已启动 ${selectedFiles.length} 个文件的下载`
-    });
   };
 
   // 应用筛选
@@ -417,7 +453,7 @@ export function AssetLibrary({
               <Button variant="default" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
                 {uploading ? <>
                     <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                    上传中...
+                    上传中... {uploadProgress}%
                   </> : <>
                     <Upload className="w-4 h-4 mr-1" />
                     上传素材

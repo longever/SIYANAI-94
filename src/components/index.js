@@ -33,3 +33,6 @@ export * from './DigitalHumanPanel.jsx';
 export * from './TimelineNodeCard.jsx';
 export * from './NodeConfigurationModal.jsx';
 export * from './ScriptGeneratorModal.jsx';
+export * from './AssetUploadDialog.jsx';
+export * from './AssetGrid.jsx';
+export * from './AssetPreviewDialog.jsx';
