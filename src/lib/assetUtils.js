@@ -1,5 +1,9 @@
 
 export async function getAssetDownloadUrl(fileId) {
+  if (!fileId || typeof fileId !== 'string') {
+    throw new Error('assetId 不能为空且必须是字符串');
+  }
+  
   try {
     const tcb = await window.$w.cloud.getCloudInstance();
     const result = await tcb.callFunction({

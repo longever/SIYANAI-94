@@ -26,6 +26,10 @@ export function AssetPreviewDialog({
     }
   }, [asset, open]);
   const loadAssetUrl = async () => {
+    if (!asset || !asset._id) {
+      setLoading(false);
+      return;
+    }
     try {
       const url = await getAssetDownloadUrl(asset._id);
       setDownloadUrl(url);
@@ -82,6 +86,7 @@ export function AssetPreviewDialog({
         const link = document.createElement('a');
         link.href = url;
         link.download = asset.name;
+        link.style.display = 'none';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -113,9 +118,7 @@ export function AssetPreviewDialog({
           }} />}
               
               {isVideo && downloadUrl && <div className="relative">
-                  <video ref={videoRef} src={downloadUrl} className="w-full max-h-[60vh]" onTimeUpdate={handleTimeUpdate} onLoadedMetadata={handleLoadedMetadata} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onError={() => {
-              alert('视频加载失败，请检查网络连接');
-            }} controls={false} />
+                  <video ref={videoRef} src={downloadUrl} className="w-full max-h-[60vh]" onTimeUpdate={handleTimeUpdate} onLoadedMetadata={handleLoadedMetadata} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onError={() => alert('视频加载失败，请检查网络连接')} controls={false} />
                   
                   {/* 自定义视频控制栏 */}
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
@@ -150,9 +153,7 @@ export function AssetPreviewDialog({
                         </div>
                       </div>
                       
-                      <audio ref={audioRef} src={downloadUrl} onTimeUpdate={handleTimeUpdate} onLoadedMetadata={handleLoadedMetadata} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onError={() => {
-                  alert('音频加载失败，请检查网络连接');
-                }} className="hidden" />
+                      <audio ref={audioRef} src={downloadUrl} onTimeUpdate={handleTimeUpdate} onLoadedMetadata={handleLoadedMetadata} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onError={() => alert('音频加载失败，请检查网络连接')} className="hidden" />
                       
                       <div className="space-y-4">
                         <div className="flex items-center gap-4">

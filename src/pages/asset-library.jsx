@@ -168,6 +168,6 @@ export default function AssetLibrary(props) {
           </div>}
       </div>
 
-      <AssetUploadDialog open={isUploadOpen} onOpenChange={setIsUploadOpen} onSuccess={handleUploadSuccess} />
+      <AssetUploadDialog open={isUploadOpen} onOpenChange={setIsUploadOpen} onSuccess={handleUploadSuccess} $w={props.$w} />
     </div>;
 }
