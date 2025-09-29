@@ -1,71 +1,95 @@
 
 'use strict';
 
-const cloudbase = require('@cloudbase/node-sdk');
-const Busboy = require('busboy');
-const path = require('path');
-
 exports.main = async (event, context) => {
   try {
-    // 初始化 CloudBase SDK
-    const app = cloudbase.init({
-      env: cloudbase.SYMBOL_CURRENT_ENV
-    });
-    const models = app.models;
-    const storage = app.storage;
-
-    // 检查是否为 multipart/form-data 请求
-    const contentType = event.headers && (event.headers['content-type'] || event.headers['Content-Type']);
-    if (!contentType || !contentType.includes('multipart/form-data')) {
+    // 使用平台内置的 cloud 对象
+    const cloud = context.cloud;
+    
+    // 获取上传的文件信息
+    const { file, filename, description = '' } = event;
+    
+    if (!file) {
       return {
         code: 400,
-        message: 'Content-Type must be multipart/form-data'
+        message: 'No file provided'
       };
     }
 
-    // 解析 multipart/form-data
-    const result = await parseMultipartFormData(event, contentType);
+    // 处理文件数据
+    let fileBuffer;
+    let fileName = filename || 'unnamed-file';
     
-    if (!result.file) {
+    // 支持 base64 字符串或 Buffer
+    if (typeof file === 'string') {
+      // base64 字符串
+      fileBuffer = Buffer.from(file, 'base64');
+    } else if (file instanceof Buffer) {
+      // Buffer
+      fileBuffer = file;
+    } else {
       return {
         code: 400,
-        message: 'No file uploaded'
+        message: 'Invalid file format'
+      };
+    }
+
+    // 限制文件大小 (10MB)
+    const maxSize = 10 * 1024 * 1024;
+    if (fileBuffer.length > maxSize) {
+      return {
+        code: 413,
+        message: 'File too large (max 10MB)'
       };
     }
 
     // 生成唯一文件名
-    const fileExtension = path.extname(result.filename || 'file');
-    const uniqueFilename = `assets/${Date.now()}-${Math.random().toString(36).substring(2)}${fileExtension}`;
+    const fileExtension = fileName.includes('.') ? fileName.substring(fileName.lastIndexOf('.')) : '';
+    const uniqueFilename = `assets/${Date.now()}-${Math.random().toString(36).substring(2, 15)}${fileExtension}`;
     
     // 上传到云存储
-    const uploadResult = await storage.upload({
+    const uploadResult = await cloud.uploadFile({
       cloudPath: uniqueFilename,
-      fileContent: result.file
+      fileContent: fileBuffer
     });
 
     // 获取文件信息
-    const fileInfo = await storage.getFileInfo(uniqueFilename);
-    
+    const fileInfo = await cloud.getTempFileURL({
+      fileList: [uploadResult.fileID]
+    });
+
     // 构造数据模型记录
     const assetData = {
       fileUrl: uploadResult.fileID,
-      fileName: result.filename || 'unnamed-file',
-      fileSize: result.file.length,
-      mimeType: result.mimetype || 'application/octet-stream',
+      fileName: fileName,
+      fileSize: fileBuffer.length,
+      mimeType: event.mimeType || 'application/octet-stream',
       uploadTime: new Date(),
-      description: result.description || '',
-      originalName: result.filename || 'unnamed-file'
+      description: description,
+      originalName: fileName
     };
 
     // 写入数据模型
-    const assetRecord = await models.asset_library.create({
-      data: assetData
+    const assetRecord = await cloud.callFunction({
+      name: 'weda-datasource',
+      data: {
+        dataSourceName: 'asset_library',
+        methodName: 'wedaCreateV2',
+        params: {
+          data: assetData
+        }
+      }
     });
 
     return {
       code: 0,
       message: 'Upload successful',
-      data: assetRecord.data
+      data: {
+        id: assetRecord.result.id,
+        fileUrl: fileInfo.fileList[0].tempFileURL,
+        fileName: fileName,
+        fileSize: fileBuffer.length
+      }
     };
 
   } catch (error) {
@@ -75,13 +99,13 @@ exports.main = async (event, context) => {
     let errorMessage = 'Upload failed';
     let errorCode = 500;
     
-    if (error.message.includes('size')) {
+    if (error.message && error.message.includes('size')) {
       errorMessage = 'File too large';
       errorCode = 413;
-    } else if (error.message.includes('upload')) {
+    } else if (error.message && error.message.includes('upload')) {
       errorMessage = 'File upload failed';
       errorCode = 500;
-    } else if (error.message.includes('database')) {
+    } else if (error.message && error.message.includes('database')) {
       errorMessage = 'Database operation failed';
       errorCode = 500;
     }
@@ -89,77 +113,7 @@ exports.main = async (event, context) => {
     return {
       code: errorCode,
       message: errorMessage,
-      error: error.message
+      error: error.message || 'Unknown error'
     };
   }
 };
-
-// 解析 multipart/form-data
-function parseMultipartFormData(event, contentType) {
-  return new Promise((resolve, reject) => {
-    const busboy = Busboy({
-      headers: {
-        'content-type': contentType
-      },
-      limits: {
-        fileSize: 10 * 1024 * 1024 // 限制文件大小为10MB
-      }
-    });
-
-    const result = {
-      file: null,
-      filename: null,
-      mimetype: null,
-      description: null
-    };
-
-    busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
-      if (fieldname !== 'file') {
-        file.resume();
-        return;
-      }
-
-      const chunks = [];
-      
-      file.on('data', (chunk) => {
-        chunks.push(chunk);
-      });
-
-      file.on('end', () => {
-        result.file = Buffer.concat(chunks);
-        result.filename = filename;
-        result.mimetype = mimetype;
-      });
-
-      file.on('limit', () => {
-        reject(new Error('File size limit exceeded'));
-      });
-    });
-
-    busboy.on('field', (fieldname, value) => {
-      if (fieldname === 'filename') {
-        result.filename = value;
-      } else if (fieldname === 'description') {
-        result.description = value;
-      }
-    });
-
-    busboy.on('finish', () => {
-      resolve(result);
-    });
-
-    busboy.on('error', (error) => {
-      reject(error);
-    });
-
-    // 处理 base64 编码的 body
-    if (event.isBase64Encoded) {
-      const buffer = Buffer.from(event.body, 'base64');
-      busboy.write(buffer);
-    } else {
-      busboy.write(event.body);
-    }
-    
-    busboy.end();
-  });
-}
