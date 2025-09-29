@@ -11,17 +11,66 @@ export function NodeConfigurationModal({
   onClose,
   onUpdate
 }) {
-  const [config, setConfig] = React.useState(node);
+  // 添加空值保护，确保 node 存在且有默认值
+  const [config, setConfig] = React.useState(() => {
+    if (!node) {
+      return {
+        id: '',
+        title: '',
+        duration: 5,
+        content: '',
+        type: 'text2video',
+        provider: 'tongyi',
+        shotType: 'medium',
+        transition: 'none',
+        colorStyle: 'natural'
+      };
+    }
+    return {
+      id: node.id || '',
+      title: node.title || '',
+      duration: node.duration || 5,
+      content: node.content || '',
+      type: node.type || 'text2video',
+      provider: node.provider || 'tongyi',
+      shotType: node.shotType || 'medium',
+      transition: node.transition || 'none',
+      colorStyle: node.colorStyle || 'natural'
+    };
+  });
+
+  // 当 node 变化时更新配置
+  React.useEffect(() => {
+    if (node) {
+      setConfig({
+        id: node.id || '',
+        title: node.title || '',
+        duration: node.duration || 5,
+        content: node.content || '',
+        type: node.type || 'text2video',
+        provider: node.provider || 'tongyi',
+        shotType: node.shotType || 'medium',
+        transition: node.transition || 'none',
+        colorStyle: node.colorStyle || 'natural'
+      });
+    }
+  }, [node]);
   const handleSave = () => {
-    onUpdate(node.id, config);
+    if (!config.id) return;
+    onUpdate(config.id, config);
     onClose();
   };
+
+  // 如果 node 不存在，不渲染模态框
+  if (!node) {
+    return null;
+  }
   return <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings className="w-5 h-5" />
-            节点配置 - {node.title}
+            节点配置 - {config.title || '未命名节点'}
           </DialogTitle>
         </DialogHeader>
         
@@ -32,7 +81,7 @@ export function NodeConfigurationModal({
               <Input value={config.title} onChange={e => setConfig({
               ...config,
               title: e.target.value
-            })} />
+            })} placeholder="请输入节点标题" />
             </div>
             <div>
               <Label>时长(秒)</Label>
@@ -48,7 +97,7 @@ export function NodeConfigurationModal({
             <Textarea value={config.content} onChange={e => setConfig({
             ...config,
             content: e.target.value
-          })} rows={4} />
+          })} rows={4} placeholder="请输入视频内容描述" />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -147,7 +196,7 @@ export function NodeConfigurationModal({
           <Button variant="outline" onClick={onClose}>
             取消
           </Button>
-          <Button onClick={handleSave}>
+          <Button onClick={handleSave} disabled={!config.title.trim()}>
             保存配置
           </Button>
         </DialogFooter>
