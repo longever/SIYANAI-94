@@ -39,15 +39,22 @@ export function TimelineNodeCard({
     label: '百度智能云'
   }];
   const GenerationIcon = generationTypes.find(t => t.value === node.generationType)?.icon || FileText;
+
+  // 添加空函数检查，防止 onUpdate 未定义
+  const handleUpdate = (nodeId, updates) => {
+    if (typeof onUpdate === 'function') {
+      onUpdate(nodeId, updates);
+    }
+  };
   return <Card className={cn("w-80 flex-shrink-0 transition-all duration-200", isDragging && "opacity-50 scale-95")}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium">节点 {index + 1}</CardTitle>
           <div className="flex gap-1">
-            <Button variant="ghost" size="sm" onClick={() => onConfigure(node)}>
+            <Button variant="ghost" size="sm" onClick={() => onConfigure && onConfigure(node)}>
               <Settings className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => onDelete(node.id)} className="text-destructive hover:text-destructive">
+            <Button variant="ghost" size="sm" onClick={() => onDelete && onDelete(node.id)} className="text-destructive hover:text-destructive">
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
@@ -56,7 +63,7 @@ export function TimelineNodeCard({
       <CardContent className="space-y-3">
         <div>
           <label className="text-xs font-medium mb-1 block">生成方式</label>
-          <Select value={node.generationType} onValueChange={value => onUpdate(node.id, {
+          <Select value={node.generationType} onValueChange={value => handleUpdate(node.id, {
           generationType: value
         })}>
             <SelectTrigger className="h-8 text-sm">
@@ -75,7 +82,7 @@ export function TimelineNodeCard({
 
         <div>
           <label className="text-xs font-medium mb-1 block">AI服务商</label>
-          <Select value={node.provider} onValueChange={value => onUpdate(node.id, {
+          <Select value={node.provider} onValueChange={value => handleUpdate(node.id, {
           provider: value
         })}>
             <SelectTrigger className="h-8 text-sm">
