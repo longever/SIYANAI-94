@@ -1,0 +1,10 @@
+{
+  "name": "upload-asset",
+  "version": "1.0.0",
+  "description": "文件上传云函数，支持multipart/form-data格式，将文件保存到云存储并记录到asset_library数据模型",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.10.0",
+    "busboy": "^1.6.0"
+  }
+}

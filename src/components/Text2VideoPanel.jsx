@@ -1,147 +1,141 @@
 // @ts-ignore;
 import React, { useState } from 'react';
 // @ts-ignore;
-import { Card, CardContent, CardHeader, CardTitle, Textarea, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Label, Slider, Switch, useToast } from '@/components/ui';
+import { Card, CardContent, CardHeader, CardTitle, Button, Textarea, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Slider, Dialog, DialogContent, DialogHeader, DialogTitle, useToast } from '@/components/ui';
 // @ts-ignore;
-import { Mic, Sparkles } from 'lucide-react';
+import { Image, Music, Film } from 'lucide-react';
 
+import { AssetLibrary } from '@/components/AssetLibrary';
 export function Text2VideoPanel({
-  onGenerate
+  onAddToTimeline,
+  $w
 }) {
   const [text, setText] = useState('');
-  const [template, setTemplate] = useState('educational');
-  const [duration, setDuration] = useState(30);
-  const [style, setStyle] = useState('natural');
-  const [enableVoice, setEnableVoice] = useState(true);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [style, setStyle] = useState('realistic');
+  const [duration, setDuration] = useState(5);
+  const [backgroundImage, setBackgroundImage] = useState('');
+  const [backgroundMusic, setBackgroundMusic] = useState('');
+  const [showAssetLibrary, setShowAssetLibrary] = useState(false);
+  const [assetType, setAssetType] = useState('');
   const {
     toast
   } = useToast();
-  const templates = {
-    educational: {
-      name: '教育科普',
-      prompt: '制作一个教育科普视频，内容专业但通俗易懂，适合大众学习'
-    },
-    promotional: {
-      name: '产品推广',
-      prompt: '制作一个产品推广视频，突出产品特点和优势，吸引用户购买'
-    },
-    entertaining: {
-      name: '娱乐搞笑',
-      prompt: '制作一个娱乐搞笑视频，内容轻松有趣，能够引起观众共鸣'
-    },
-    storytelling: {
-      name: '故事叙述',
-      prompt: '制作一个情感故事视频，情节引人入胜，富有感染力'
-    }
-  };
-  const handleGenerate = async () => {
+  const handleAddToTimeline = () => {
     if (!text.trim()) {
       toast({
         title: '请输入文本内容',
-        description: '请填写要生成视频的文本内容',
+        description: '文本内容不能为空',
         variant: 'destructive'
       });
       return;
     }
-    setIsGenerating(true);
+    const nodeData = {
+      type: 'text2video',
+      title: text.substring(0, 30) + (text.length > 30 ? '...' : ''),
+      text,
+      style,
+      duration,
+      backgroundImage,
+      backgroundMusic,
+      config: {
+        resolution: '1920x1080',
+        fps: 30
+      }
+    };
+    onAddToTimeline(nodeData);
 
-    // 模拟AI生成过程
-    setTimeout(() => {
-      const result = {
-        type: 'text2video',
-        text,
-        template,
-        duration,
-        style,
-        enableVoice,
-        prompt: templates[template].prompt + ': ' + text
-      };
-      onGenerate(result);
-      toast({
-        title: '生成成功',
-        description: '文生视频已生成完成'
-      });
-      setIsGenerating(false);
-    }, 3000);
+    // 重置表单
+    setText('');
+    setStyle('realistic');
+    setDuration(5);
+    setBackgroundImage('');
+    setBackgroundMusic('');
   };
-  return <div className="space-y-4">
-      <Card className="bg-slate-900 border-slate-800">
+  const handleAssetSelect = asset => {
+    if (assetType === 'image') {
+      setBackgroundImage(asset.url);
+    } else if (assetType === 'audio') {
+      setBackgroundMusic(asset.url);
+    }
+    setShowAssetLibrary(false);
+    toast({
+      title: '素材已选择',
+      description: `${asset.name} 已添加到配置中`
+    });
+  };
+  return <div className="p-4 space-y-4">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-lg">文本输入</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Textarea value={text} onChange={e => setText(e.target.value)} placeholder="输入你想要生成视频的文本内容..." className="min-h-[120px] bg-slate-800 border-slate-700" />
-          
-          <div className="flex items-center gap-2">
-            <Mic className="w-4 h-4 text-slate-400" />
-            <span className="text-sm text-slate-400">支持语音转文字</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="bg-slate-900 border-slate-800">
-        <CardHeader>
-          <CardTitle className="text-lg">模板选择</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Select value={template} onValueChange={setTemplate}>
-            <SelectTrigger className="bg-slate-800 border-slate-700">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(templates).map(([key, value]) => <SelectItem key={key} value={key}>
-                  {value.name}
-                </SelectItem>)}
-            </SelectContent>
-          </Select>
-          
-          <p className="text-sm text-slate-400">
-            {templates[template].prompt}
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card className="bg-slate-900 border-slate-800">
-        <CardHeader>
-          <CardTitle className="text-lg">参数设置</CardTitle>
+          <CardTitle>文本转视频</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label>视频时长: {duration}秒</Label>
-            <Slider value={[duration]} onValueChange={([value]) => setDuration(value)} min={5} max={120} step={5} className="mt-2" />
+            <Label>文本内容</Label>
+            <Textarea placeholder="输入你想要转换成视频的文本内容..." value={text} onChange={e => setText(e.target.value)} className="min-h-[100px]" />
           </div>
-          
+
           <div>
-            <Label>视觉风格</Label>
+            <Label>视频风格</Label>
             <Select value={style} onValueChange={setStyle}>
-              <SelectTrigger className="bg-slate-800 border-slate-700 mt-2">
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="natural">自然写实</SelectItem>
-                <SelectItem value="cinematic">电影质感</SelectItem>
-                <SelectItem value="animated">动画风格</SelectItem>
-                <SelectItem value="vintage">复古风格</SelectItem>
+                <SelectItem value="realistic">写实风格</SelectItem>
+                <SelectItem value="cartoon">卡通风格</SelectItem>
+                <SelectItem value="anime">动漫风格</SelectItem>
+                <SelectItem value="sketch">素描风格</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          
-          <div className="flex items-center justify-between">
-            <Label>启用AI配音</Label>
-            <Switch checked={enableVoice} onCheckedChange={setEnableVoice} />
+
+          <div>
+            <Label>视频时长: {duration}秒</Label>
+            <Slider value={[duration]} onValueChange={value => setDuration(value[0])} min={3} max={30} step={1} />
           </div>
+
+          <div>
+            <Label>背景图片</Label>
+            <div className="flex gap-2">
+              <Input placeholder="图片URL或选择素材" value={backgroundImage} onChange={e => setBackgroundImage(e.target.value)} />
+              <Button size="sm" variant="outline" onClick={() => {
+              setAssetType('image');
+              setShowAssetLibrary(true);
+            }}>
+                <Image className="w-4 h-4" />
+              </Button>
+            </div>
+            {backgroundImage && <img src={backgroundImage} alt="背景预览" className="mt-2 w-full h-32 object-cover rounded" />}
+          </div>
+
+          <div>
+            <Label>背景音乐</Label>
+            <div className="flex gap-2">
+              <Input placeholder="音频URL或选择素材" value={backgroundMusic} onChange={e => setBackgroundMusic(e.target.value)} />
+              <Button size="sm" variant="outline" onClick={() => {
+              setAssetType('audio');
+              setShowAssetLibrary(true);
+            }}>
+                <Music className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+
+          <Button className="w-full" onClick={handleAddToTimeline} disabled={!text.trim()}>
+            <Film className="w-4 h-4 mr-2" />
+            添加到时间线
+          </Button>
         </CardContent>
       </Card>
 
-      <Button onClick={handleGenerate} disabled={isGenerating} className="w-full bg-sky-600 hover:bg-sky-700">
-        {isGenerating ? <>
-            <Sparkles className="w-4 h-4 mr-2 animate-spin" />
-            生成中...
-          </> : <>
-            <Sparkles className="w-4 h-4 mr-2" />
-            生成视频
-          </>}
-      </Button>
+      {/* 素材库弹窗 */}
+      <Dialog open={showAssetLibrary} onOpenChange={setShowAssetLibrary}>
+        <DialogContent className="max-w-6xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>选择素材</DialogTitle>
+          </DialogHeader>
+          <AssetLibrary onAssetSelect={handleAssetSelect} onInsertToCreator={handleAssetSelect} $w={$w} />
+        </DialogContent>
+      </Dialog>
     </div>;
 }

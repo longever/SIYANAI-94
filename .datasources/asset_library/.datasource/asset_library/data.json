@@ -1,0 +1,509 @@
+
+[
+  {
+    "_id": "img_001",
+    "name": "城市夜景.jpg",
+    "type": "image",
+    "category": "personal",
+    "url": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/image/city_night_001.jpg",
+    "thumbnail": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/image/thumb/city_night_001_thumb.jpg",
+    "cloudPath": "saas_temp/image/city_night_001.jpg",
+    "fileSize": 2457600,
+    "uploadTime": 1727587200000,
+    "tags": ["城市", "夜景", "灯光", "建筑"],
+    "mimeType": "image/jpeg",
+    "dimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "metadata": {
+      "camera": "Canon EOS R5",
+      "iso": 800,
+      "aperture": "f/2.8"
+    },
+    "usageCount": 12,
+    "downloadCount": 5,
+    "isPlatform": false,
+    "createdAt": 1727587200000,
+    "updatedAt": 1727587200000
+  },
+  {
+    "_id": "img_002",
+    "name": "自然风光.png",
+    "type": "image",
+    "category": "platform",
+    "url": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/image/nature_landscape_002.png",
+    "thumbnail": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/image/thumb/nature_landscape_002_thumb.png",
+    "cloudPath": "saas_temp/image/nature_landscape_002.png",
+    "fileSize": 3145728,
+    "uploadTime": 1727673600000,
+    "tags": ["自然", "风景", "山脉", "湖泊"],
+    "mimeType": "image/png",
+    "dimensions": {
+      "width": 2560,
+      "height": 1440
+    },
+    "metadata": {
+      "format": "PNG",
+      "colorSpace": "sRGB"
+    },
+    "usageCount": 25,
+    "downloadCount": 8,
+    "isPlatform": true,
+    "createdAt": 1727673600000,
+    "updatedAt": 1727673600000
+  },
+  {
+    "_id": "img_003",
+    "name": "商业办公.webp",
+    "type": "image",
+    "category": "personal",
+    "url": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/image/business_office_003.webp",
+    "thumbnail": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/image/thumb/business_office_003_thumb.webp",
+    "cloudPath": "saas_temp/image/business_office_003.webp",
+    "fileSize": 1024000,
+    "uploadTime": 1727760000000,
+    "tags": ["商业", "办公", "现代", "简约"],
+    "mimeType": "image/webp",
+    "dimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "metadata": {
+      "format": "WebP",
+      "quality": 85
+    },
+    "usageCount": 8,
+    "downloadCount": 3,
+    "isPlatform": false,
+    "createdAt": 1727760000000,
+    "updatedAt": 1727760000000
+  },
+  {
+    "_id": "img_004",
+    "name": "美食料理.jpg",
+    "type": "image",
+    "category": "platform",
+    "url": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/image/food_cuisine_004.jpg",
+    "thumbnail": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/image/thumb/food_cuisine_004_thumb.jpg",
+    "cloudPath": "saas_temp/image/food_cuisine_004.jpg",
+    "fileSize": 1536000,
+    "uploadTime": 1727846400000,
+    "tags": ["美食", "料理", "餐厅", "色彩"],
+    "mimeType": "image/jpeg",
+    "dimensions": {
+      "width": 2048,
+      "height": 1536
+    },
+    "metadata": {
+      "camera": "iPhone 14 Pro",
+      "foodCategory": "dessert"
+    },
+    "usageCount": 18,
+    "downloadCount": 7,
+    "isPlatform": true,
+    "createdAt": 1727846400000,
+    "updatedAt": 1727846400000
+  },
+  {
+    "_id": "img_005",
+    "name": "科技未来.png",
+    "type": "image",
+    "category": "personal",
+    "url": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/image/tech_future_005.png",
+    "thumbnail": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/image/thumb/tech_future_005_thumb.png",
+    "cloudPath": "saas_temp/image/tech_future_005.png",
+    "fileSize": 2097152,
+    "uploadTime": 1727932800000,
+    "tags": ["科技", "未来", "数字", "创新"],
+    "mimeType": "image/png",
+    "dimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "metadata": {
+      "style": "futuristic",
+      "colors": ["blue", "purple"]
+    },
+    "usageCount": 15,
+    "downloadCount": 6,
+    "isPlatform": false,
+    "createdAt": 1727932800000,
+    "updatedAt": 1727932800000
+  },
+  {
+    "_id": "video_001",
+    "name": "产品展示.mp4",
+    "type": "video",
+    "category": "personal",
+    "url": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/video/product_showcase_001.mp4",
+    "thumbnail": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/video/thumb/product_showcase_001_thumb.jpg",
+    "cloudPath": "saas_temp/video/product_showcase_001.mp4",
+    "fileSize": 15728640,
+    "uploadTime": 1727587200000,
+    "tags": ["产品", "展示", "商业", "营销"],
+    "mimeType": "video/mp4",
+    "duration": 30,
+    "dimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "metadata": {
+      "codec": "H.264",
+      "bitrate": "5000 kbps",
+      "fps": 30
+    },
+    "usageCount": 22,
+    "downloadCount": 9,
+    "isPlatform": false,
+    "createdAt": 1727587200000,
+    "updatedAt": 1727587200000
+  },
+  {
+    "_id": "video_002",
+    "name": "教程演示.mp4",
+    "type": "video",
+    "category": "platform",
+    "url": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/video/tutorial_demo_002.mp4",
+    "thumbnail": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/video/thumb/tutorial_demo_002_thumb.jpg",
+    "cloudPath": "saas_temp/video/tutorial_demo_002.mp4",
+    "fileSize": 31457280,
+    "uploadTime": 1727673600000,
+    "tags": ["教程", "演示", "教育", "学习"],
+    "mimeType": "video/mp4",
+    "duration": 120,
+    "dimensions": {
+      "width": 1280,
+      "height": 720
+    },
+    "metadata": {
+      "codec": "H.264",
+      "bitrate": "2000 kbps",
+      "fps": 25
+    },
+    "usageCount": 35,
+    "downloadCount": 12,
+    "isPlatform": true,
+    "createdAt": 1727673600000,
+    "updatedAt": 1727673600000
+  },
+  {
+    "_id": "video_003",
+    "name": "品牌宣传.mp4",
+    "type": "video",
+    "category": "platform",
+    "url": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/video/brand_promo_003.mp4",
+    "thumbnail": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/video/thumb/brand_promo_003_thumb.jpg",
+    "cloudPath": "saas_temp/video/brand_promo_003.mp4",
+    "fileSize": 20971520,
+    "uploadTime": 1727760000000,
+    "tags": ["品牌", "宣传", "广告", "创意"],
+    "mimeType": "video/mp4",
+    "duration": 45,
+    "dimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "metadata": {
+      "codec": "H.264",
+      "bitrate": "4000 kbps",
+      "fps": 30
+    },
+    "usageCount": 28,
+    "downloadCount": 11,
+    "isPlatform": true,
+    "createdAt": 1727760000000,
+    "updatedAt": 1727760000000
+  },
+  {
+    "_id": "video_004",
+    "name": "活动记录.mp4",
+    "type": "video",
+    "category": "personal",
+    "url": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/video/event_recording_004.mp4",
+    "thumbnail": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/video/thumb/event_recording_004_thumb.jpg",
+    "cloudPath": "saas_temp/video/event_recording_004.mp4",
+    "fileSize": 26214400,
+    "uploadTime": 1727846400000,
+    "tags": ["活动", "记录", "现场", "纪实"],
+    "mimeType": "video/mp4",
+    "duration": 90,
+    "dimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "metadata": {
+      "codec": "H.264",
+      "bitrate": "2500 kbps",
+      "fps": 30
+    },
+    "usageCount": 19,
+    "downloadCount": 7,
+    "isPlatform": false,
+    "createdAt": 1727846400000,
+    "updatedAt": 1727846400000
+  },
+  {
+    "_id": "video_005",
+    "name": "动画短片.mp4",
+    "type": "video",
+    "category": "platform",
+    "url": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/video/animation_short_005.mp4",
+    "thumbnail": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/video/thumb/animation_short_005_thumb.jpg",
+    "cloudPath": "saas_temp/video/animation_short_005.mp4",
+    "fileSize": 10485760,
+    "uploadTime": 1727932800000,
+    "tags": ["动画", "短片", "创意", "故事"],
+    "mimeType": "video/mp4",
+    "duration": 60,
+    "dimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "metadata": {
+      "codec": "H.264",
+      "bitrate": "1500 kbps",
+      "fps": 24
+    },
+    "usageCount": 42,
+    "downloadCount": 15,
+    "isPlatform": true,
+    "createdAt": 1727932800000,
+    "updatedAt": 1727932800000
+  },
+  {
+    "_id": "audio_001",
+    "name": "轻松背景音乐.mp3",
+    "type": "audio",
+    "category": "platform",
+    "url": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/audio/relaxing_bg_001.mp3",
+    "thumbnail": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/audio/thumb/relaxing_bg_001_thumb.jpg",
+    "cloudPath": "saas_temp/audio/relaxing_bg_001.mp3",
+    "fileSize": 3145728,
+    "uploadTime": 1727587200000,
+    "tags": ["轻松", "背景", "音乐", "舒缓"],
+    "mimeType": "audio/mp3",
+    "duration": 180,
+    "metadata": {
+      "bitrate": "128 kbps",
+      "sampleRate": "44.1 kHz",
+      "channels": 2
+    },
+    "usageCount": 55,
+    "downloadCount": 20,
+    "isPlatform": true,
+    "createdAt": 1727587200000,
+    "updatedAt": 1727587200000
+  },
+  {
+    "_id": "audio_002",
+    "name": "企业宣传配乐.mp3",
+    "type": "audio",
+    "category": "platform",
+    "url": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/audio/corporate_theme_002.mp3",
+    "thumbnail": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/audio/thumb/corporate_theme_002_thumb.jpg",
+    "cloudPath": "saas_temp/audio/corporate_theme_002.mp3",
+    "fileSize": 4194304,
+    "uploadTime": 1727673600000,
+    "tags": ["企业", "宣传", "配乐", "专业"],
+    "mimeType": "audio/mp3",
+    "duration": 240,
+    "metadata": {
+      "bitrate": "128 kbps",
+      "sampleRate": "44.1 kHz",
+      "channels": 2
+    },
+    "usageCount": 38,
+    "downloadCount": 14,
+    "isPlatform": true,
+    "createdAt": 1727673600000,
+    "updatedAt": 1727673600000
+  },
+  {
+    "_id": "audio_003",
+    "name": "科技电子音效.mp3",
+    "type": "audio",
+    "category": "personal",
+    "url": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/audio/tech_electronic_003.mp3",
+    "thumbnail": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/audio/thumb/tech_electronic_003_thumb.jpg",
+    "cloudPath": "saas_temp/audio/tech_electronic_003.mp3",
+    "fileSize": 2097152,
+    "uploadTime": 1727760000000,
+    "tags": ["科技", "电子", "音效", "未来"],
+    "mimeType": "audio/mp3",
+    "duration": 120,
+    "metadata": {
+      "bitrate": "128 kbps",
+      "sampleRate": "44.1 kHz",
+      "channels": 2
+    },
+    "usageCount": 27,
+    "downloadCount": 9,
+    "isPlatform": false,
+    "createdAt": 1727760000000,
+    "updatedAt": 1727760000000
+  },
+  {
+    "_id": "audio_004",
+    "name": "自然白噪音.mp3",
+    "type": "audio",
+    "category": "platform",
+    "url": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/audio/nature_white_004.mp3",
+    "thumbnail": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/audio/thumb/nature_white_004_thumb.jpg",
+    "cloudPath": "saas_temp/audio/nature_white_004.mp3",
+    "fileSize": 5242880,
+    "uploadTime": 1727846400000,
+    "tags": ["自然", "白噪音", "放松", "冥想"],
+    "mimeType": "audio/mp3",
+    "duration": 300,
+    "metadata": {
+      "bitrate": "128 kbps",
+      "sampleRate": "44.1 kHz",
+      "channels": 2
+    },
+    "usageCount": 31,
+    "downloadCount": 11,
+    "isPlatform": true,
+    "createdAt": 1727846400000,
+    "updatedAt": 1727846400000
+  },
+  {
+    "_id": "audio_005",
+    "name": "激励鼓舞配乐.mp3",
+    "type": "audio",
+    "category": "personal",
+    "url": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/audio/inspiring_motivational_005.mp3",
+    "thumbnail": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/audio/thumb/inspiring_motivational_005_thumb.jpg",
+    "cloudPath": "saas_temp/audio/inspiring_motivational_005.mp3",
+    "fileSize": 3670016,
+    "uploadTime": 1727932800000,
+    "tags": ["激励", "鼓舞", "配乐", "正能量"],
+    "mimeType": "audio/mp3",
+    "duration": 210,
+    "metadata": {
+      "bitrate": "128 kbps",
+      "sampleRate": "44.1 kHz",
+      "channels": 2
+    },
+    "usageCount": 22,
+    "downloadCount": 8,
+    "isPlatform": false,
+    "createdAt": 1727932800000,
+    "updatedAt": 1727932800000
+  },
+  {
+    "_id": "model_001",
+    "name": "现代沙发3D模型.glb",
+    "type": "model",
+    "category": "platform",
+    "url": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/model/modern_sofa_001.glb",
+    "thumbnail": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/model/thumb/modern_sofa_001_thumb.jpg",
+    "cloudPath": "saas_temp/model/modern_sofa_001.glb",
+    "fileSize": 2097152,
+    "uploadTime": 1727587200000,
+    "tags": ["家具", "沙发", "现代", "室内设计"],
+    "mimeType": "model/gltf-binary",
+    "metadata": {
+      "format": "glTF",
+      "vertices": 15000,
+      "textures": 2
+    },
+    "usageCount": 18,
+    "downloadCount": 6,
+    "isPlatform": true,
+    "createdAt": 1727587200000,
+    "updatedAt": 1727587200000
+  },
+  {
+    "_id": "model_002",
+    "name": "商务人物3D模型.fbx",
+    "type": "model",
+    "category": "platform",
+    "url": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/model/business_character_002.fbx",
+    "thumbnail": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/model/thumb/business_character_002_thumb.jpg",
+    "cloudPath": "saas_temp/model/business_character_002.fbx",
+    "fileSize": 3145728,
+    "uploadTime": 1727673600000,
+    "tags": ["人物", "商务", "角色", "动画"],
+    "mimeType": "model/fbx",
+    "metadata": {
+      "format": "FBX",
+      "bones": 45,
+      "animations": 3
+    },
+    "usageCount": 25,
+    "downloadCount": 9,
+    "isPlatform": true,
+    "createdAt": 1727673600000,
+    "updatedAt": 1727673600000
+  },
+  {
+    "_id": "model_003",
+    "name": "科技产品3D模型.obj",
+    "type": "model",
+    "category": "personal",
+    "url": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/model/tech_product_003.obj",
+    "thumbnail": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/model/thumb/tech_product_003_thumb.jpg",
+    "cloudPath": "saas_temp/model/tech_product_003.obj",
+    "fileSize": 1048576,
+    "uploadTime": 1727760000000,
+    "tags": ["科技", "产品", "电子设备", "未来"],
+    "mimeType": "model/obj",
+    "metadata": {
+      "format": "OBJ",
+      "vertices": 8000,
+      "materials": 1
+    },
+    "usageCount": 12,
+    "downloadCount": 4,
+    "isPlatform": false,
+    "createdAt": 1727760000000,
+    "updatedAt": 1727760000000
+  },
+  {
+    "_id": "model_004",
+    "name": "建筑外观3D模型.gltf",
+    "type": "model",
+    "category": "platform",
+    "url": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/model/building_exterior_004.gltf",
+    "thumbnail": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/model/thumb/building_exterior_004_thumb.jpg",
+    "cloudPath": "saas_temp/model/building_exterior_004.gltf",
+    "fileSize": 4194304,
+    "uploadTime": 1727846400000,
+    "tags": ["建筑", "外观", "城市", "景观"],
+    "mimeType": "model/gltf+json",
+    "metadata": {
+      "format": "glTF",
+      "vertices": 25000,
+      "textures": 4
+    },
+    "usageCount": 20,
+    "downloadCount": 7,
+    "isPlatform": true,
+    "createdAt": 1727846400000,
+    "updatedAt": 1727846400000
+  },
+  {
+    "_id": "model_005",
+    "name": "汽车模型.glb",
+    "type": "model",
+    "category": "personal",
+    "url": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/model/luxury_car_005.glb",
+    "thumbnail": "https://saas-temp-1258344701.cos.ap-guangzhou.myqcloud.com/model/thumb/luxury_car_005_thumb.jpg",
+    "cloudPath": "saas_temp/model/luxury_car_005.glb",
+    "fileSize": 5242880,
+    "uploadTime": 1727932800000,
+    "tags": ["汽车", "豪华", "交通工具", "细节"],
+    "mimeType": "model/gltf-binary",
+    "metadata": {
+      "format": "glTF",
+      "vertices": 35000,
+      "textures": 6
+    },
+    "usageCount": 15,
+    "downloadCount": 5,
+    "isPlatform": false,
+    "createdAt": 1727932800000,
+    "updatedAt": 1727932800000
+  }
+]

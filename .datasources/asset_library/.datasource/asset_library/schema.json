@@ -31,14 +31,22 @@
       "type": "Image"
     },
     {
-      "name": "size",
-      "title": "文件大小(字节)",
-      "type": "Number"
+      "name": "cloudPath",
+      "title": "云存储路径",
+      "type": "String",
+      "description": "文件在云存储中的完整路径"
     },
     {
-      "name": "duration",
-      "title": "时长(秒)",
-      "type": "Number"
+      "name": "fileSize",
+      "title": "文件大小",
+      "type": "Number",
+      "description": "文件大小，单位为字节"
+    },
+    {
+      "name": "uploadTime",
+      "title": "上传时间",
+      "type": "DateTime",
+      "format": "timestamp-ms"
     },
     {
       "name": "tags",
@@ -49,47 +57,46 @@
       }
     },
     {
-      "name": "metadata",
-      "title": "元数据",
-      "type": "Object"
+      "name": "mimeType",
+      "title": "MIME类型",
+      "type": "String",
+      "description": "文件的MIME类型，如image/jpeg、video/mp4等"
     },
     {
-      "name": "usage_count",
+      "name": "duration",
+      "title": "时长(秒)",
+      "type": "Number",
+      "description": "视频或音频的时长，单位为秒"
+    },
+    {
+      "name": "dimensions",
+      "title": "尺寸信息",
+      "type": "Object",
+      "description": "图片或视频的宽度和高度信息"
+    },
+    {
+      "name": "metadata",
+      "title": "元数据",
+      "type": "Object",
+      "description": "额外的文件元数据信息"
+    },
+    {
+      "name": "usageCount",
       "title": "使用次数",
       "type": "Number",
       "default": 0
     },
     {
-      "name": "download_count",
+      "name": "downloadCount",
       "title": "下载次数",
       "type": "Number",
       "default": 0
     },
     {
-      "name": "is_platform",
+      "name": "isPlatform",
       "title": "是否平台素材",
       "type": "Boolean",
       "default": false
-    },
-    {
-      "name": "mime_type",
-      "title": "MIME类型",
-      "type": "String"
-    },
-    {
-      "name": "dimensions",
-      "title": "尺寸信息",
-      "type": "Object"
-    },
-    {
-      "name": "folder_path",
-      "title": "云存储路径",
-      "type": "String"
-    },
-    {
-      "name": "file_hash",
-      "title": "文件哈希值",
-      "type": "String"
     }
   ]
 }
