@@ -1,84 +1,117 @@
 // @ts-ignore;
-import React from 'react';
+import React, { useState } from 'react';
 // @ts-ignore;
 import { Card, CardContent, Badge, Button } from '@/components/ui';
 // @ts-ignore;
-import { Image, Video, Music, Type, Box, File, Download, Trash2, Eye } from 'lucide-react';
+import { Play, Music, Image, FileText, Download, Eye } from 'lucide-react';
 
+import { AssetPreviewDialog } from './AssetPreviewDialog';
+import { getAssetIcon } from '@/lib/assetUtils';
 export function AssetGrid({
   assets,
-  onPreview,
-  onDelete,
-  onDownload
+  onDelete
 }) {
+  const [previewAsset, setPreviewAsset] = useState(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const handlePreview = asset => {
+    setPreviewAsset(asset);
+    setIsPreviewOpen(true);
+  };
   const getTypeIcon = type => {
     switch (type) {
-      case 'image':
-        return Image;
       case 'video':
-        return Video;
+        return <Play className="w-4 h-4" />;
       case 'audio':
-        return Music;
-      case 'font':
-        return Type;
-      case '3d':
-        return Box;
+        return <Music className="w-4 h-4" />;
+      case 'image':
+        return <Image className="w-4 h-4" />;
+      case 'document':
+        return <FileText className="w-4 h-4" />;
       default:
-        return File;
+        return <FileText className="w-4 h-4" />;
     }
   };
-  const getTypeName = type => {
-    const typeMap = {
-      'image': '图片',
-      'video': '视频',
-      'audio': '音频',
-      'font': '字体',
-      '3d': '3D模型',
-      'subtitle': '字幕'
-    };
-    return typeMap[type] || '其他';
+  const getTypeColor = type => {
+    switch (type) {
+      case 'video':
+        return 'bg-red-100 text-red-800';
+      case 'audio':
+        return 'bg-blue-100 text-blue-800';
+      case 'image':
+        return 'bg-green-100 text-green-800';
+      case 'document':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
-  const formatFileSize = bytes => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-  const formatTime = timestamp => {
-    return new Date(timestamp).toLocaleDateString('zh-CN');
-  };
-  return <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-      {assets.map(asset => {
-      const Icon = getTypeIcon(asset.type);
-      return <Card key={asset._id} className="group hover:shadow-lg transition-shadow">
+  return <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {assets.map(asset => <Card key={asset._id} className="group hover:shadow-lg transition-shadow">
             <CardContent className="p-4">
-              <div className="aspect-square bg-gray-100 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
-                {asset.type === 'image' && asset.thumbnail ? <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" /> : <Icon className="w-12 h-12 text-gray-400" />}
-              </div>
-              
-              <h3 className="font-medium text-sm truncate mb-1">{asset.name}</h3>
-              <p className="text-xs text-gray-500 mb-2">{formatFileSize(asset.size)}</p>
-              
-              <div className="flex items-center justify-between">
-                <Badge variant="secondary" className="text-xs">
-                  {getTypeName(asset.type)}
-                </Badge>
+              {/* 缩略图区域 */}
+              <div className="relative aspect-video bg-gray-100 rounded-lg mb-3 overflow-hidden">
+                {asset.type === 'image' && asset.thumbnailUrl ? <img src={asset.thumbnailUrl} alt={asset.name} className="w-full h-full object-cover" /> : asset.type === 'video' && asset.thumbnailUrl ? <div className="relative w-full h-full">
+                    <img src={asset.thumbnailUrl} alt={asset.name} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                      <Play className="w-12 h-12 text-white" />
+                    </div>
+                  </div> : asset.type === 'audio' ? <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500">
+                    <Music className="w-12 h-12 text-white" />
+                  </div> : <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                    <span className="text-4xl">{getAssetIcon(asset.type)}</span>
+                  </div>}
                 
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onPreview(asset)}>
-                    <Eye className="w-3 h-3" />
+                {/* 悬停操作 */}
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <Button size="sm" variant="secondary" onClick={() => handlePreview(asset)} className="bg-white/90 hover:bg-white">
+                    <Eye className="w-4 h-4 mr-1" />
+                    预览
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onDownload(asset)}>
-                    <Download className="w-3 h-3" />
-                  </Button>
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-600" onClick={() => onDelete(asset)}>
-                    <Trash2 className="w-3 h-3" />
+                  <Button size="sm" variant="secondary" className="bg-white/90 hover:bg-white">
+                    <Download className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
+
+              {/* 文件信息 */}
+              <div className="space-y-2">
+                <h3 className="font-medium text-sm truncate" title={asset.name}>
+                  {asset.name}
+                </h3>
+                
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className={getTypeColor(asset.type)}>
+                    {getTypeIcon(asset.type)}
+                    <span className="ml-1 capitalize">{asset.type}</span>
+                  </Badge>
+                  <span className="text-xs text-gray-500">{asset.size}</span>
+                </div>
+
+                {asset.tags && asset.tags.length > 0 && <div className="flex flex-wrap gap-1">
+                    {asset.tags.slice(0, 2).map((tag, index) => <Badge key={index} variant="outline" className="text-xs">
+                        {tag}
+                      </Badge>)}
+                    {asset.tags.length > 2 && <Badge variant="outline" className="text-xs">
+                        +{asset.tags.length - 2}
+                      </Badge>}
+                  </div>}
+              </div>
+
+              {/* 操作按钮 */}
+              <div className="mt-3 flex gap-2">
+                <Button size="sm" variant="outline" className="flex-1" onClick={() => handlePreview(asset)}>
+                  <Eye className="w-3 h-3 mr-1" />
+                  预览
+                </Button>
+                <Button size="sm" variant="outline" className="flex-1" onClick={() => onDelete(asset._id)}>
+                  删除
+                </Button>
+              </div>
             </CardContent>
-          </Card>;
-    })}
-    </div>;
+          </Card>)}
+      </div>
+
+      <AssetPreviewDialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen} asset={previewAsset} />
+    </>;
 }

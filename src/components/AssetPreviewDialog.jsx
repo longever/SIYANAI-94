@@ -1,45 +1,87 @@
 // @ts-ignore;
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 // @ts-ignore;
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Button, Badge } from '@/components/ui';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, Button } from '@/components/ui';
 // @ts-ignore;
-import { Image, Video, Music, Type, Box, Download, Trash2, ExternalLink } from 'lucide-react';
+import { Download, X, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 
+import { getAssetDownloadUrl } from '@/lib/assetUtils';
 export function AssetPreviewDialog({
-  asset,
   open,
   onOpenChange,
-  onDownload,
-  onDelete
+  asset
 }) {
-  if (!asset) return null;
-  const getTypeIcon = type => {
-    switch (type) {
-      case 'image':
-        return Image;
-      case 'video':
-        return Video;
-      case 'audio':
-        return Music;
-      case 'font':
-        return Type;
-      case '3d':
-        return Box;
-      default:
-        return null;
+  const [downloadUrl, setDownloadUrl] = useState('');
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const videoRef = useRef(null);
+  const audioRef = useRef(null);
+  useEffect(() => {
+    if (asset && open) {
+      loadAssetUrl();
+    }
+  }, [asset, open]);
+  const loadAssetUrl = async () => {
+    try {
+      const url = await getAssetDownloadUrl(asset.fileId);
+      setDownloadUrl(url);
+    } catch (error) {
+      console.error('Failed to load asset URL:', error);
     }
   };
-  const formatFileSize = bytes => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  const handlePlayPause = () => {
+    const mediaElement = videoRef.current || audioRef.current;
+    if (mediaElement) {
+      if (isPlaying) {
+        mediaElement.pause();
+      } else {
+        mediaElement.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
   };
-  const formatTime = timestamp => {
-    return new Date(timestamp).toLocaleString('zh-CN');
+  const handleMuteToggle = () => {
+    const mediaElement = videoRef.current || audioRef.current;
+    if (mediaElement) {
+      mediaElement.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
   };
-  const Icon = getTypeIcon(asset.type);
+  const handleTimeUpdate = e => {
+    setCurrentTime(e.target.currentTime);
+  };
+  const handleLoadedMetadata = e => {
+    setDuration(e.target.duration);
+  };
+  const handleSeek = e => {
+    const mediaElement = videoRef.current || audioRef.current;
+    if (mediaElement) {
+      const seekTime = e.target.value / 100 * duration;
+      mediaElement.currentTime = seekTime;
+      setCurrentTime(seekTime);
+    }
+  };
+  const formatTime = time => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+  const handleDownload = () => {
+    if (downloadUrl) {
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = asset.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+  if (!asset) return null;
+  const isVideo = asset.type === 'video';
+  const isAudio = asset.type === 'audio';
+  const isImage = asset.type === 'image';
   return <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
@@ -47,78 +89,101 @@ export function AssetPreviewDialog({
         </DialogHeader>
         
         <div className="flex flex-col gap-4">
-          {/* 预览区域 */}
-          <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
-            {asset.type === 'image' && <img src={asset.url} alt={asset.name} className="w-full h-full object-contain max-h-96" />}
+          {/* 媒体内容区域 */}
+          <div className="relative bg-black rounded-lg overflow-hidden">
+            {isImage && downloadUrl && <img src={downloadUrl} alt={asset.name} className="w-full h-auto max-h-[60vh] object-contain" />}
             
-            {asset.type === 'video' && <video src={asset.url} controls className="w-full h-full max-h-96" />}
-            
-            {asset.type === 'audio' && <div className="flex items-center justify-center h-64">
-                <audio src={asset.url} controls className="w-full max-w-md" />
+            {isVideo && downloadUrl && <div className="relative">
+                <video ref={videoRef} src={downloadUrl} className="w-full max-h-[60vh]" onTimeUpdate={handleTimeUpdate} onLoadedMetadata={handleLoadedMetadata} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} controls={false} />
+                
+                {/* 自定义视频控制栏 */}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                  <div className="flex items-center gap-4 text-white">
+                    <Button variant="ghost" size="sm" className="text-white hover:bg-white/20" onClick={handlePlayPause}>
+                      {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                    </Button>
+                    
+                    <span className="text-sm">
+                      {formatTime(currentTime)} / {formatTime(duration)}
+                    </span>
+                    
+                    <input type="range" min="0" max="100" value={duration ? currentTime / duration * 100 : 0} onChange={handleSeek} className="flex-1 h-1 bg-white/30 rounded-lg appearance-none cursor-pointer" />
+                    
+                    <Button variant="ghost" size="sm" className="text-white hover:bg-white/20" onClick={handleMuteToggle}>
+                      {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                    </Button>
+                  </div>
+                </div>
               </div>}
             
-            {asset.type === '3d' && <div className="flex items-center justify-center h-64">
-                <div className="text-center">
-                  <Box className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">3D模型预览</p>
-                  <p className="text-sm text-gray-400 mt-2">
-                    文件大小: {formatFileSize(asset.size)}
-                  </p>
+            {isAudio && downloadUrl && <div className="p-8 bg-gray-100">
+                <div className="flex items-center justify-center">
+                  <div className="bg-white rounded-lg p-6 shadow-lg w-full max-w-md">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                        <Volume2 className="w-8 h-8 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">{asset.name}</h3>
+                        <p className="text-sm text-gray-500">音频文件</p>
+                      </div>
+                    </div>
+                    
+                    <audio ref={audioRef} src={downloadUrl} onTimeUpdate={handleTimeUpdate} onLoadedMetadata={handleLoadedMetadata} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} className="hidden" />
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-4">
+                        <Button variant="outline" size="sm" onClick={handlePlayPause}>
+                          {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+                        </Button>
+                        
+                        <span className="text-sm text-gray-600">
+                          {formatTime(currentTime)} / {formatTime(duration)}
+                        </span>
+                        
+                        <Button variant="ghost" size="sm" onClick={handleMuteToggle}>
+                          {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                        </Button>
+                      </div>
+                      
+                      <input type="range" min="0" max="100" value={duration ? currentTime / duration * 100 : 0} onChange={handleSeek} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
+                    </div>
+                  </div>
                 </div>
               </div>}
           </div>
-
+          
           {/* 文件信息 */}
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="font-medium">文件大小:</span>
-              <span className="ml-2">{formatFileSize(asset.size)}</span>
+              <span className="font-medium">类型：</span>
+              <span className="capitalize">{asset.type}</span>
             </div>
             <div>
-              <span className="font-medium">上传时间:</span>
-              <span className="ml-2">{formatTime(asset.createdAt)}</span>
+              <span className="font-medium">大小：</span>
+              <span>{asset.size}</span>
             </div>
             <div>
-              <span className="font-medium">文件类型:</span>
-              <span className="ml-2">{asset.mime_type}</span>
+              <span className="font-medium">上传时间：</span>
+              <span>{new Date(asset.createdAt).toLocaleString()}</span>
             </div>
             <div>
-              <span className="font-medium">使用次数:</span>
-              <span className="ml-2">{asset.usage_count || 0}</span>
+              <span className="font-medium">标签：</span>
+              <span>{asset.tags?.join(', ') || '无'}</span>
             </div>
           </div>
-
-          {/* 标签 */}
-          {asset.tags?.length > 0 && <div>
-              <span className="font-medium">标签:</span>
-              <div className="flex gap-2 mt-2 flex-wrap">
-                {asset.tags.map(tag => <Badge key={tag} variant="secondary">
-                    {tag}
-                  </Badge>)}
-              </div>
-            </div>}
-
+          
           {/* 操作按钮 */}
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              关闭
-            </Button>
-            <Button variant="outline" onClick={() => onDownload(asset)}>
+          <div className="flex gap-2">
+            <Button onClick={handleDownload} disabled={!downloadUrl}>
               <Download className="w-4 h-4 mr-2" />
               下载
             </Button>
-            <Button variant="outline" onClick={() => window.open(asset.url, '_blank')}>
-              <ExternalLink className="w-4 h-4 mr-2" />
-              打开
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              <X className="w-4 h-4 mr-2" />
+              关闭
             </Button>
-            <Button variant="destructive" onClick={() => {
-            onDelete(asset);
-            onOpenChange(false);
-          }}>
-              <Trash2 className="w-4 h-4 mr-2" />
-              删除
-            </Button>
-          </DialogFooter>
+          </div>
         </div>
       </DialogContent>
     </Dialog>;
