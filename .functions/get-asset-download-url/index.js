@@ -3,7 +3,7 @@
 
 exports.main = async (event, context) => {
   try {
-    // 1. 获取云开发实例（平台内置能力）
+    // 1. 获取云开发实例（使用平台内置能力，不依赖第三方包）
     const tcb = await getCloudInstance();
     const storage = tcb.cloud;
 
@@ -68,9 +68,10 @@ exports.main = async (event, context) => {
   }
 };
 
-// 获取云开发实例的辅助函数（平台内置）
+// 获取云开发实例的辅助函数（使用平台内置能力）
 async function getCloudInstance() {
-  const cloud = require('wx-server-sdk');
+  // 使用平台内置的 cloud 对象，不依赖 wx-server-sdk
+  const cloud = require('cloud');
   cloud.init({
     env: cloud.DYNAMIC_CURRENT_ENV
   });
