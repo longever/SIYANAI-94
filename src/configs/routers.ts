@@ -1,16 +1,13 @@
 import INDEX from '../pages/index.jsx';
-import CREATE from '../pages/create.jsx';
 import MEMBERSHIP from '../pages/membership.jsx';
 import DIGITAL_HUMAN from '../pages/digital-human.jsx';
 import EXPORT_SHARE from '../pages/export-share.jsx';
 import AI_VIDEO-CREATOR from '../pages/ai-video-creator.jsx';
 import ASSET_LIBRARY from '../pages/asset-library.jsx';
+import VIDEO_CREATOR-PRO from '../pages/video-creator-pro.jsx';
 export const routers = [{
   id: "index",
   component: INDEX
-}, {
-  id: "create",
-  component: CREATE
 }, {
   id: "membership",
   component: MEMBERSHIP
@@ -26,4 +23,7 @@ export const routers = [{
 }, {
   id: "asset-library",
   component: ASSET_LIBRARY
+}, {
+  id: "video-creator-pro",
+  component: VIDEO_CREATOR-PRO
 }]
