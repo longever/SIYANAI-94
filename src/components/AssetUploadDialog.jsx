@@ -47,7 +47,7 @@ export function AssetUploadDialog({
           name: 'upload-asset',
           data: formData,
           headers: {
-            'Content-Type': 'multipart/form-data'
+            'content-type': 'multipart/form-data'
           }
         });
         if (uploadResult.code === 0) {
