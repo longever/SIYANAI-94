@@ -50,7 +50,7 @@ export default function AssetLibraryPage(props) {
         const assetsWithUrls = await Promise.all(result.records.map(async asset => {
           try {
             const urlResult = await $w.cloud.callFunction({
-              name: 'getAssetDownloadUrl',
+              name: 'get-asset-download-url',
               data: {
                 assetId: asset._id
               }
@@ -97,7 +97,7 @@ export default function AssetLibraryPage(props) {
   const handleDownloadAsset = async asset => {
     try {
       const result = await $w.cloud.callFunction({
-        name: 'getAssetDownloadUrl',
+        name: 'get-asset-download-url',
         data: {
           assetId: asset._id
         }
@@ -261,88 +261,88 @@ export default function AssetLibraryPage(props) {
   }];
   if (loading) {
     return <div style={style} className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>;
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    </div>;
   }
   return <div style={style} className="min-h-screen bg-background">
-      <div className="flex h-screen">
-        {/* 左侧分类导航 */}
-        <div className="w-64 bg-card border-r border-border p-4">
-          <h2 className="text-lg font-semibold mb-4">分类</h2>
-          <nav className="space-y-1">
-            {categories.map(category => {
+    <div className="flex h-screen">
+      {/* 左侧分类导航 */}
+      <div className="w-64 bg-card border-r border-border p-4">
+        <h2 className="text-lg font-semibold mb-4">分类</h2>
+        <nav className="space-y-1">
+          {categories.map(category => {
             const Icon = category.icon;
             return <button key={category.id} onClick={() => setSelectedCategory(category.id)} className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${selectedCategory === category.id ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'}`}>
-                  <div className="flex items-center gap-2">
-                    <Icon className="w-4 h-4" />
-                    <span>{category.name}</span>
-                  </div>
-                  <Badge variant={selectedCategory === category.id ? "secondary" : "outline"}>
-                    {category.count}
-                  </Badge>
-                </button>;
-          })}
-          </nav>
-        </div>
-
-        {/* 右侧内容区 */}
-        <div className="flex-1 flex flex-col">
-          {/* 顶部工具栏 */}
-          <div className="border-b border-border p-4">
-            <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold">素材库</h1>
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input type="text" placeholder="搜索素材..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10 w-64" />
-                </div>
-                <Button onClick={() => setShowUploadDialog(true)}>
-                  <Upload className="w-4 h-4 mr-2" />
-                  上传素材
-                </Button>
+              <div className="flex items-center gap-2">
+                <Icon className="w-4 h-4" />
+                <span>{category.name}</span>
               </div>
-            </div>
-          </div>
-
-          {/* 素材网格 */}
-          <div className="flex-1 overflow-auto p-6">
-            {filteredAssets.length === 0 ? <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                <File className="w-16 h-16 mb-4" />
-                <p className="text-lg mb-2">暂无素材</p>
-                <p className="text-sm mb-4">开始上传您的第一个素材吧</p>
-                <Button onClick={() => setShowUploadDialog(true)}>
-                  <Upload className="w-4 h-4 mr-2" />
-                  上传素材
-                </Button>
-              </div> : <AssetGrid assets={filteredAssets} onPreview={setPreviewAsset} onDelete={handleDeleteAsset} onDownload={handleDownloadAsset} />}
-          </div>
-        </div>
+              <Badge variant={selectedCategory === category.id ? "secondary" : "outline"}>
+                {category.count}
+              </Badge>
+            </button>;
+          })}
+        </nav>
       </div>
 
-      {/* 上传对话框 */}
-      <AssetUploadDialog open={showUploadDialog} onOpenChange={setShowUploadDialog} onUploadComplete={fetchAssets} $w={$w} />
+      {/* 右侧内容区 */}
+      <div className="flex-1 flex flex-col">
+        {/* 顶部工具栏 */}
+        <div className="border-b border-border p-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold">素材库</h1>
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input type="text" placeholder="搜索素材..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10 w-64" />
+              </div>
+              <Button onClick={() => setShowUploadDialog(true)}>
+                <Upload className="w-4 h-4 mr-2" />
+                上传素材
+              </Button>
+            </div>
+          </div>
+        </div>
 
-      {/* 预览对话框 */}
-      <AssetPreviewDialog asset={previewAsset} open={!!previewAsset} onOpenChange={open => !open && setPreviewAsset(null)} onDownload={handleDownloadAsset} onDelete={handleDeleteAsset} />
+        {/* 素材网格 */}
+        <div className="flex-1 overflow-auto p-6">
+          {filteredAssets.length === 0 ? <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+            <File className="w-16 h-16 mb-4" />
+            <p className="text-lg mb-2">暂无素材</p>
+            <p className="text-sm mb-4">开始上传您的第一个素材吧</p>
+            <Button onClick={() => setShowUploadDialog(true)}>
+              <Upload className="w-4 h-4 mr-2" />
+              上传素材
+            </Button>
+          </div> : <AssetGrid assets={filteredAssets} onPreview={setPreviewAsset} onDelete={handleDeleteAsset} onDownload={handleDownloadAsset} />}
+        </div>
+      </div>
+    </div>
 
-      {/* 删除确认对话框 */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>确认删除</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            确定要删除素材 "{assetToDelete?.name}" 吗？此操作将同时删除云存储中的文件，且无法恢复。
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-              取消
-            </Button>
-            <Button variant="destructive" onClick={confirmDelete}>
-              确认删除
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>;
+    {/* 上传对话框 */}
+    <AssetUploadDialog open={showUploadDialog} onOpenChange={setShowUploadDialog} onUploadComplete={fetchAssets} $w={$w} />
+
+    {/* 预览对话框 */}
+    <AssetPreviewDialog asset={previewAsset} open={!!previewAsset} onOpenChange={open => !open && setPreviewAsset(null)} onDownload={handleDownloadAsset} onDelete={handleDeleteAsset} />
+
+    {/* 删除确认对话框 */}
+    <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>确认删除</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground">
+          确定要删除素材 "{assetToDelete?.name}" 吗？此操作将同时删除云存储中的文件，且无法恢复。
+        </p>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+            取消
+          </Button>
+          <Button variant="destructive" onClick={confirmDelete}>
+            确认删除
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  </div>;
 }

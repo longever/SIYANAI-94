@@ -45,7 +45,7 @@ export function AssetUploadDialog({
 
         // 调用云函数上传到云存储
         const uploadResult = await $w.cloud.callFunction({
-          name: 'uploadAsset',
+          name: 'upload-asset',
           data: {
             filename: file.name,
             fileContent: base64Data,
@@ -117,14 +117,14 @@ export function AssetUploadDialog({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
   return <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>上传素材</DialogTitle>
-        </DialogHeader>
-        
-        <div className="space-y-4">
-          {/* 拖拽上传区域 */}
-          <div className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragging ? 'border-primary bg-primary/5' : 'border-gray-300'}`} onDragOver={e => {
+    <DialogContent className="max-w-2xl">
+      <DialogHeader>
+        <DialogTitle>上传素材</DialogTitle>
+      </DialogHeader>
+
+      <div className="space-y-4">
+        {/* 拖拽上传区域 */}
+        <div className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragging ? 'border-primary bg-primary/5' : 'border-gray-300'}`} onDragOver={e => {
           e.preventDefault();
           setIsDragging(true);
         }} onDragLeave={() => setIsDragging(false)} onDrop={e => {
@@ -132,66 +132,66 @@ export function AssetUploadDialog({
           setIsDragging(false);
           handleFileSelect(e.dataTransfer.files);
         }}>
-            <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-sm text-gray-600 mb-2">
-              拖拽文件到此处或
-              <Button variant="link" className="p-0 h-auto ml-1" onClick={() => fileInputRef.current?.click()}>
-                选择文件
-              </Button>
-            </p>
-            <p className="text-xs text-gray-500">
-              支持图片、视频、音频、字体、3D模型等格式
-            </p>
-            <input ref={fileInputRef} type="file" multiple className="hidden" onChange={e => handleFileSelect(e.target.files)} />
-          </div>
-
-          {/* 文件列表 */}
-          {uploadedFiles.length > 0 && <div className="space-y-2">
-              <h4 className="text-sm font-medium">待上传文件 ({uploadedFiles.length})</h4>
-              <div className="max-h-64 overflow-y-auto space-y-2">
-                {uploadedFiles.map((file, index) => {
-              const Icon = getFileIcon(file);
-              return <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Icon className="w-5 h-5 text-gray-500" />
-                        <div>
-                          <p className="text-sm font-medium">{file.name}</p>
-                          <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
-                        </div>
-                      </div>
-                      <Button variant="ghost" size="sm" onClick={() => removeFile(index)}>
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>;
-            })}
-              </div>
-            </div>}
-
-          {/* 上传进度 */}
-          {uploading && <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>上传中...</span>
-                <span>{Math.round(uploadProgress)}%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-primary h-2 rounded-full transition-all" style={{
-              width: `${uploadProgress}%`
-            }} />
-              </div>
-            </div>}
+          <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+          <p className="text-sm text-gray-600 mb-2">
+            拖拽文件到此处或
+            <Button variant="link" className="p-0 h-auto ml-1" onClick={() => fileInputRef.current?.click()}>
+              选择文件
+            </Button>
+          </p>
+          <p className="text-xs text-gray-500">
+            支持图片、视频、音频、字体、3D模型等格式
+          </p>
+          <input ref={fileInputRef} type="file" multiple className="hidden" onChange={e => handleFileSelect(e.target.files)} />
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            取消
-          </Button>
-          <Button onClick={handleUpload} disabled={uploading || uploadedFiles.length === 0}>
-            {uploading ? <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                上传中...
-              </> : `开始上传 (${uploadedFiles.length})`}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>;
+        {/* 文件列表 */}
+        {uploadedFiles.length > 0 && <div className="space-y-2">
+          <h4 className="text-sm font-medium">待上传文件 ({uploadedFiles.length})</h4>
+          <div className="max-h-64 overflow-y-auto space-y-2">
+            {uploadedFiles.map((file, index) => {
+              const Icon = getFileIcon(file);
+              return <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Icon className="w-5 h-5 text-gray-500" />
+                  <div>
+                    <p className="text-sm font-medium">{file.name}</p>
+                    <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => removeFile(index)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>;
+            })}
+          </div>
+        </div>}
+
+        {/* 上传进度 */}
+        {uploading && <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span>上传中...</span>
+            <span>{Math.round(uploadProgress)}%</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="bg-primary h-2 rounded-full transition-all" style={{
+              width: `${uploadProgress}%`
+            }} />
+          </div>
+        </div>}
+      </div>
+
+      <DialogFooter>
+        <Button variant="outline" onClick={() => onOpenChange(false)}>
+          取消
+        </Button>
+        <Button onClick={handleUpload} disabled={uploading || uploadedFiles.length === 0}>
+          {uploading ? <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            上传中...
+          </> : `开始上传 (${uploadedFiles.length})`}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>;
 }
