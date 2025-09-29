@@ -2,5 +2,8 @@
 {
   "name": "upload-asset",
   "version": "1.0.0",
-  "description": "文件上传云函数，使用平台内置能力上传文件到云存储并记录到asset_library数据模型"
+  "description": "文件上传云函数，使用平台内置能力上传文件到云存储并记录到asset_library数据模型",
+  "main": "index.js",
+  "dependencies": {}
 }
+  

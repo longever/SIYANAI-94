@@ -2,9 +2,7 @@
 {
   "name": "deleteAsset",
   "version": "1.0.0",
-  "description": "根据 assetId 删除云存储文件及 asset_library 数据模型记录",
+  "description": "根据 assetId 删除云存储文件及 asset_library 数据模型记录（无第三方依赖）",
   "main": "index.js",
-  "dependencies": {
-    "@cloudbase/node-sdk": "^3.10.0"
-  }
+  "dependencies": {}
 }

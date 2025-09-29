@@ -1,0 +1,8 @@
+
+{
+  "name": "generateVideo",
+  "version": "1.0.0",
+  "description": "AI视频生成云函数，使用平台内置能力实现视频生成逻辑",
+  "main": "index.js",
+  "dependencies": {}
+}
