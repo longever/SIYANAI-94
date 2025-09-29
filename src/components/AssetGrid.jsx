@@ -89,6 +89,20 @@ export function AssetGrid({
         return 'bg-gray-100 text-gray-800';
     }
   };
+  const getAssetIcon = type => {
+    switch (type) {
+      case 'video':
+        return '🎬';
+      case 'audio':
+        return '🎵';
+      case 'image':
+        return '🖼️';
+      case 'document':
+        return '📄';
+      default:
+        return '📁';
+    }
+  };
   return <>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {assets.map(asset => <Card key={asset._id} className="group hover:shadow-lg transition-shadow">
