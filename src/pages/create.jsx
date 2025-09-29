@@ -567,4 +567,5 @@ export default function CreatePage(props) {
 
       {/* 节点配置模态框 */}
       {selectedNode && <NodeConfigurationModal node={selectedNode} isOpen={!!selectedNode} onClose={() => setSelectedNode(null)} onUpdate={updateNode} />}
-    </div>;
+    </div>
+  };
