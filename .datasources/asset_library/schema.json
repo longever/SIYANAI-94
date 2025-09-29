@@ -11,14 +11,12 @@
     {
       "name": "type",
       "title": "素材类型",
-      "type": "String",
-      "enum": ["image", "video", "audio", "model", "other"]
+      "type": "String"
     },
     {
       "name": "category",
       "title": "素材分类",
-      "type": "String",
-      "enum": ["personal", "platform"]
+      "type": "String"
     },
     {
       "name": "url",
@@ -56,20 +54,17 @@
     {
       "name": "usage_count",
       "title": "使用次数",
-      "type": "Number",
-      "default": 0
+      "type": "Number"
     },
     {
       "name": "download_count",
       "title": "下载次数",
-      "type": "Number",
-      "default": 0
+      "type": "Number"
     },
     {
       "name": "is_platform",
       "title": "是否平台素材",
-      "type": "Boolean",
-      "default": false
+      "type": "Boolean"
     },
     {
       "name": "mime_type",
@@ -93,3 +88,4 @@
     }
   ]
 }
+  

@@ -60,13 +60,16 @@ export function AssetUploadDialog({
           type: fileType,
           size: file.size,
           mime_type: file.type,
-          fileUrl: uploadResult.fileID,
+          url: uploadResult.fileID,
+          thumbnail: fileType === 'image' ? uploadResult.fileID : null,
           tags: [],
           usage_count: 0,
           download_count: 0,
           is_platform: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          folder_path: uniqueFilename,
+          file_hash: null,
+          dimensions: null,
+          metadata: {}
         };
         const createResult = await $w.cloud.callDataSource({
           dataSourceName: 'asset_library',

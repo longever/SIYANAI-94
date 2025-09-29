@@ -57,8 +57,8 @@ export default function AssetLibraryPage(props) {
             });
             return {
               ...asset,
-              url: urlResult.downloadUrl || asset.fileUrl,
-              thumbnail: asset.type === 'image' ? urlResult.downloadUrl || asset.fileUrl : null
+              url: urlResult.downloadUrl || asset.url,
+              thumbnail: asset.type === 'image' ? urlResult.downloadUrl || asset.thumbnail : null
             };
           } catch (error) {
             console.error('获取URL失败:', error);
