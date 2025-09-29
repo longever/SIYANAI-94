@@ -10,7 +10,7 @@ exports.main = async (event, context) => {
 
     // 2. 参数校验
     const { file, filename, description = '', mimeType = 'application/octet-stream' } = event;
-    
+
     if (!file) {
       return {
         success: false,
@@ -22,7 +22,7 @@ exports.main = async (event, context) => {
     // 3. 处理文件数据
     let fileBuffer;
     let fileName = filename || '未命名文件';
-    
+
     // 支持 base64 字符串或 Buffer
     if (typeof file === 'string') {
       // base64 字符串
@@ -51,7 +51,7 @@ exports.main = async (event, context) => {
     // 5. 生成唯一文件名
     const fileExtension = fileName.includes('.') ? fileName.substring(fileName.lastIndexOf('.')) : '';
     const uniqueFilename = `assets/${Date.now()}-${Math.random().toString(36).substring(2, 15)}${fileExtension}`;
-    
+
     // 6. 上传到云存储
     const uploadResult = await storage.uploadFile({
       cloudPath: uniqueFilename,
@@ -97,11 +97,11 @@ exports.main = async (event, context) => {
 
   } catch (error) {
     console.error('上传失败:', error);
-    
+
     // 错误处理
     let errorMessage = '上传失败';
     let errorCode = 500;
-    
+
     if (error.message && error.message.includes('size')) {
       errorMessage = '文件过大';
       errorCode = 413;
@@ -130,4 +130,3 @@ async function getCloudInstance() {
   });
   return cloud;
 }
-  
