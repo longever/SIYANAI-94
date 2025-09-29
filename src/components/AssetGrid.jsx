@@ -6,16 +6,60 @@ import { Card, CardContent, Badge, Button } from '@/components/ui';
 import { Play, Music, Image, FileText, Download, Eye } from 'lucide-react';
 
 import { AssetPreviewDialog } from './AssetPreviewDialog';
-import { getAssetIcon } from '@/lib/assetUtils';
+import { getAssetDownloadUrl } from '@/lib/assetUtils';
 export function AssetGrid({
   assets,
   onDelete
 }) {
   const [previewAsset, setPreviewAsset] = useState(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [downloading, setDownloading] = useState({});
   const handlePreview = asset => {
     setPreviewAsset(asset);
     setIsPreviewOpen(true);
+  };
+  const handleDownload = async (asset, e) => {
+    e.stopPropagation();
+    setDownloading(prev => ({
+      ...prev,
+      [asset._id]: true
+    }));
+    try {
+      const downloadUrl = await getAssetDownloadUrl(asset._id);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = asset.name;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // 更新下载次数
+      await window.$w.cloud.callDataSource({
+        dataSourceName: 'asset_library',
+        methodName: 'wedaUpdateV2',
+        params: {
+          data: {
+            download_count: (asset.download_count || 0) + 1
+          },
+          filter: {
+            where: {
+              _id: {
+                $eq: asset._id
+              }
+            }
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('下载失败，请稍后重试');
+    } finally {
+      setDownloading(prev => ({
+        ...prev,
+        [asset._id]: false
+      }));
+    }
   };
   const getTypeIcon = type => {
     switch (type) {
@@ -51,8 +95,8 @@ export function AssetGrid({
             <CardContent className="p-4">
               {/* 缩略图区域 */}
               <div className="relative aspect-video bg-gray-100 rounded-lg mb-3 overflow-hidden">
-                {asset.type === 'image' && asset.thumbnailUrl ? <img src={asset.thumbnailUrl} alt={asset.name} className="w-full h-full object-cover" /> : asset.type === 'video' && asset.thumbnailUrl ? <div className="relative w-full h-full">
-                    <img src={asset.thumbnailUrl} alt={asset.name} className="w-full h-full object-cover" />
+                {asset.type === 'image' && asset.thumbnail ? <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" /> : asset.type === 'video' && asset.thumbnail ? <div className="relative w-full h-full">
+                    <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
                       <Play className="w-12 h-12 text-white" />
                     </div>
@@ -68,8 +112,8 @@ export function AssetGrid({
                     <Eye className="w-4 h-4 mr-1" />
                     预览
                   </Button>
-                  <Button size="sm" variant="secondary" className="bg-white/90 hover:bg-white">
-                    <Download className="w-4 h-4" />
+                  <Button size="sm" variant="secondary" onClick={e => handleDownload(asset, e)} disabled={downloading[asset._id]} className="bg-white/90 hover:bg-white">
+                    {downloading[asset._id] ? <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" /> : <Download className="w-4 h-4" />}
                   </Button>
                 </div>
               </div>
@@ -104,8 +148,9 @@ export function AssetGrid({
                   <Eye className="w-3 h-3 mr-1" />
                   预览
                 </Button>
-                <Button size="sm" variant="outline" className="flex-1" onClick={() => onDelete(asset._id)}>
-                  删除
+                <Button size="sm" variant="outline" className="flex-1" onClick={e => handleDownload(asset, e)} disabled={downloading[asset._id]}>
+                  {downloading[asset._id] ? <div className="w-3 h-3 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" /> : <Download className="w-3 h-3 mr-1" />}
+                  下载
                 </Button>
               </div>
             </CardContent>

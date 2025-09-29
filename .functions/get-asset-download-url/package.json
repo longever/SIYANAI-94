@@ -2,8 +2,10 @@
 {
   "name": "get-asset-download-url",
   "version": "1.0.0",
-  "description": "根据 assetId 获取云存储文件的临时下载链接（无第三方依赖）",
+  "description": "获取素材下载URL的云函数",
   "main": "index.js",
-  "dependencies": {}
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  }
 }
   

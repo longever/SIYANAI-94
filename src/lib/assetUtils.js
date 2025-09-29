@@ -1,20 +1,17 @@
 
 export async function getAssetDownloadUrl(fileId) {
   try {
-    const response = await fetch(`/.functions/get-asset-download-url`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ fileId }),
+    const tcb = await window.$w.cloud.getCloudInstance();
+    const result = await tcb.callFunction({
+      name: 'get-asset-download-url',
+      data: { fileId }
     });
     
-    if (!response.ok) {
-      throw new Error('Failed to get download URL');
+    if (result.result.success) {
+      return result.result.downloadUrl;
+    } else {
+      throw new Error(result.result.error || 'Failed to get download URL');
     }
-    
-    const data = await response.json();
-    return data.downloadUrl;
   } catch (error) {
     console.error('Error getting download URL:', error);
     throw error;
@@ -39,3 +36,4 @@ export function getAssetIcon(type) {
   };
   return icons[type] || icons.other;
 }
+  

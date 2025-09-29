@@ -1,9 +1,9 @@
 // @ts-ignore;
 import React, { useState, useEffect } from 'react';
 // @ts-ignore;
-import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Tabs, TabsContent, TabsList, TabsTrigger, useToast } from '@/components/ui';
+import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, useToast } from '@/components/ui';
 // @ts-ignore;
-import { Upload, Search, Filter } from 'lucide-react';
+import { Upload, Search } from 'lucide-react';
 
 import { AssetGrid } from '@/components/AssetGrid';
 import { AssetUploadDialog } from '@/components/AssetUploadDialog';
@@ -35,7 +35,10 @@ export default function AssetLibrary(props) {
           }],
           getCount: true,
           pageSize: 100,
-          pageNumber: 1
+          pageNumber: 1,
+          select: {
+            $master: true
+          }
         }
       });
       if (response.records) {
