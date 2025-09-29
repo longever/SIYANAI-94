@@ -1,0 +1,81 @@
+
+{
+  "name": "asset_library",
+  "title": "素材库",
+  "schemas": [
+    {
+      "name": "name",
+      "title": "素材名称",
+      "type": "String"
+    },
+    {
+      "name": "type",
+      "title": "素材类型",
+      "type": "String"
+    },
+    {
+      "name": "category",
+      "title": "素材分类",
+      "type": "String"
+    },
+    {
+      "name": "url",
+      "title": "文件URL",
+      "type": "Url"
+    },
+    {
+      "name": "thumbnail",
+      "title": "缩略图URL",
+      "type": "Image"
+    },
+    {
+      "name": "size",
+      "title": "文件大小",
+      "type": "Number"
+    },
+    {
+      "name": "duration",
+      "title": "时长",
+      "type": "Number"
+    },
+    {
+      "name": "tags",
+      "title": "标签",
+      "type": "Array",
+      "items": {
+        "type": "String"
+      }
+    },
+    {
+      "name": "metadata",
+      "title": "元数据",
+      "type": "Object"
+    },
+    {
+      "name": "usage_count",
+      "title": "使用次数",
+      "type": "Number"
+    },
+    {
+      "name": "download_count",
+      "title": "下载次数",
+      "type": "Number"
+    },
+    {
+      "name": "is_platform",
+      "title": "是否平台素材",
+      "type": "Boolean"
+    },
+    {
+      "name": "mime_type",
+      "title": "MIME类型",
+      "type": "String"
+    },
+    {
+      "name": "dimensions",
+      "title": "尺寸",
+      "type": "Object"
+    }
+  ]
+}
+  

@@ -1,0 +1,248 @@
+
+[
+  {
+    "_id": "img_city_night",
+    "name": "城市夜景",
+    "type": "image",
+    "category": "personal",
+    "url": "https://images.unsplash.com/photo-1449824913935-59a10b8d2000",
+    "thumbnail": "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=300&h=200&fit=crop",
+    "size": 2516582,
+    "tags": ["城市", "夜景", "现代", "建筑"],
+    "metadata": {
+      "format": "JPEG",
+      "color_space": "RGB",
+      "orientation": "landscape"
+    },
+    "usage_count": 15,
+    "download_count": 8,
+    "is_platform": false,
+    "mime_type": "image/jpeg",
+    "dimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "createdAt": 1705315200000,
+    "updatedAt": 1705315200000
+  },
+  {
+    "_id": "img_product_showcase",
+    "name": "产品展示",
+    "type": "image",
+    "category": "personal",
+    "url": "https://images.unsplash.com/photo-1492619375914-88005aa9e8fb",
+    "thumbnail": "https://images.unsplash.com/photo-1492619375914-88005aa9e8fb?w=300&h=200&fit=crop",
+    "size": 3670016,
+    "tags": ["产品", "展示", "商业", "摄影"],
+    "metadata": {
+      "format": "JPEG",
+      "color_space": "RGB",
+      "orientation": "landscape"
+    },
+    "usage_count": 23,
+    "download_count": 12,
+    "is_platform": false,
+    "mime_type": "image/jpeg",
+    "dimensions": {
+      "width": 2048,
+      "height": 1365
+    },
+    "createdAt": 1705228800000,
+    "updatedAt": 1705228800000
+  },
+  {
+    "_id": "img_nature_landscape",
+    "name": "自然风光",
+    "type": "image",
+    "category": "platform",
+    "url": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e",
+    "thumbnail": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=300&h=200&fit=crop",
+    "size": 3145728,
+    "tags": ["自然", "风景", "山脉", "森林"],
+    "metadata": {
+      "format": "JPEG",
+      "color_space": "RGB",
+      "orientation": "landscape"
+    },
+    "usage_count": 45,
+    "download_count": 28,
+    "is_platform": true,
+    "mime_type": "image/jpeg",
+    "dimensions": {
+      "width": 2400,
+      "height": 1600
+    },
+    "createdAt": 1705142400000,
+    "updatedAt": 1705142400000
+  },
+  {
+    "_id": "video_product_demo",
+    "name": "产品演示视频",
+    "type": "video",
+    "category": "personal",
+    "url": "https://example.com/videos/product-demo.mp4",
+    "thumbnail": "https://images.unsplash.com/photo-1492619375914-88005aa9e8fb?w=300&h=200&fit=crop",
+    "size": 48058368,
+    "duration": 30.5,
+    "tags": ["产品", "演示", "营销", "商业"],
+    "metadata": {
+      "format": "MP4",
+      "codec": "H.264",
+      "bitrate": 12000000,
+      "fps": 30
+    },
+    "usage_count": 8,
+    "download_count": 3,
+    "is_platform": false,
+    "mime_type": "video/mp4",
+    "dimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "createdAt": 1705401600000,
+    "updatedAt": 1705401600000
+  },
+  {
+    "_id": "audio_background_music",
+    "name": "轻快背景音乐",
+    "type": "audio",
+    "category": "platform",
+    "url": "https://example.com/audio/upbeat-bg.mp3",
+    "thumbnail": "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=200&fit=crop",
+    "size": 5441956,
+    "duration": 150.2,
+    "tags": ["轻快", "背景", "音乐", "正能量"],
+    "metadata": {
+      "format": "MP3",
+      "codec": "MPEG Audio Layer III",
+      "bitrate": 320000,
+      "sample_rate": 44100
+    },
+    "usage_count": 67,
+    "download_count": 34,
+    "is_platform": true,
+    "mime_type": "audio/mpeg",
+    "createdAt": 1705315200000,
+    "updatedAt": 1705315200000
+  },
+  {
+    "_id": "font_elegant",
+    "name": "优雅黑体",
+    "type": "font",
+    "category": "personal",
+    "url": "https://example.com/fonts/elegant-heiti.ttf",
+    "thumbnail": "https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=300&h=200&fit=crop",
+    "size": 1153434,
+    "tags": ["字体", "黑体", "优雅", "中文"],
+    "metadata": {
+      "format": "TTF",
+      "family": "优雅黑体",
+      "style": "Regular",
+      "weight": 400
+    },
+    "usage_count": 12,
+    "download_count": 7,
+    "is_platform": false,
+    "mime_type": "font/ttf",
+    "createdAt": 1705228800000,
+    "updatedAt": 1705228800000
+  },
+  {
+    "_id": "model_3d_cube",
+    "name": "3D立方体模型",
+    "type": "3d",
+    "category": "platform",
+    "url": "https://example.com/models/cube.obj",
+    "thumbnail": "https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=300&h=200&fit=crop",
+    "size": 9122611,
+    "tags": ["3D", "模型", "立方体", "几何"],
+    "metadata": {
+      "format": "OBJ",
+      "vertices": 8,
+      "faces": 12,
+      "materials": 1
+    },
+    "usage_count": 5,
+    "download_count": 2,
+    "is_platform": true,
+    "mime_type": "model/obj",
+    "createdAt": 1705136000000,
+    "updatedAt": 1705136000000
+  },
+  {
+    "_id": "subtitle_welcome",
+    "name": "开场字幕",
+    "type": "subtitle",
+    "category": "personal",
+    "url": "https://example.com/subtitles/welcome.srt",
+    "thumbnail": "https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=300&h=200&fit=crop",
+    "size": 1024,
+    "duration": 3.5,
+    "tags": ["字幕", "开场", "欢迎", "中文"],
+    "metadata": {
+      "format": "SRT",
+      "language": "zh-CN",
+      "encoding": "UTF-8",
+      "line_count": 3
+    },
+    "usage_count": 19,
+    "download_count": 8,
+    "is_platform": false,
+    "mime_type": "application/x-subrip",
+    "createdAt": 1705049600000,
+    "updatedAt": 1705049600000
+  },
+  {
+    "_id": "img_tech_background",
+    "name": "科技背景图",
+    "type": "image",
+    "category": "platform",
+    "url": "https://images.unsplash.com/photo-1550751827-4bd374c3f58b",
+    "thumbnail": "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=300&h=200&fit=crop",
+    "size": 2097152,
+    "tags": ["科技", "背景", "未来", "数字"],
+    "metadata": {
+      "format": "JPEG",
+      "color_space": "RGB",
+      "orientation": "landscape"
+    },
+    "usage_count": 89,
+    "download_count": 56,
+    "is_platform": true,
+    "mime_type": "image/jpeg",
+    "dimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "createdAt": 1704963200000,
+    "updatedAt": 1704963200000
+  },
+  {
+    "_id": "video_intro_animation",
+    "name": "片头动画",
+    "type": "video",
+    "category": "platform",
+    "url": "https://example.com/videos/intro-animation.mp4",
+    "thumbnail": "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=300&h=200&fit=crop",
+    "size": 8388608,
+    "duration": 5.2,
+    "tags": ["动画", "片头", "科技", "开场"],
+    "metadata": {
+      "format": "MP4",
+      "codec": "H.264",
+      "bitrate": 8000000,
+      "fps": 30
+    },
+    "usage_count": 34,
+    "download_count": 21,
+    "is_platform": true,
+    "mime_type": "video/mp4",
+    "dimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "createdAt": 1704876800000,
+    "updatedAt": 1704876800000
+  }
+]
+  
