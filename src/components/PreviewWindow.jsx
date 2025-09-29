@@ -1,80 +1,88 @@
 // @ts-ignore;
-import React, { useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 // @ts-ignore;
-import { Play, Pause, SkipBack, SkipForward, Volume2, Maximize2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, Button } from '@/components/ui';
 // @ts-ignore;
-import { Button, Slider, Card } from '@/components/ui';
+import { Play, Pause, Volume2, VolumeX, Maximize2 } from 'lucide-react';
 
 export function PreviewWindow({
-  isDarkMode
+  mode,
+  nodes,
+  isPlaying,
+  currentTime
 }) {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(120);
-  const [volume, setVolume] = useState(75);
-  const formatTime = seconds => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-  const handlePlayPause = () => {
-    setIsPlaying(!isPlaying);
-  };
-  const handleSeek = value => {
-    setCurrentTime(value[0]);
-  };
-  return <div className="h-full flex flex-col bg-black">
-      {/* 视频预览区域 */}
-      <div className="flex-1 relative">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className={`w-full h-full flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
+  const videoRef = useRef(null);
+  useEffect(() => {
+    if (isPlaying && videoRef.current) {
+      videoRef.current.play();
+    } else if (videoRef.current) {
+      videoRef.current.pause();
+    }
+  }, [isPlaying]);
+  const renderPreview = () => {
+    switch (mode) {
+      case 'text2video':
+        return <div className="aspect-video bg-gradient-to-br from-blue-900 to-purple-900 rounded-lg flex items-center justify-center">
             <div className="text-center">
-              <div className="w-32 h-32 bg-gray-700 rounded-lg flex items-center justify-center mb-4">
-                <Play className="w-12 h-12 text-gray-400" />
+              <div className="text-2xl font-bold text-white mb-2">文本转视频预览</div>
+              <div className="text-gray-300">
+                {nodes.length > 0 ? `${nodes.length} 个节点已配置` : '请添加文本节点'}
               </div>
-              <p className="text-gray-400">视频预览区域</p>
+            </div>
+          </div>;
+      case 'image2video':
+        return <div className="aspect-video bg-gradient-to-br from-purple-900 to-pink-900 rounded-lg flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white mb-2">图片转视频预览</div>
+              <div className="text-gray-300">
+                {nodes.length > 0 ? `${nodes.length} 个图片节点已配置` : '请添加图片节点'}
+              </div>
+            </div>
+          </div>;
+      case 'digitalHuman':
+        return <div className="aspect-video bg-gradient-to-br from-green-900 to-blue-900 rounded-lg flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white mb-2">数字人视频预览</div>
+              <div className="text-gray-300">
+                {nodes.length > 0 ? `${nodes.length} 个数字人节点已配置` : '请添加数字人节点'}
+              </div>
+            </div>
+          </div>;
+      default:
+        return <div className="aspect-video bg-gray-800 rounded-lg flex items-center justify-center">
+            <div className="text-gray-400">选择创作模式开始预览</div>
+          </div>;
+    }
+  };
+  return <div className="space-y-4">
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold flex items-center justify-between">
+            实时预览
+            <div className="flex space-x-1">
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                <Maximize2 className="w-3 h-3" />
+              </Button>
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {renderPreview()}
+          
+          <div className="mt-3 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                <Play className="w-3 h-3" />
+              </Button>
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                <Volume2 className="w-3 h-3" />
+              </Button>
+            </div>
+            <div className="text-xs text-gray-400">
+              {nodes.length} 节点 | {currentTime.toFixed(1)}s
             </div>
           </div>
-        </div>
-        
-        {/* 预览模式切换 */}
-        <div className="absolute top-4 left-4 flex gap-2">
-          <Button size="sm" variant="secondary">节点预览</Button>
-          <Button size="sm" variant="ghost">全片预览</Button>
-        </div>
-        
-        {/* 全屏按钮 */}
-        <Button size="sm" variant="ghost" className="absolute top-4 right-4">
-          <Maximize2 className="w-4 h-4" />
-        </Button>
-      </div>
-
-      {/* 播放控制栏 */}
-      <div className="bg-gray-900 p-4">
-        <div className="flex items-center gap-4">
-          <Button size="sm" variant="ghost" onClick={handlePlayPause} className="text-white hover:text-white">
-            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-          </Button>
-          
-          <Button size="sm" variant="ghost" className="text-white hover:text-white">
-            <SkipBack className="w-4 h-4" />
-          </Button>
-          
-          <Button size="sm" variant="ghost" className="text-white hover:text-white">
-            <SkipForward className="w-4 h-4" />
-          </Button>
-          
-          <div className="flex-1 flex items-center gap-2">
-            <span className="text-sm text-gray-400">{formatTime(currentTime)}</span>
-            <Slider value={[currentTime]} onValueChange={handleSeek} max={duration} step={1} className="flex-1" />
-            <span className="text-sm text-gray-400">{formatTime(duration)}</span>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Volume2 className="w-4 h-4 text-gray-400" />
-            <Slider value={[volume]} onValueChange={v => setVolume(v[0])} max={100} step={1} className="w-20" />
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>;
 }

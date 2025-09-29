@@ -1,147 +1,97 @@
 // @ts-ignore;
 import React, { useState } from 'react';
 // @ts-ignore;
-import { Card, CardContent, CardHeader, CardTitle, Button, Input, Textarea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Label, useToast } from '@/components/ui';
+import { Card, CardContent, Button } from '@/components/ui';
 // @ts-ignore;
-import { X, Upload, Image as ImageIcon, Video, File } from 'lucide-react';
+import { Trash2, Copy, Move } from 'lucide-react';
 
 export function NodeCard({
   node,
-  index,
-  onUpdate,
-  onDelete
+  isSelected,
+  onSelect,
+  onDrag,
+  onDelete,
+  mode
 }) {
-  const {
-    toast
-  } = useToast();
-  const [localNode, setLocalNode] = useState(node);
-  const handleUpdate = (field, value) => {
-    const updated = {
-      ...localNode,
-      [field]: value
+  const [isDragging, setIsDragging] = useState(false);
+  const handleMouseDown = e => {
+    if (e.target.closest('.node-controls')) return;
+    setIsDragging(true);
+    const startX = e.clientX - node.position.x;
+    const startY = e.clientY - node.position.y;
+    const handleMouseMove = e => {
+      const newX = e.clientX - startX;
+      const newY = e.clientY - startY;
+      onDrag(node.id, {
+        x: newX,
+        y: newY
+      });
     };
-    setLocalNode(updated);
-    onUpdate(index, updated);
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
   };
-  const handleFileUpload = e => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        toast({
-          title: "文件过大",
-          description: "请选择小于10MB的文件",
-          variant: "destructive"
-        });
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = event => {
-        const updated = {
-          ...localNode,
-          material: {
-            name: file.name,
-            type: file.type,
-            url: event.target.result,
-            size: file.size
-          }
-        };
-        setLocalNode(updated);
-        onUpdate(index, updated);
-        toast({
-          title: "上传成功",
-          description: `已上传 ${file.name}`
-        });
-      };
-      reader.readAsDataURL(file);
+  const getNodeIcon = () => {
+    switch (node.type) {
+      case 'text':
+        return 'T';
+      case 'image':
+        return '🖼️';
+      case 'video':
+        return '🎥';
+      case 'audio':
+        return '🎵';
+      default:
+        return '📄';
     }
   };
-  return <Card className="mb-4 hover:shadow-lg transition-shadow">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">节点 {index + 1}</CardTitle>
-          <Button variant="ghost" size="sm" onClick={() => onDelete(index)} className="h-8 w-8 p-0 text-destructive hover:text-destructive">
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div>
-          <Label htmlFor={`text-${index}`}>文本内容</Label>
-          <Textarea id={`text-${index}`} value={localNode.text || ''} onChange={e => handleUpdate('text', e.target.value)} placeholder="请输入视频文案内容..." className="min-h-[80px] resize-none" />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor={`duration-${index}`}>视频时长</Label>
-            <Select value={localNode.duration || '15'} onValueChange={value => handleUpdate('duration', value)}>
-              <SelectTrigger id={`duration-${index}`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="5">5秒</SelectItem>
-                <SelectItem value="10">10秒</SelectItem>
-                <SelectItem value="15">15秒</SelectItem>
-                <SelectItem value="30">30秒</SelectItem>
-                <SelectItem value="60">60秒</SelectItem>
-              </SelectContent>
-            </Select>
+  const getNodeColor = () => {
+    switch (mode) {
+      case 'text2video':
+        return 'border-blue-500 bg-blue-500/10';
+      case 'image2video':
+        return 'border-purple-500 bg-purple-500/10';
+      case 'digitalHuman':
+        return 'border-green-500 bg-green-500/10';
+      default:
+        return 'border-gray-500 bg-gray-500/10';
+    }
+  };
+  return <Card className={`absolute w-48 cursor-move transition-all duration-200 ${isSelected ? 'ring-2 ring-blue-400 shadow-lg' : ''} ${getNodeColor()} border-2`} style={{
+    left: node.position.x,
+    top: node.position.y,
+    transform: isDragging ? 'scale(1.05)' : 'scale(1)'
+  }} onClick={() => onSelect(node)} onMouseDown={handleMouseDown}>
+      <CardContent className="p-3">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center space-x-2">
+            <span className="text-lg">{getNodeIcon()}</span>
+            <span className="text-sm font-medium truncate">
+              {node.data.name || node.type}
+            </span>
           </div>
-
-          <div>
-            <Label htmlFor={`style-${index}`}>视频风格</Label>
-            <Select value={localNode.style || 'casual'} onValueChange={value => handleUpdate('style', value)}>
-              <SelectTrigger id={`style-${index}`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="casual">休闲</SelectItem>
-                <SelectItem value="business">商务</SelectItem>
-                <SelectItem value="creative">创意</SelectItem>
-                <SelectItem value="minimal">极简</SelectItem>
-              </SelectContent>
-            </Select>
+          
+          <div className="node-controls flex space-x-1">
+            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-red-500/20" onClick={e => {
+            e.stopPropagation();
+            onDelete(node.id);
+          }}>
+              <Trash2 className="w-3 h-3" />
+            </Button>
           </div>
         </div>
 
-        <div>
-          <Label htmlFor={`voice-${index}`}>配音选择</Label>
-          <Select value={localNode.voice || 'female'} onValueChange={value => handleUpdate('voice', value)}>
-            <SelectTrigger id={`voice-${index}`}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="male">男声</SelectItem>
-              <SelectItem value="female">女声</SelectItem>
-              <SelectItem value="child">童声</SelectItem>
-              <SelectItem value="elder">长者</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="text-xs text-gray-400">
+          时长: {node.data.duration || 5}s
         </div>
-
-        <div>
-          <Label>素材</Label>
-          <div className="border-2 border-dashed rounded-lg p-4 text-center">
-            {localNode.material ? <div className="space-y-2">
-                {localNode.material.type.startsWith('image/') ? <img src={localNode.material.url} alt={localNode.material.name} className="max-h-32 mx-auto rounded" /> : localNode.material.type.startsWith('video/') ? <video src={localNode.material.url} className="max-h-32 mx-auto rounded" controls /> : <div className="flex items-center justify-center h-32 bg-muted rounded">
-                    <File className="h-8 w-8 text-muted-foreground" />
-                  </div>}
-                <p className="text-sm text-muted-foreground">{localNode.material.name}</p>
-                <Button variant="outline" size="sm" onClick={() => document.getElementById(`file-${index}`).click()}>
-                  <Upload className="h-4 w-4 mr-2" />
-                  替换素材
-                </Button>
-              </div> : <div className="space-y-2">
-                <div className="flex items-center justify-center h-32 bg-muted rounded">
-                  <ImageIcon className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <Button variant="outline" size="sm" onClick={() => document.getElementById(`file-${index}`).click()}>
-                  <Upload className="h-4 w-4 mr-2" />
-                  上传素材
-                </Button>
-              </div>}
-            <input id={`file-${index}`} type="file" className="hidden" accept="image/*,video/*" onChange={handleFileUpload} />
-          </div>
-        </div>
+        
+        {node.data.content && <div className="mt-1 text-xs text-gray-500 truncate">
+            {node.data.content.substring(0, 30)}...
+          </div>}
       </CardContent>
     </Card>;
 }
