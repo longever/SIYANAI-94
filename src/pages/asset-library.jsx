@@ -1,9 +1,9 @@
 // @ts-ignore;
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore;
-import { Button, Card, CardContent, Input, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, useToast } from '@/components/ui';
+import { Button, Card, CardContent, Input, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, useToast, Badge } from '@/components/ui';
 // @ts-ignore;
-import { Search, Upload, Image, Video, Music, Type, Box, Trash2, X, File } from 'lucide-react';
+import { Search, Upload, Image, Video, Music, Type, Box, Trash2, X, File, Loader2 } from 'lucide-react';
 
 export default function AssetLibraryPage(props) {
   const {
@@ -22,121 +22,126 @@ export default function AssetLibraryPage(props) {
   const [assetToDelete, setAssetToDelete] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
 
-  // 模拟素材数据
-  const mockAssets = [{
-    id: 1,
-    name: '城市夜景.jpg',
-    type: 'image',
-    size: '2.4 MB',
-    uploadTime: '2024-01-15 14:30',
-    thumbnail: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=300&h=200&fit=crop'
-  }, {
-    id: 2,
-    name: '产品展示.mp4',
-    type: 'video',
-    size: '45.8 MB',
-    uploadTime: '2024-01-15 13:45',
-    thumbnail: 'https://images.unsplash.com/photo-1492619375914-88005aa9e8fb?w=300&h=200&fit=crop'
-  }, {
-    id: 3,
-    name: '背景音乐.mp3',
-    type: 'audio',
-    size: '5.2 MB',
-    uploadTime: '2024-01-15 12:20',
-    thumbnail: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=200&fit=crop'
-  }, {
-    id: 4,
-    name: '优雅黑体.ttf',
-    type: 'font',
-    size: '1.1 MB',
-    uploadTime: '2024-01-15 11:15',
-    thumbnail: 'https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=300&h=200&fit=crop'
-  }, {
-    id: 5,
-    name: '3D立方体.obj',
-    type: '3d',
-    size: '8.7 MB',
-    uploadTime: '2024-01-15 10:30',
-    thumbnail: 'https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=300&h=200&fit=crop'
-  }, {
-    id: 6,
-    name: '风景照片.jpg',
-    type: 'image',
-    size: '3.2 MB',
-    uploadTime: '2024-01-14 16:45',
-    thumbnail: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=300&h=200&fit=crop'
-  }];
-  const categories = [{
-    id: 'all',
-    name: '全部',
-    icon: File,
-    count: mockAssets.length
-  }, {
-    id: 'image',
-    name: '图片',
-    icon: Image,
-    count: mockAssets.filter(a => a.type === 'image').length
-  }, {
-    id: 'video',
-    name: '视频',
-    icon: Video,
-    count: mockAssets.filter(a => a.type === 'video').length
-  }, {
-    id: 'audio',
-    name: '音频',
-    icon: Music,
-    count: mockAssets.filter(a => a.type === 'audio').length
-  }, {
-    id: 'font',
-    name: '字体',
-    icon: Type,
-    count: mockAssets.filter(a => a.type === 'font').length
-  }, {
-    id: '3d',
-    name: '3D模型',
-    icon: Box,
-    count: mockAssets.filter(a => a.type === '3d').length
-  }];
+  // 获取素材列表
+  const fetchAssets = useCallback(async () => {
+    try {
+      setLoading(true);
+      const result = await $w.cloud.callDataSource({
+        dataSourceName: 'asset_library',
+        methodName: 'wedaGetRecordsV2',
+        params: {
+          select: {
+            $master: true
+          },
+          getCount: true,
+          orderBy: [{
+            createdAt: 'desc'
+          }]
+        }
+      });
+      if (result.records) {
+        setAssets(result.records);
+      }
+    } catch (error) {
+      toast({
+        title: "获取素材失败",
+        description: error.message || "请稍后重试",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [$w.cloud, toast]);
   useEffect(() => {
-    setAssets(mockAssets);
-  }, []);
+    fetchAssets();
+  }, [fetchAssets]);
+
+  // 筛选逻辑
   useEffect(() => {
     let filtered = assets;
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(asset => asset.type === selectedCategory);
     }
     if (searchQuery) {
-      filtered = filtered.filter(asset => asset.name.toLowerCase().includes(searchQuery.toLowerCase()));
+      filtered = filtered.filter(asset => asset.name.toLowerCase().includes(searchQuery.toLowerCase()) || asset.tags && asset.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())));
     }
     setFilteredAssets(filtered);
   }, [assets, selectedCategory, searchQuery]);
-  const handleUpload = () => {
-    if (uploadedFile) {
+
+  // 上传素材
+  const handleUpload = async () => {
+    if (!uploadedFile) return;
+    try {
+      setUploading(true);
+
+      // 这里应该调用云存储上传文件，然后保存素材信息
+      // 为了演示，我们直接创建素材记录
+      const fileType = uploadedFile.type.startsWith('image/') ? 'image' : uploadedFile.type.startsWith('video/') ? 'video' : uploadedFile.type.startsWith('audio/') ? 'audio' : uploadedFile.type.includes('font') ? 'font' : 'other';
       const newAsset = {
-        id: Date.now(),
         name: uploadedFile.name,
-        type: uploadedFile.type.startsWith('image/') ? 'image' : uploadedFile.type.startsWith('video/') ? 'video' : uploadedFile.type.startsWith('audio/') ? 'audio' : 'other',
-        size: `${(uploadedFile.size / 1024 / 1024).toFixed(1)} MB`,
-        uploadTime: new Date().toLocaleString('zh-CN'),
-        thumbnail: uploadedFile.type.startsWith('image/') ? URL.createObjectURL(uploadedFile) : 'https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=300&h=200&fit=crop'
+        type: fileType,
+        category: 'personal',
+        size: uploadedFile.size,
+        mime_type: uploadedFile.type,
+        tags: [],
+        usage_count: 0,
+        download_count: 0,
+        is_platform: false,
+        createdAt: Date.now(),
+        updatedAt: Date.now()
       };
-      setAssets([newAsset, ...assets]);
-      setShowUploadDialog(false);
-      setUploadedFile(null);
-      toast({
-        title: "上传成功",
-        description: `${uploadedFile.name} 已添加到素材库`
+      const result = await $w.cloud.callDataSource({
+        dataSourceName: 'asset_library',
+        methodName: 'wedaCreateV2',
+        params: {
+          data: newAsset
+        }
       });
+      if (result.id) {
+        await fetchAssets(); // 重新获取列表
+        setShowUploadDialog(false);
+        setUploadedFile(null);
+        toast({
+          title: "上传成功",
+          description: `${uploadedFile.name} 已添加到素材库`
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "上传失败",
+        description: error.message || "请稍后重试",
+        variant: "destructive"
+      });
+    } finally {
+      setUploading(false);
     }
   };
+
+  // 删除素材
   const handleDelete = asset => {
     setAssetToDelete(asset);
     setShowDeleteDialog(true);
   };
-  const confirmDelete = () => {
-    if (assetToDelete) {
-      setAssets(assets.filter(a => a.id !== assetToDelete.id));
+  const confirmDelete = async () => {
+    if (!assetToDelete) return;
+    try {
+      await $w.cloud.callDataSource({
+        dataSourceName: 'asset_library',
+        methodName: 'wedaDeleteV2',
+        params: {
+          filter: {
+            where: {
+              _id: {
+                $eq: assetToDelete._id
+              }
+            }
+          }
+        }
+      });
+      await fetchAssets(); // 重新获取列表
       setShowDeleteDialog(false);
       setAssetToDelete(null);
       toast({
@@ -144,8 +149,101 @@ export default function AssetLibraryPage(props) {
         description: `${assetToDelete.name} 已从素材库移除`,
         variant: "destructive"
       });
+    } catch (error) {
+      toast({
+        title: "删除失败",
+        description: error.message || "请稍后重试",
+        variant: "destructive"
+      });
     }
   };
+
+  // 格式化文件大小
+  const formatFileSize = bytes => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // 格式化时间
+  const formatTime = timestamp => {
+    return new Date(timestamp).toLocaleString('zh-CN');
+  };
+
+  // 获取素材类型图标
+  const getTypeIcon = type => {
+    switch (type) {
+      case 'image':
+        return Image;
+      case 'video':
+        return Video;
+      case 'audio':
+        return Music;
+      case 'font':
+        return Type;
+      case '3d':
+        return Box;
+      case 'subtitle':
+        return Type;
+      default:
+        return File;
+    }
+  };
+
+  // 获取素材类型中文名
+  const getTypeName = type => {
+    const typeMap = {
+      'image': '图片',
+      'video': '视频',
+      'audio': '音频',
+      'font': '字体',
+      '3d': '3D模型',
+      'subtitle': '字幕'
+    };
+    return typeMap[type] || '其他';
+  };
+
+  // 分类统计
+  const categories = [{
+    id: 'all',
+    name: '全部',
+    icon: File,
+    count: assets.length
+  }, {
+    id: 'image',
+    name: '图片',
+    icon: Image,
+    count: assets.filter(a => a.type === 'image').length
+  }, {
+    id: 'video',
+    name: '视频',
+    icon: Video,
+    count: assets.filter(a => a.type === 'video').length
+  }, {
+    id: 'audio',
+    name: '音频',
+    icon: Music,
+    count: assets.filter(a => a.type === 'audio').length
+  }, {
+    id: 'font',
+    name: '字体',
+    icon: Type,
+    count: assets.filter(a => a.type === 'font').length
+  }, {
+    id: '3d',
+    name: '3D模型',
+    icon: Box,
+    count: assets.filter(a => a.type === '3d').length
+  }, {
+    id: 'subtitle',
+    name: '字幕',
+    icon: Type,
+    count: assets.filter(a => a.type === 'subtitle').length
+  }];
+
+  // 拖拽处理
   const handleDragOver = e => {
     e.preventDefault();
     setIsDragging(true);
@@ -162,22 +260,11 @@ export default function AssetLibraryPage(props) {
       setUploadedFile(files[0]);
     }
   };
-  const getTypeIcon = type => {
-    switch (type) {
-      case 'image':
-        return Image;
-      case 'video':
-        return Video;
-      case 'audio':
-        return Music;
-      case 'font':
-        return Type;
-      case '3d':
-        return Box;
-      default:
-        return File;
-    }
-  };
+  if (loading) {
+    return <div style={style} className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>;
+  }
   return <div style={style} className="min-h-screen bg-background">
       <div className="flex h-screen">
         {/* 左侧分类导航 */}
@@ -191,7 +278,9 @@ export default function AssetLibraryPage(props) {
                     <Icon className="w-4 h-4" />
                     <span>{category.name}</span>
                   </div>
-                  <span className="text-xs">{category.count}</span>
+                  <Badge variant={selectedCategory === category.id ? "secondary" : "outline"}>
+                    {category.count}
+                  </Badge>
                 </button>;
           })}
           </nav>
@@ -221,23 +310,34 @@ export default function AssetLibraryPage(props) {
             {filteredAssets.length > 0 ? <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredAssets.map(asset => {
               const TypeIcon = getTypeIcon(asset.type);
-              return <Card key={asset.id} className="group relative overflow-hidden">
+              return <Card key={asset._id} className="group relative overflow-hidden hover:shadow-lg transition-shadow">
                       <button onClick={() => handleDelete(asset)} className="absolute top-2 right-2 z-10 p-1.5 bg-destructive/90 text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                         <Trash2 className="w-4 h-4" />
                       </button>
                       
                       <div className="aspect-video relative">
-                        <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" />
+                        <img src={asset.thumbnail || 'https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=300&h=200&fit=crop'} alt={asset.name} className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                         <div className="absolute bottom-2 left-2">
                           <TypeIcon className="w-5 h-5 text-white drop-shadow-lg" />
                         </div>
+                        {asset.is_platform && <Badge className="absolute top-2 left-2 bg-primary/90 text-primary-foreground">
+                            平台
+                          </Badge>}
                       </div>
                       
                       <CardContent className="p-4">
                         <h3 className="font-medium text-sm truncate mb-1">{asset.name}</h3>
-                        <p className="text-xs text-muted-foreground mb-1">{asset.size}</p>
-                        <p className="text-xs text-muted-foreground">{asset.uploadTime}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                          <span>{getTypeName(asset.type)}</span>
+                          <span>•</span>
+                          <span>{formatFileSize(asset.size)}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">{formatTime(asset.createdAt)}</p>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span>使用 {asset.usage_count || 0} 次</span>
+                          <span>下载 {asset.download_count || 0} 次</span>
+                        </div>
                       </CardContent>
                     </Card>;
             })}
@@ -277,7 +377,7 @@ export default function AssetLibraryPage(props) {
             {uploadedFile && <div className="mt-4 p-3 bg-muted rounded-lg">
                 <p className="text-sm font-medium">{uploadedFile.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {(uploadedFile.size / 1024 / 1024).toFixed(1)} MB
+                  {formatFileSize(uploadedFile.size)}
                 </p>
               </div>}
           </div>
@@ -289,7 +389,8 @@ export default function AssetLibraryPage(props) {
           }}>
               取消
             </Button>
-            <Button onClick={handleUpload} disabled={!uploadedFile}>
+            <Button onClick={handleUpload} disabled={!uploadedFile || uploading}>
+              {uploading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               上传
             </Button>
           </DialogFooter>
