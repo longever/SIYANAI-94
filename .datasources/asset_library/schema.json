@@ -20,13 +20,13 @@
     },
     {
       "name": "url",
-      "title": "文件URL",
-      "type": "Url"
+      "title": "云存储文件ID",
+      "type": "String"
     },
     {
       "name": "thumbnail",
-      "title": "缩略图URL",
-      "type": "Image"
+      "title": "缩略图云存储ID",
+      "type": "String"
     },
     {
       "name": "size",
@@ -78,7 +78,7 @@
     },
     {
       "name": "folder_path",
-      "title": "云存储路径",
+      "title": "云存储完整路径",
       "type": "String"
     },
     {
@@ -88,4 +88,3 @@
     }
   ]
 }
-  

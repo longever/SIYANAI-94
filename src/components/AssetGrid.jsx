@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 // @ts-ignore;
 import { Card, CardContent, Badge, Button } from '@/components/ui';
 // @ts-ignore;
-import { Play, Music, Image, FileText, Download, Eye } from 'lucide-react';
+import { Play, Music, Image, FileText, Download, Eye, Folder } from 'lucide-react';
 
 import { AssetPreviewDialog } from './AssetPreviewDialog';
 import { getAssetDownloadUrl } from '@/lib/assetUtils';
@@ -71,6 +71,10 @@ export function AssetGrid({
         return <Image className="w-4 h-4" />;
       case 'document':
         return <FileText className="w-4 h-4" />;
+      case 'font':
+        return <FileText className="w-4 h-4" />;
+      case 'model':
+        return <Folder className="w-4 h-4" />;
       default:
         return <FileText className="w-4 h-4" />;
     }
@@ -85,23 +89,33 @@ export function AssetGrid({
         return 'bg-green-100 text-green-800';
       case 'document':
         return 'bg-yellow-100 text-yellow-800';
+      case 'font':
+        return 'bg-purple-100 text-purple-800';
+      case 'model':
+        return 'bg-orange-100 text-orange-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
   const getAssetIcon = type => {
-    switch (type) {
-      case 'video':
-        return '🎬';
-      case 'audio':
-        return '🎵';
-      case 'image':
-        return '🖼️';
-      case 'document':
-        return '📄';
-      default:
-        return '📁';
+    const icons = {
+      image: '🖼️',
+      video: '🎬',
+      audio: '🎵',
+      document: '📄',
+      font: '🔤',
+      model: '🧊',
+      other: '📁'
+    };
+    return icons[type] || icons.other;
+  };
+  const getFolderPath = folderPath => {
+    if (!folderPath) return '未知路径';
+    const parts = folderPath.split('/');
+    if (parts.length >= 2 && parts[0] === 'saas_temp') {
+      return `saas_temp/${parts[1]}/`;
     }
+    return folderPath;
   };
   return <>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -144,6 +158,12 @@ export function AssetGrid({
                     <span className="ml-1 capitalize">{asset.type}</span>
                   </Badge>
                   <span className="text-xs text-gray-500">{asset.size}</span>
+                </div>
+
+                {/* 显示存储路径 */}
+                <div className="text-xs text-gray-500">
+                  <span className="font-medium">路径：</span>
+                  <span className="text-blue-600">{getFolderPath(asset.folder_path)}</span>
                 </div>
 
                 {asset.tags && asset.tags.length > 0 && <div className="flex flex-wrap gap-1">

@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 // @ts-ignore;
 import { Dialog, DialogContent, DialogHeader, DialogTitle, Button } from '@/components/ui';
 // @ts-ignore;
-import { Download, X, Play, Pause, Volume2, VolumeX, Music, FileText } from 'lucide-react';
+import { Download, X, Play, Pause, Volume2, VolumeX, Music, FileText, Folder } from 'lucide-react';
 
 import { getAssetDownloadUrl } from '@/lib/assetUtils';
 export function AssetPreviewDialog({
@@ -97,10 +97,19 @@ export function AssetPreviewDialog({
       }
     }
   };
+  const getFolderPath = folderPath => {
+    if (!folderPath) return '未知路径';
+    const parts = folderPath.split('/');
+    if (parts.length >= 2 && parts[0] === 'saas_temp') {
+      return `saas_temp/${parts[1]}/`;
+    }
+    return folderPath;
+  };
   if (!asset) return null;
   const isVideo = asset.type === 'video';
   const isAudio = asset.type === 'audio';
   const isImage = asset.type === 'image';
+  const isModel = asset.type === 'model';
   return <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
@@ -175,8 +184,14 @@ export function AssetPreviewDialog({
                     </div>
                   </div>
                 </div>}
+
+              {isModel && downloadUrl && <div className="p-8 text-center">
+                  <Folder className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                  <p className="text-gray-600 mb-2">3D模型文件</p>
+                  <p className="text-sm text-gray-500">请下载后在3D软件中查看</p>
+                </div>}
               
-              {!isImage && !isVideo && !isAudio && downloadUrl && <div className="p-8 text-center">
+              {!isImage && !isVideo && !isAudio && !isModel && downloadUrl && <div className="p-8 text-center">
                   <FileText className="w-16 h-16 mx-auto mb-4 text-gray-400" />
                   <p className="text-gray-600">此文件类型暂不支持预览</p>
                 </div>}
@@ -191,6 +206,10 @@ export function AssetPreviewDialog({
               <div>
                 <span className="font-medium">大小：</span>
                 <span>{asset.size}</span>
+              </div>
+              <div>
+                <span className="font-medium">存储路径：</span>
+                <span className="text-blue-600">{getFolderPath(asset.folder_path)}</span>
               </div>
               <div>
                 <span className="font-medium">上传时间：</span>

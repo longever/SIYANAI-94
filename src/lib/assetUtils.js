@@ -35,8 +35,35 @@ export function getAssetIcon(type) {
     video: '🎥',
     audio: '🎵',
     document: '📄',
+    font: '🔤',
+    model: '🧊',
     other: '📁',
   };
   return icons[type] || icons.other;
+}
+
+export function getAssetTypeFromMime(mimeType) {
+  if (!mimeType) return 'other';
+  
+  if (mimeType.startsWith('image/')) return 'image';
+  if (mimeType.startsWith('video/')) return 'video';
+  if (mimeType.startsWith('audio/')) return 'audio';
+  if (mimeType.includes('font')) return 'font';
+  if (mimeType.includes('model') || mimeType.includes('glb') || mimeType.includes('gltf')) return 'model';
+  
+  return 'document';
+}
+
+export function getSubfolderByType(type) {
+  const typeMap = {
+    image: 'image',
+    video: 'video',
+    audio: 'audio',
+    font: 'font',
+    model: 'model',
+    document: 'document',
+    other: 'other'
+  };
+  return typeMap[type] || 'other';
 }
   

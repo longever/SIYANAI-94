@@ -37,11 +37,24 @@ export function AssetUploadDialog({
       const tcb = await $w.cloud.getCloudInstance();
       for (let i = 0; i < uploadedFiles.length; i++) {
         const file = uploadedFiles[i];
-        const fileType = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : file.type.includes('font') ? 'font' : 'other';
 
-        // 生成唯一文件名
+        // 根据文件类型确定子文件夹
+        let subFolder = 'other';
+        if (file.type.startsWith('image/')) {
+          subFolder = 'image';
+        } else if (file.type.startsWith('video/')) {
+          subFolder = 'video';
+        } else if (file.type.startsWith('audio/')) {
+          subFolder = 'audio';
+        } else if (file.type.includes('font')) {
+          subFolder = 'font';
+        } else if (file.name.endsWith('.glb') || file.name.endsWith('.gltf') || file.name.endsWith('.obj')) {
+          subFolder = 'model';
+        }
+
+        // 生成唯一文件名，使用 saas_temp 文件夹结构
         const fileExtension = file.name.split('.').pop();
-        const uniqueFilename = `assets/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExtension}`;
+        const uniqueFilename = `saas_temp/${subFolder}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExtension}`;
 
         // 直接上传到云存储
         const uploadResult = await tcb.uploadFile({
@@ -57,19 +70,24 @@ export function AssetUploadDialog({
         // 创建素材记录
         const assetData = {
           name: file.name,
-          type: fileType,
+          type: subFolder,
+          // 使用子文件夹作为类型
           size: file.size,
           mime_type: file.type,
           url: uploadResult.fileID,
-          thumbnail: fileType === 'image' ? uploadResult.fileID : null,
+          thumbnail: subFolder === 'image' ? uploadResult.fileID : null,
           tags: [],
           usage_count: 0,
           download_count: 0,
           is_platform: false,
           folder_path: uniqueFilename,
+          // 存储完整路径
           file_hash: null,
           dimensions: null,
-          metadata: {}
+          metadata: {
+            originalName: file.name,
+            uploadPath: uniqueFilename
+          }
         };
         const createResult = await $w.cloud.callDataSource({
           dataSourceName: 'asset_library',
@@ -89,7 +107,7 @@ export function AssetUploadDialog({
       }
       toast({
         title: "上传成功",
-        description: `成功上传 ${uploadedAssets.length} 个文件到云存储`
+        description: `成功上传 ${uploadedAssets.length} 个文件到云存储的 saas_temp 文件夹`
       });
       onSuccess(uploadedAssets);
       onOpenChange(false);
@@ -144,7 +162,7 @@ export function AssetUploadDialog({
               </Button>
             </p>
             <p className="text-xs text-gray-500">
-              支持图片、视频、音频、字体、3D模型等格式
+              支持图片、视频、音频、字体、3D模型等格式，将自动分类到对应子文件夹
             </p>
             <input ref={fileInputRef} type="file" multiple className="hidden" onChange={e => handleFileSelect(e.target.files)} />
           </div>
