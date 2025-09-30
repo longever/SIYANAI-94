@@ -6,15 +6,14 @@ export async function getAssetDownloadUrl(fileId) {
   
   try {
     const tcb = await window.$w.cloud.getCloudInstance();
-    const result = await tcb.callFunction({
-      name: 'get-asset-download-url',
-      data: { fileId }
+    const result = await tcb.getTempFileURL({
+      fileList: [fileId]
     });
     
-    if (result.result.success) {
-      return result.result.downloadUrl;
+    if (result.fileList && result.fileList.length > 0) {
+      return result.fileList[0].tempFileURL;
     } else {
-      throw new Error(result.result.error || 'Failed to get download URL');
+      throw new Error('Failed to get download URL');
     }
   } catch (error) {
     console.error('Error getting download URL:', error);

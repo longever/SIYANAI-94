@@ -42,7 +42,24 @@ export default function AssetLibrary(props) {
         }
       });
       if (response.records) {
-        setAssets(response.records);
+        // 获取云存储临时URL
+        const tcb = await props.$w.cloud.getCloudInstance();
+        const assetsWithUrls = await Promise.all(response.records.map(async asset => {
+          try {
+            const urlResult = await tcb.getTempFileURL({
+              fileList: [asset.url]
+            });
+            return {
+              ...asset,
+              thumbnail: asset.type === 'image' ? urlResult.fileList[0].tempFileURL : null,
+              downloadUrl: urlResult.fileList[0].tempFileURL
+            };
+          } catch (error) {
+            console.error('获取URL失败:', error);
+            return asset;
+          }
+        }));
+        setAssets(assetsWithUrls);
       }
     } catch (error) {
       console.error('Error loading assets:', error);
@@ -67,6 +84,17 @@ export default function AssetLibrary(props) {
   };
   const handleDelete = async assetId => {
     try {
+      // 先获取文件信息
+      const asset = assets.find(a => a._id === assetId);
+      if (!asset) return;
+
+      // 删除云存储文件
+      const tcb = await props.$w.cloud.getCloudInstance();
+      await tcb.deleteFile({
+        fileList: [asset.url]
+      });
+
+      // 删除数据库记录
       await props.$w.cloud.callDataSource({
         dataSourceName: 'asset_library',
         methodName: 'wedaDeleteV2',
@@ -82,7 +110,7 @@ export default function AssetLibrary(props) {
       });
       toast({
         title: '删除成功',
-        description: '素材已删除'
+        description: '素材已从云存储删除'
       });
       loadAssets();
     } catch (error) {

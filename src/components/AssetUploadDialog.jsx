@@ -32,12 +32,12 @@ export function AssetUploadDialog({
     try {
       setUploading(true);
       const uploadedAssets = [];
+
+      // 获取云开发实例
+      const tcb = await $w.cloud.getCloudInstance();
       for (let i = 0; i < uploadedFiles.length; i++) {
         const file = uploadedFiles[i];
         const fileType = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : file.type.includes('font') ? 'font' : 'other';
-
-        // 使用云开发原生实例进行上传，避免 Content-Type 问题
-        const tcb = await $w.cloud.getCloudInstance();
 
         // 生成唯一文件名
         const fileExtension = file.name.split('.').pop();
