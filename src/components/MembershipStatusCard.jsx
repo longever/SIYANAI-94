@@ -8,6 +8,15 @@ import { Crown, Clock, TrendingUp } from 'lucide-react';
 export function MembershipStatusCard({
   membership
 }) {
+  // 添加空值检查，防止 undefined 错误
+  const safeMembership = membership || {
+    level: 'free',
+    expiresAt: '未开通',
+    dailyQuota: {
+      used: 0,
+      remaining: 0
+    }
+  };
   const getLevelColor = level => {
     switch (level) {
       case 'free':
@@ -42,19 +51,19 @@ export function MembershipStatusCard({
           <div>
             <CardTitle className="text-xl">当前会员状态</CardTitle>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              到期时间：{membership.expiresAt}
+              到期时间：{safeMembership.expiresAt}
             </p>
           </div>
-          <Crown className={`w-8 h-8 ${getLevelColor(membership.level)}`} />
+          <Crown className={`w-8 h-8 ${getLevelColor(safeMembership.level)}`} />
         </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-2xl font-bold">{getLevelName(membership.level)}</p>
-              <Badge variant={membership.level === 'premium' ? 'default' : 'secondary'}>
-                {membership.level === 'premium' ? '高级会员' : '当前等级'}
+              <p className="text-2xl font-bold">{getLevelName(safeMembership.level)}</p>
+              <Badge variant={safeMembership.level === 'premium' ? 'default' : 'secondary'}>
+                {safeMembership.level === 'premium' ? '高级会员' : '当前等级'}
               </Badge>
             </div>
             <Button className="bg-[#FF7D00] hover:bg-[#FF7D00]/90">
@@ -64,11 +73,15 @@ export function MembershipStatusCard({
           
           <div className="grid grid-cols-2 gap-4">
             <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg">
-              <p className="text-2xl font-bold text-[#165DFF]">{membership.dailyQuota.used}</p>
+              <p className="text-2xl font-bold text-[#165DFF]">
+                {safeMembership.dailyQuota?.used || 0}
+              </p>
               <p className="text-sm text-gray-500">今日已用</p>
             </div>
             <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg">
-              <p className="text-2xl font-bold text-green-500">{membership.dailyQuota.remaining}</p>
+              <p className="text-2xl font-bold text-green-500">
+                {safeMembership.dailyQuota?.remaining || 0}
+              </p>
               <p className="text-sm text-gray-500">今日剩余</p>
             </div>
           </div>

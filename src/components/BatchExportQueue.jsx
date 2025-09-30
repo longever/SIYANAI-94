@@ -6,10 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle, Button, Checkbox, Progress, B
 import { Download, Play, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw } from 'lucide-react';
 
 export function BatchExportQueue({
-  projects,
-  exportTasks,
-  isGenerating,
-  generationProgress,
+  projects = [],
+  exportTasks = [],
+  isGenerating = false,
+  generationProgress = 0,
   onBatchGenerate,
   onDownload,
   onRefresh
@@ -25,10 +25,10 @@ export function BatchExportQueue({
     });
   };
   const handleSelectAll = () => {
-    if (selectedProjects.length === projects.length) {
+    if (selectedProjects.length === (projects?.length || 0)) {
       setSelectedProjects([]);
     } else {
-      setSelectedProjects(projects);
+      setSelectedProjects(projects || []);
     }
   };
   const getStatusIcon = status => {
@@ -76,8 +76,8 @@ export function BatchExportQueue({
         <CardContent>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Button variant="outline" size="sm" onClick={handleSelectAll} disabled={projects.length === 0}>
-                {selectedProjects.length === projects.length ? '取消全选' : '全选'}
+              <Button variant="outline" size="sm" onClick={handleSelectAll} disabled={(projects?.length || 0) === 0}>
+                {selectedProjects.length === (projects?.length || 0) ? '取消全选' : '全选'}
               </Button>
               <span className="text-sm text-slate-400">
                 已选择 {selectedProjects.length} 个项目
@@ -85,7 +85,7 @@ export function BatchExportQueue({
             </div>
             
             <div className="space-y-2 max-h-64 overflow-y-auto">
-              {projects.map(project => <div key={project.id} className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
+              {(projects || []).map(project => <div key={project.id} className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
                   <div className="flex items-center gap-3">
                     <Checkbox checked={selectedProjects.find(p => p.id === project.id) !== undefined} onCheckedChange={() => handleProjectToggle(project)} />
                     <div>
@@ -123,8 +123,8 @@ export function BatchExportQueue({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {exportTasks.length > 0 ? <div className="space-y-3">
-              {exportTasks.map(task => <div key={task.id} className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
+          {(exportTasks?.length || 0) > 0 ? <div className="space-y-3">
+              {(exportTasks || []).map(task => <div key={task.id} className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
                   <div className="flex items-center gap-3">
                     {getStatusIcon(task.status)}
                     <div>
