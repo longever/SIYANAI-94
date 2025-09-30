@@ -1,120 +1,156 @@
 // @ts-ignore;
-import React from 'react';
+import React, { useState } from 'react';
 // @ts-ignore;
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+import { Card, CardContent, CardHeader, CardTitle, Button, Checkbox, Progress, Badge } from '@/components/ui';
 // @ts-ignore;
-import { Play, Pause, X, Clock } from 'lucide-react';
+import { Download, Play, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw } from 'lucide-react';
 
 export function BatchExportQueue({
-  tasks,
-  onTaskAction
+  projects,
+  exportTasks,
+  isGenerating,
+  generationProgress,
+  onBatchGenerate,
+  onDownload,
+  onRefresh
 }) {
-  const mockTasks = [{
-    id: 1,
-    name: '产品宣传片.mp4',
-    progress: 75,
-    status: 'processing',
-    format: 'mp4',
-    resolution: '1080p',
-    estimatedTime: '2:30',
-    thumbnail: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=80&h=60&fit=crop'
-  }, {
-    id: 2,
-    name: '企业介绍.mov',
-    progress: 100,
-    status: 'completed',
-    format: 'mov',
-    resolution: '4k',
-    estimatedTime: '完成',
-    thumbnail: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=80&h=60&fit=crop'
-  }, {
-    id: 3,
-    name: '教学视频.webm',
-    progress: 0,
-    status: 'queued',
-    format: 'webm',
-    resolution: '720p',
-    estimatedTime: '等待中',
-    thumbnail: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=80&h=60&fit=crop'
-  }];
-  const getStatusColor = status => {
-    switch (status) {
-      case 'processing':
-        return 'text-blue-500';
-      case 'completed':
-        return 'text-green-500';
-      case 'queued':
-        return 'text-gray-500';
-      case 'failed':
-        return 'text-red-500';
-      default:
-        return 'text-gray-500';
+  const [selectedProjects, setSelectedProjects] = useState([]);
+  const handleProjectToggle = project => {
+    setSelectedProjects(prev => {
+      if (prev.find(p => p.id === project.id)) {
+        return prev.filter(p => p.id !== project.id);
+      } else {
+        return [...prev, project];
+      }
+    });
+  };
+  const handleSelectAll = () => {
+    if (selectedProjects.length === projects.length) {
+      setSelectedProjects([]);
+    } else {
+      setSelectedProjects(projects);
     }
   };
-  const getStatusText = status => {
+  const getStatusIcon = status => {
     switch (status) {
-      case 'processing':
-        return '处理中';
       case 'completed':
-        return '已完成';
-      case 'queued':
-        return '等待中';
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'processing':
+        return <Clock className="w-4 h-4 text-blue-500 animate-spin" />;
       case 'failed':
-        return '失败';
+        return <XCircle className="w-4 h-4 text-red-500" />;
       default:
-        return '未知';
+        return <AlertCircle className="w-4 h-4 text-slate-400" />;
     }
   };
-  return <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>批量导出队列</span>
-          <span className="text-sm font-normal text-gray-500">{mockTasks.length} 个任务</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {mockTasks.map(task => <div key={task.id} className="border rounded-lg p-3">
-              <div className="flex items-center gap-3">
-                <img src={task.thumbnail} alt={task.name} className="w-16 h-12 object-cover rounded" />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium text-sm">{task.name}</h4>
-                    <span className={`text-xs ${getStatusColor(task.status)}`}>
-                      {getStatusText(task.status)}
-                    </span>
+  const getStatusBadge = status => {
+    switch (status) {
+      case 'completed':
+        return <Badge variant="success">已完成</Badge>;
+      case 'processing':
+        return <Badge variant="default">处理中</Badge>;
+      case 'failed':
+        return <Badge variant="destructive">失败</Badge>;
+      default:
+        return <Badge variant="secondary">等待中</Badge>;
+    }
+  };
+  const formatFileSize = bytes => {
+    if (!bytes) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+  const formatDuration = seconds => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+  return <div className="space-y-6">
+      {/* 项目选择 */}
+      <Card className="bg-slate-800 border-slate-700">
+        <CardHeader>
+          <CardTitle className="text-white">选择项目</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Button variant="outline" size="sm" onClick={handleSelectAll} disabled={projects.length === 0}>
+                {selectedProjects.length === projects.length ? '取消全选' : '全选'}
+              </Button>
+              <span className="text-sm text-slate-400">
+                已选择 {selectedProjects.length} 个项目
+              </span>
+            </div>
+            
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {projects.map(project => <div key={project.id} className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Checkbox checked={selectedProjects.find(p => p.id === project.id) !== undefined} onCheckedChange={() => handleProjectToggle(project)} />
+                    <div>
+                      <p className="text-sm font-medium text-white">{project.name}</p>
+                      <p className="text-xs text-slate-400">
+                        {project.nodeCount} 节点 • {formatDuration(project.totalDuration)}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-                    <span>{task.format.toUpperCase()}</span>
-                    <span>•</span>
-                    <span>{task.resolution}</span>
-                    <span>•</span>
-                    <Clock className="w-3 h-3" />
-                    <span>{task.estimatedTime}</span>
+                  {getStatusBadge(project.status)}
+                </div>)}
+            </div>
+            
+            <Button className="w-full" onClick={() => onBatchGenerate(selectedProjects)} disabled={selectedProjects.length === 0 || isGenerating}>
+              {isGenerating ? <>
+                  <Clock className="w-4 h-4 mr-2 animate-spin" />
+                  生成中 {generationProgress}%
+                </> : <>
+                  <Play className="w-4 h-4 mr-2" />
+                  开始批量生成
+                </>}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 导出任务列表 */}
+      <Card className="bg-slate-800 border-slate-700">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center justify-between">
+            导出任务
+            <Button size="sm" variant="ghost" onClick={onRefresh}>
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {exportTasks.length > 0 ? <div className="space-y-3">
+              {exportTasks.map(task => <div key={task.id} className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    {getStatusIcon(task.status)}
+                    <div>
+                      <p className="text-sm font-medium text-white">{task.projectName}</p>
+                      <p className="text-xs text-slate-400">
+                        {formatDuration(task.duration)} • {formatFileSize(task.fileSize)}
+                      </p>
+                    </div>
                   </div>
-                  {task.status === 'processing' && <div className="mt-2">
-                      <div className="w-full bg-gray-200 rounded-full h-1.5">
-                        <div className="bg-[#165DFF] h-1.5 rounded-full transition-all duration-300" style={{
-                    width: `${task.progress}%`
-                  }} />
-                      </div>
-                      <span className="text-xs text-gray-500">{task.progress}%</span>
-                    </div>}
-                </div>
-                <div className="flex gap-1">
-                  {task.status === 'processing' && <button onClick={() => onTaskAction(task.id, 'pause')} className="p-1 hover:bg-gray-100 rounded">
-                      <Pause className="w-4 h-4" />
-                    </button>}
-                  {task.status === 'queued' && <button onClick={() => onTaskAction(task.id, 'start')} className="p-1 hover:bg-gray-100 rounded">
-                      <Play className="w-4 h-4" />
-                    </button>}
-                  <button onClick={() => onTaskAction(task.id, 'cancel')} className="p-1 hover:bg-gray-100 rounded">
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>)}
-        </div>
-      </CardContent>
-    </Card>;
+                  
+                  <div className="flex items-center gap-2">
+                    {task.status === 'processing' && <Progress value={task.progress} className="w-20" />}
+                    
+                    {task.status === 'completed' && <Button size="sm" variant="ghost" onClick={() => onDownload(task.id)}>
+                        <Download className="w-4 h-4" />
+                      </Button>}
+                    
+                    {getStatusBadge(task.status)}
+                  </div>
+                </div>)}
+            </div> : <div className="text-center py-8 text-slate-400">
+              <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>暂无导出任务</p>
+              <p className="text-sm mt-2">选择项目并开始批量生成</p>
+            </div>}
+        </CardContent>
+      </Card>
+    </div>;
 }

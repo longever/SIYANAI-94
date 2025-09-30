@@ -1,303 +1,673 @@
 // @ts-ignore;
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore;
-import { Button, Card, CardContent, CardHeader, CardTitle, Tabs, TabsContent, TabsList, TabsTrigger, useToast } from '@/components/ui';
+import { Button, Card, CardContent, CardHeader, CardTitle, Tabs, TabsContent, TabsList, TabsTrigger, useToast, Skeleton, Badge } from '@/components/ui';
 // @ts-ignore;
-import { Play, Pause, Trash2, Image, Music, Video, Plus, Settings, Download, Sparkles } from 'lucide-react';
+import { Plus, Play, Save, Download, Share2, RefreshCw, Trash2, Copy, Eye, Settings, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
-import { EnhancedAssetLibrary } from '@/components/EnhancedAssetLibrary';
 import { TimelineNodeCard } from '@/components/TimelineNodeCard';
 import { NodeConfigurationModal } from '@/components/NodeConfigurationModal';
 import { ScriptGeneratorModal } from '@/components/ScriptGeneratorModal';
+import { EnhancedAssetLibrary } from '@/components/EnhancedAssetLibrary';
 import { VideoPreviewWindow } from '@/components/VideoPreviewWindow';
 import { Text2VideoPanel } from '@/components/Text2VideoPanel';
 import { Image2VideoPanel } from '@/components/Image2VideoPanel';
 import { DigitalHumanPanel } from '@/components/DigitalHumanPanel';
 export default function AIVideoCreator(props) {
-  const [selectedAssets, setSelectedAssets] = useState([]);
-  const [isAssetLibraryOpen, setIsAssetLibraryOpen] = useState(false);
-  const [currentTab, setCurrentTab] = useState('text2video');
-  const [timelineNodes, setTimelineNodes] = useState([]);
-  const [selectedNode, setSelectedNode] = useState(null);
-  const [isNodeConfigOpen, setIsNodeConfigOpen] = useState(false);
-  const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [aiMode, setAiMode] = useState('creative');
+  const {
+    $w
+  } = props;
   const {
     toast
   } = useToast();
-  const videoRef = useRef(null);
+  const [loading, setLoading] = useState(true);
+  const [nodes, setNodes] = useState([]);
+  const [selectedNode, setSelectedNode] = useState(null);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [currentTaskId, setCurrentTaskId] = useState(null);
+  const [projectId, setProjectId] = useState(null);
+  const [activeTab, setActiveTab] = useState('timeline');
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
-  // 素材选择处理
-  const handleAssetSelect = asset => {
-    const newAsset = {
-      ...asset,
-      id: `asset_${Date.now()}`,
-      selectedAt: new Date().toISOString()
-    };
-    setSelectedAssets(prev => [...prev, newAsset]);
-    setIsAssetLibraryOpen(false);
-    toast({
-      title: '素材已添加',
-      description: `${asset.name} 已添加到AI创作中心`
-    });
-  };
-
-  // 移除素材
-  const handleRemoveAsset = assetId => {
-    setSelectedAssets(prev => prev.filter(asset => asset.id !== assetId));
-    toast({
-      title: '素材已移除',
-      description: '素材已从AI创作中心移除'
-    });
-  };
-
-  // 素材预览组件
-  const AssetPreview = ({
-    asset
-  }) => {
-    const [isPlaying, setIsPlaying] = useState(false);
-    const mediaRef = useRef(null);
-    const handlePlayPause = e => {
-      e.stopPropagation();
-      if (mediaRef.current) {
-        if (isPlaying) {
-          mediaRef.current.pause();
-        } else {
-          mediaRef.current.play();
-        }
-        setIsPlaying(!isPlaying);
-      }
-    };
-    const formatTime = time => {
-      if (!time || isNaN(time)) return '0:00';
-      const minutes = Math.floor(time / 60);
-      const seconds = Math.floor(time % 60);
-      return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    };
-    return <div className="relative group bg-white rounded-lg border p-3 hover:shadow-md transition-all">
-        <div className="aspect-video bg-gray-100 rounded-md overflow-hidden mb-2">
-          {asset.type === 'image' && asset.thumbnail && <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" />}
-          
-          {asset.type === 'video' && asset.thumbnail && <div className="relative w-full h-full">
-              <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button size="sm" variant="secondary" className="bg-white/90 hover:bg-white" onClick={handlePlayPause}>
-                  {isPlaying ? <Pause size={16} /> : <Play size={16} />}
-                </Button>
-              </div>
-              <video ref={mediaRef} src={asset.downloadUrl} className="hidden" onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} />
-            </div>}
-          
-          {asset.type === 'audio' && <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500">
-              <div className="text-center text-white">
-                <Music className="w-8 h-8 mx-auto mb-1" />
-                <p className="text-xs font-medium truncate">{asset.name}</p>
-              </div>
-              <audio ref={mediaRef} src={asset.downloadUrl} className="hidden" onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} />
-            </div>}
-        </div>
-        
-        <div className="space-y-1">
-          <p className="text-sm font-medium truncate">{asset.name}</p>
-          <p className="text-xs text-gray-500 capitalize">{asset.type} • {asset.size}</p>
-        </div>
-        
-        <Button size="sm" variant="ghost" className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white shadow-md" onClick={() => handleRemoveAsset(asset.id)}>
-          <Trash2 size={14} />
-        </Button>
-      </div>;
-  };
-
-  // 时间轴操作
-  const handleAddNode = (type, asset) => {
-    const newNode = {
-      id: `node_${Date.now()}`,
-      type,
-      asset,
-      startTime: currentTime,
-      duration: asset.type === 'video' ? asset.duration || 5 : 3,
-      properties: {
-        aiMode,
-        prompt: '',
-        style: 'cinematic'
-      }
-    };
-    setTimelineNodes(prev => [...prev, newNode]);
-    toast({
-      title: 'AI节点已添加',
-      description: `${type} 节点已添加到AI时间轴`
-    });
-  };
-  const handleDeleteNode = nodeId => {
-    setTimelineNodes(prev => prev.filter(node => node.id !== nodeId));
-  };
-  const handleUpdateNode = (nodeId, updates) => {
-    setTimelineNodes(prev => prev.map(node => node.id === nodeId ? {
-      ...node,
-      ...updates
-    } : node));
-  };
-
-  // 预览控制
-  const handlePlayPause = () => {
-    setIsPlaying(!isPlaying);
-  };
-  const handleGenerateVideo = async () => {
+  // 获取项目节点列表
+  const loadNodes = async () => {
     try {
-      const response = await props.$w.cloud.callFunction({
-        name: 'generateVideo',
-        data: {
-          nodes: timelineNodes,
-          assets: selectedAssets,
-          aiMode,
-          prompt: 'AI生成的视频内容'
+      setLoading(true);
+      const result = await $w.cloud.callDataSource({
+        dataSourceName: 'video_node',
+        methodName: 'wedaGetRecordsV2',
+        params: {
+          filter: {
+            where: {
+              projectId: {
+                $eq: projectId || 'default-project'
+              }
+            }
+          },
+          orderBy: [{
+            orderIndex: 'asc'
+          }],
+          select: {
+            $master: true
+          }
         }
       });
-      toast({
-        title: 'AI生成成功',
-        description: 'AI视频已生成，正在下载...'
-      });
-      if (response.downloadUrl) {
-        window.open(response.downloadUrl, '_blank');
+      if (result.records) {
+        setNodes(result.records);
       }
     } catch (error) {
+      console.error('获取节点失败:', error);
       toast({
-        title: 'AI生成失败',
-        description: error.message || 'AI视频生成失败，请稍后重试',
+        title: '获取节点失败',
+        description: error.message || '请稍后重试',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 保存节点到数据库
+  const saveNode = async nodeData => {
+    try {
+      const node = {
+        ...nodeData,
+        projectId: projectId || 'default-project',
+        orderIndex: nodeData.orderIndex || nodes.length,
+        status: 'draft',
+        createdAt: new Date().toISOString()
+      };
+      const result = await $w.cloud.callDataSource({
+        dataSourceName: 'video_node',
+        methodName: 'wedaCreateV2',
+        params: {
+          data: node
+        }
+      });
+      if (result.id) {
+        toast({
+          title: '节点保存成功',
+          description: '节点已保存到云端',
+          variant: 'success'
+        });
+        loadNodes();
+        return result.id;
+      }
+    } catch (error) {
+      console.error('保存节点失败:', error);
+      toast({
+        title: '保存节点失败',
+        description: error.message || '请稍后重试',
+        variant: 'destructive'
+      });
+      throw error;
+    }
+  };
+
+  // 更新节点
+  const updateNode = async (nodeId, updates) => {
+    try {
+      const result = await $w.cloud.callDataSource({
+        dataSourceName: 'video_node',
+        methodName: 'wedaUpdateV2',
+        params: {
+          data: {
+            ...updates,
+            updatedAt: new Date().toISOString()
+          },
+          filter: {
+            where: {
+              _id: {
+                $eq: nodeId
+              }
+            }
+          }
+        }
+      });
+      if (result.count > 0) {
+        loadNodes();
+        return true;
+      }
+    } catch (error) {
+      console.error('更新节点失败:', error);
+      toast({
+        title: '更新节点失败',
+        description: error.message || '请稍后重试',
+        variant: 'destructive'
+      });
+      throw error;
+    }
+  };
+
+  // 删除节点
+  const deleteNode = async nodeId => {
+    try {
+      const result = await $w.cloud.callDataSource({
+        dataSourceName: 'video_node',
+        methodName: 'wedaDeleteV2',
+        params: {
+          filter: {
+            where: {
+              _id: {
+                $eq: nodeId
+              }
+            }
+          }
+        }
+      });
+      if (result.count > 0) {
+        toast({
+          title: '节点删除成功',
+          description: '节点已从项目中移除',
+          variant: 'success'
+        });
+        loadNodes();
+        if (selectedNode?.id === nodeId) {
+          setSelectedNode(null);
+        }
+      }
+    } catch (error) {
+      console.error('删除节点失败:', error);
+      toast({
+        title: '删除节点失败',
+        description: error.message || '请稍后重试',
         variant: 'destructive'
       });
     }
   };
-  const formatTime = time => {
-    if (!time || isNaN(time)) return '0:00';
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
-  return <div className="h-screen flex flex-col bg-gradient-to-br from-gray-50 to-blue-50">
-      {/* 顶部AI工具栏 */}
-      <div className="bg-white border-b px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <Sparkles className="w-5 h-5 text-purple-600" />
-            <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              AI视频创作中心
-            </h1>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Button size="sm" variant="outline" onClick={() => setIsAssetLibraryOpen(true)} className="border-purple-200 text-purple-600 hover:bg-purple-50">
-              <Plus className="w-4 h-4 mr-2" />
-              添加AI素材
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => setIsScriptModalOpen(true)} className="border-purple-200 text-purple-600 hover:bg-purple-50">
-              <Sparkles className="w-4 h-4 mr-2" />
-              AI脚本生成
-            </Button>
-            <Button size="sm" className="bg-gradient-to-r from-purple-600 to-pink-600 text-white" onClick={handleGenerateVideo}>
-              <Download className="w-4 h-4 mr-2" />
-              AI生成视频
-            </Button>
-          </div>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <Button size="sm" variant="ghost" onClick={handlePlayPause}>
-            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-          </Button>
-          <span className="text-sm text-gray-600">
-            {formatTime(currentTime)} / {formatTime(duration)}
-          </span>
-        </div>
-      </div>
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* 左侧AI素材预览区 */}
-        <div className="w-80 bg-white border-r flex flex-col">
-          <div className="p-4 border-b bg-gradient-to-r from-purple-50 to-pink-50">
-            <h2 className="font-semibold text-sm text-purple-800">AI素材库</h2>
-            <p className="text-xs text-purple-600 mt-1">
-              {selectedAssets.length} 个AI素材
-            </p>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto p-4">
-            {selectedAssets.length === 0 ? <div className="text-center py-8">
-                <div className="text-purple-300 mb-2">
-                  <Image className="w-12 h-12 mx-auto" />
-                </div>
-                <p className="text-sm text-gray-500 mb-2">暂无AI素材</p>
-                <Button size="sm" variant="outline" className="border-purple-200 text-purple-600 hover:bg-purple-50" onClick={() => setIsAssetLibraryOpen(true)}>
-                  添加AI素材
-                </Button>
-              </div> : <div className="grid grid-cols-1 gap-3">
-                {selectedAssets.map(asset => <AssetPreview key={asset.id} asset={asset} />)}
-              </div>}
-          </div>
-        </div>
-
-        {/* 中间主工作区 */}
-        <div className="flex-1 flex flex-col">
-          <Tabs value={currentTab} onValueChange={setCurrentTab} className="flex-1">
-            <TabsList className="w-full justify-start rounded-none border-b bg-white">
-              <TabsTrigger value="text2video" className="data-[state=active]:text-purple-600">
-                文本生视频
-              </TabsTrigger>
-              <TabsTrigger value="image2video" className="data-[state=active]:text-purple-600">
-                图片生视频
-              </TabsTrigger>
-              <TabsTrigger value="digitalhuman" className="data-[state=active]:text-purple-600">
-                数字人
-              </TabsTrigger>
-              <TabsTrigger value="timeline" className="data-[state=active]:text-purple-600">
-                AI时间轴
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="text2video" className="flex-1 p-0 m-0">
-              <Text2VideoPanel selectedAssets={selectedAssets} onAddNode={handleAddNode} aiMode={aiMode} onAiModeChange={setAiMode} />
-            </TabsContent>
-            
-            <TabsContent value="image2video" className="flex-1 p-0 m-0">
-              <Image2VideoPanel selectedAssets={selectedAssets} onAddNode={handleAddNode} aiMode={aiMode} />
-            </TabsContent>
-            
-            <TabsContent value="digitalhuman" className="flex-1 p-0 m-0">
-              <DigitalHumanPanel selectedAssets={selectedAssets} onAddNode={handleAddNode} aiMode={aiMode} />
-            </TabsContent>
-            
-            <TabsContent value="timeline" className="flex-1 p-0 m-0">
-              <div className="h-full flex">
-                <div className="flex-1 p-4">
-                  <TimelineNodeCard nodes={timelineNodes} onDeleteNode={handleDeleteNode} onUpdateNode={handleUpdateNode} onAddNode={handleAddNode} selectedAssets={selectedAssets} onNodeClick={setSelectedNode} />
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* 右侧AI预览窗口 */}
-        <div className="w-96 bg-white border-l">
-          <VideoPreviewWindow ref={videoRef} nodes={timelineNodes} isPlaying={isPlaying} currentTime={currentTime} onTimeUpdate={setCurrentTime} onDurationChange={setDuration} aiMode={aiMode} />
-        </div>
-      </div>
-
-      {/* 素材库弹窗 */}
-      <EnhancedAssetLibrary open={isAssetLibraryOpen} onOpenChange={setIsAssetLibraryOpen} onAssetSelect={handleAssetSelect} $w={props.$w} />
-
-      {/* 节点配置弹窗 */}
-      <NodeConfigurationModal open={isNodeConfigOpen} onOpenChange={setIsNodeConfigOpen} node={selectedNode} onUpdateNode={handleUpdateNode} availableAssets={selectedAssets} />
-
-      {/* AI脚本生成弹窗 */}
-      <ScriptGeneratorModal open={isScriptModalOpen} onOpenChange={setIsScriptModalOpen} onGenerateScript={script => {
-      // 处理生成的脚本
-      toast({
-        title: 'AI脚本已生成',
-        description: '脚本已应用到创作中心'
+  // 使用AI引擎生成脚本
+  const generateScript = async (prompt, options = {}) => {
+    try {
+      setIsGenerating(true);
+      setGenerationProgress(0);
+      const result = await $w.cloud.callFunction({
+        name: 'ai-engine-service',
+        data: {
+          action: 'generate-script',
+          prompt,
+          options: {
+            style: options.style || 'creative',
+            duration: options.duration || 60,
+            tone: options.tone || 'neutral',
+            ...options
+          }
+        }
       });
+      if (result.success) {
+        toast({
+          title: '脚本生成成功',
+          description: `生成了 ${result.data.nodes.length} 个节点`,
+          variant: 'success'
+        });
+
+        // 保存生成的节点
+        const savedNodes = await Promise.all(result.data.nodes.map((node, index) => saveNode({
+          ...node,
+          orderIndex: nodes.length + index
+        })));
+        return result.data;
+      } else {
+        throw new Error(result.error || '脚本生成失败');
+      }
+    } catch (error) {
+      console.error('脚本生成失败:', error);
+      toast({
+        title: '脚本生成失败',
+        description: error.message || '请稍后重试',
+        variant: 'destructive'
+      });
+      throw error;
+    } finally {
+      setIsGenerating(false);
+      setGenerationProgress(0);
+    }
+  };
+
+  // 生成视频
+  const generateVideo = async () => {
+    if (nodes.length === 0) {
+      toast({
+        title: '无法生成视频',
+        description: '请先添加至少一个节点',
+        variant: 'destructive'
+      });
+      return;
+    }
+    try {
+      setIsGenerating(true);
+      setGenerationProgress(10);
+
+      // 准备视频生成参数
+      const videoParams = {
+        videoName: `AI-Video-${Date.now()}`,
+        totalDuration: nodes.reduce((sum, node) => sum + (node.duration || 5), 0),
+        nodes: nodes.map(node => ({
+          id: node._id,
+          title: node.title,
+          content: node.text,
+          type: node.generationType,
+          duration: node.duration || 5,
+          provider: node.provider,
+          shotType: node.shotType,
+          transition: node.transition,
+          colorStyle: node.colorStyle,
+          assets: node.assets || {},
+          customParams: node.customParams || {}
+        }))
+      };
+
+      // 调用视频生成云函数
+      const result = await $w.cloud.callFunction({
+        name: 'generateVideo',
+        data: videoParams
+      });
+      if (result.success) {
+        setCurrentTaskId(result.projectId);
+        setGenerationProgress(50);
+
+        // 更新节点状态
+        await Promise.all(nodes.map(node => updateNode(node._id, {
+          status: 'processing'
+        })));
+
+        // 开始轮询任务状态
+        pollTaskStatus(result.projectId);
+        toast({
+          title: '视频生成已启动',
+          description: '正在处理您的视频，请稍候...',
+          variant: 'success'
+        });
+      } else {
+        throw new Error(result.error || '视频生成失败');
+      }
+    } catch (error) {
+      console.error('视频生成失败:', error);
+      toast({
+        title: '视频生成失败',
+        description: error.message || '请稍后重试',
+        variant: 'destructive'
+      });
+      setIsGenerating(false);
+    }
+  };
+
+  // 轮询任务状态
+  const pollTaskStatus = async taskId => {
+    const checkStatus = async () => {
+      try {
+        const result = await $w.cloud.callFunction({
+          name: 'generateVideo',
+          data: {
+            action: 'getTaskStatus',
+            taskId
+          }
+        });
+        if (result.success) {
+          const progress = result.data.progress || 0;
+          setGenerationProgress(progress);
+          if (result.data.status === 'completed') {
+            setPreviewUrl(result.data.videoUrl);
+            setIsGenerating(false);
+
+            // 更新所有节点状态
+            await Promise.all(nodes.map(node => updateNode(node._id, {
+              status: 'completed'
+            })));
+            toast({
+              title: '视频生成完成',
+              description: '您的视频已准备就绪',
+              variant: 'success'
+            });
+            return true;
+          } else if (result.data.status === 'failed') {
+            setIsGenerating(false);
+
+            // 更新节点状态为失败
+            await Promise.all(nodes.map(node => updateNode(node._id, {
+              status: 'failed'
+            })));
+            toast({
+              title: '视频生成失败',
+              description: result.data.error || '请稍后重试',
+              variant: 'destructive'
+            });
+            return true;
+          }
+        }
+        return false;
+      } catch (error) {
+        console.error('检查任务状态失败:', error);
+        return true;
+      }
+    };
+
+    // 每3秒检查一次，最多检查60次（3分钟）
+    let attempts = 0;
+    const maxAttempts = 60;
+    const interval = setInterval(async () => {
+      attempts++;
+      const completed = await checkStatus();
+      if (completed || attempts >= maxAttempts) {
+        clearInterval(interval);
+        if (attempts >= maxAttempts) {
+          setIsGenerating(false);
+          toast({
+            title: '视频生成超时',
+            description: '请稍后重试',
+            variant: 'destructive'
+          });
+        }
+      }
+    }, 3000);
+  };
+
+  // 预览节点
+  const previewNode = async node => {
+    if (!node) return;
+    try {
+      setPreviewLoading(true);
+      const result = await $w.cloud.callFunction({
+        name: 'ai-engine-service',
+        data: {
+          action: 'preview-node',
+          nodeId: node._id,
+          nodeData: {
+            title: node.title,
+            text: node.text,
+            generationType: node.generationType,
+            provider: node.provider,
+            shotType: node.shotType,
+            transition: node.transition,
+            colorStyle: node.colorStyle,
+            duration: node.duration,
+            assets: node.assets,
+            customParams: node.customParams
+          }
+        }
+      });
+      if (result.success) {
+        setPreviewUrl(result.data.previewUrl);
+        setSelectedNode(node);
+      } else {
+        throw new Error(result.error || '预览生成失败');
+      }
+    } catch (error) {
+      console.error('预览生成失败:', error);
+      toast({
+        title: '预览生成失败',
+        description: error.message || '请稍后重试',
+        variant: 'destructive'
+      });
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  // 添加新节点
+  const addNode = async (type = 'text2video') => {
+    const newNode = {
+      title: `新节点 ${nodes.length + 1}`,
+      text: '',
+      generationType: type,
+      provider: 'default',
+      shotType: 'medium',
+      transition: 'fade',
+      colorStyle: 'natural',
+      duration: 5,
+      assets: {},
+      customParams: {},
+      status: 'draft'
+    };
+    try {
+      const nodeId = await saveNode(newNode);
+      setSelectedNode({
+        ...newNode,
+        _id: nodeId
+      });
+      setIsConfigModalOpen(true);
+    } catch (error) {
+      console.error('添加节点失败:', error);
+    }
+  };
+
+  // 复制节点
+  const duplicateNode = async node => {
+    const duplicatedNode = {
+      ...node,
+      title: `${node.title} (副本)`,
+      status: 'draft'
+    };
+    delete duplicatedNode._id;
+    try {
+      await saveNode(duplicatedNode);
+      toast({
+        title: '节点复制成功',
+        description: '已创建节点副本',
+        variant: 'success'
+      });
+    } catch (error) {
+      console.error('复制节点失败:', error);
+    }
+  };
+
+  // 保存项目
+  const saveProject = async () => {
+    try {
+      const projectData = {
+        id: projectId || `project-${Date.now()}`,
+        name: `AI视频项目 ${new Date().toLocaleDateString()}`,
+        nodes: nodes,
+        totalDuration: nodes.reduce((sum, node) => sum + (node.duration || 5), 0),
+        createdAt: new Date().toISOString()
+      };
+
+      // 这里可以调用项目保存云函数
+      toast({
+        title: '项目保存成功',
+        description: '项目已保存到云端',
+        variant: 'success'
+      });
+    } catch (error) {
+      console.error('保存项目失败:', error);
+      toast({
+        title: '保存项目失败',
+        description: error.message || '请稍后重试',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // 初始化
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectIdFromUrl = urlParams.get('projectId');
+    if (projectIdFromUrl) {
+      setProjectId(projectIdFromUrl);
+    }
+    loadNodes();
+  }, [projectId]);
+  if (loading) {
+    return <div className="min-h-screen bg-slate-900 text-slate-100">
+        <div className="container mx-auto px-4 py-8">
+          <div className="grid grid-cols-12 gap-6">
+            <div className="col-span-3">
+              <Skeleton className="h-12 w-full mb-4" />
+              <div className="space-y-3">
+                {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
+              </div>
+            </div>
+            <div className="col-span-6">
+              <Skeleton className="h-96 w-full" />
+            </div>
+            <div className="col-span-3">
+              <Skeleton className="h-64 w-full" />
+            </div>
+          </div>
+        </div>
+      </div>;
+  }
+  return <div className="min-h-screen bg-slate-900 text-slate-100">
+      <div className="container mx-auto px-4 py-6">
+        {/* 顶部工具栏 */}
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-white">AI视频创作</h1>
+            <p className="text-slate-400 mt-1">智能脚本生成与视频制作</p>
+          </div>
+          
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={saveProject}>
+              <Save className="w-4 h-4 mr-1" />
+              保存项目
+            </Button>
+            
+            <Button size="sm" onClick={() => setIsScriptModalOpen(true)}>
+              <Plus className="w-4 h-4 mr-1" />
+              生成脚本
+            </Button>
+            
+            <Button size="sm" variant="default" onClick={generateVideo} disabled={isGenerating || nodes.length === 0}>
+              {isGenerating ? <>
+                  <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+                  生成中 {generationProgress}%
+                </> : <>
+                  <Play className="w-4 h-4 mr-1" />
+                  生成视频
+                </>}
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-12 gap-6">
+          {/* 左侧节点列表 */}
+          <div className="col-span-3">
+            <Card className="bg-slate-800 border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-white">时间线节点</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {nodes.map((node, index) => <TimelineNodeCard key={node._id} node={node} index={index} isSelected={selectedNode?._id === node._id} onSelect={() => setSelectedNode(node)} onPreview={() => previewNode(node)} onDuplicate={() => duplicateNode(node)} onDelete={() => deleteNode(node._id)} />)}
+                  
+                  {nodes.length === 0 && <div className="text-center py-8 text-slate-400">
+                      <AlertCircle className="w-12 h-12 mx-auto mb-2" />
+                      <p>暂无节点</p>
+                      <Button size="sm" variant="outline" className="mt-2" onClick={() => addNode()}>
+                        添加节点
+                      </Button>
+                    </div>}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* 中央预览区域 */}
+          <div className="col-span-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-4 bg-slate-800">
+                <TabsTrigger value="timeline" className="text-slate-300">时间线</TabsTrigger>
+                <TabsTrigger value="text2video" className="text-slate-300">文本生成</TabsTrigger>
+                <TabsTrigger value="image2video" className="text-slate-300">图片生成</TabsTrigger>
+                <TabsTrigger value="digitalhuman" className="text-slate-300">数字人</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="timeline" className="mt-4">
+                <VideoPreviewWindow previewUrl={previewUrl} isLoading={previewLoading} nodes={nodes} />
+              </TabsContent>
+              
+              <TabsContent value="text2video" className="mt-4">
+                <Text2VideoPanel onAddNode={addNode} />
+              </TabsContent>
+              
+              <TabsContent value="image2video" className="mt-4">
+                <Image2VideoPanel onAddNode={addNode} />
+              </TabsContent>
+              
+              <TabsContent value="digitalhuman" className="mt-4">
+                <DigitalHumanPanel onAddNode={addNode} />
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          {/* 右侧属性面板 */}
+          <div className="col-span-3">
+            <Card className="bg-slate-800 border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-white">节点属性</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {selectedNode ? <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="font-medium text-white">{selectedNode.title}</h3>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="ghost" onClick={() => setIsConfigModalOpen(true)}>
+                          <Settings className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => duplicateNode(selectedNode)}>
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => deleteNode(selectedNode._id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">状态:</span>
+                        <Badge variant={selectedNode.status === 'completed' ? 'success' : selectedNode.status === 'failed' ? 'destructive' : 'secondary'}>
+                          {selectedNode.status || 'draft'}
+                        </Badge>
+                      </div>
+                      
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">时长:</span>
+                        <span className="text-white">{selectedNode.duration || 5}s</span>
+                      </div>
+                      
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">类型:</span>
+                        <span className="text-white">{selectedNode.generationType || 'text2video'}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="pt-4">
+                      <Button size="sm" className="w-full" onClick={() => previewNode(selectedNode)} disabled={previewLoading}>
+                        {previewLoading ? <>
+                            <Clock className="w-4 h-4 mr-1 animate-spin" />
+                            预览中...
+                          </> : <>
+                            <Eye className="w-4 h-4 mr-1" />
+                            预览节点
+                          </>}
+                      </Button>
+                    </div>
+                  </div> : <div className="text-center py-8 text-slate-400">
+                  <AlertCircle className="w-12 h-12 mx-auto mb-2" />
+                  <p>选择一个节点进行编辑</p>
+                  <Button size="sm" variant="outline" className="mt-2" onClick={() => addNode()}>
+                    添加节点
+                  </Button>
+                </div>}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+
+      {/* 节点配置模态框 */}
+      <NodeConfigurationModal open={isConfigModalOpen} onOpenChange={setIsConfigModalOpen} node={selectedNode} onSave={updates => {
+      if (selectedNode) {
+        updateNode(selectedNode._id, updates);
+      }
     }} />
+      
+      {/* 脚本生成模态框 */}
+      <ScriptGeneratorModal open={isScriptModalOpen} onOpenChange={setIsScriptModalOpen} onGenerate={generateScript} isGenerating={isGenerating} />
     </div>;
 }

@@ -1,153 +1,160 @@
 // @ts-ignore;
 import React, { useState } from 'react';
 // @ts-ignore;
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Button, Label, Input, Textarea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Slider, useToast } from '@/components/ui';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Button, Textarea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Label, Input } from '@/components/ui';
+// @ts-ignore;
+import { Sparkles, Loader2 } from 'lucide-react';
 
 export function ScriptGeneratorModal({
   open,
   onOpenChange,
-  onGenerate
+  onGenerate,
+  isGenerating
 }) {
-  const [form, setForm] = useState({
-    topic: '',
-    duration: 60,
-    style: 'professional',
-    description: ''
-  });
-  const {
-    toast
-  } = useToast();
+  const [prompt, setPrompt] = useState('');
+  const [style, setStyle] = useState('creative');
+  const [duration, setDuration] = useState(60);
+  const [tone, setTone] = useState('neutral');
+  const [industry, setIndustry] = useState('general');
   const styles = [{
+    value: 'creative',
+    label: '创意风格'
+  }, {
     value: 'professional',
-    label: '专业商务'
+    label: '专业风格'
   }, {
     value: 'casual',
-    label: '轻松休闲'
+    label: '轻松风格'
+  }, {
+    value: 'dramatic',
+    label: '戏剧风格'
   }, {
     value: 'educational',
-    label: '教育科普'
+    label: '教育风格'
+  }];
+  const tones = [{
+    value: 'neutral',
+    label: '中性'
   }, {
-    value: 'promotional',
-    label: '产品推广'
+    value: 'positive',
+    label: '积极'
+  }, {
+    value: 'emotional',
+    label: '情感化'
+  }, {
+    value: 'urgent',
+    label: '紧迫'
+  }, {
+    value: 'inspiring',
+    label: '激励'
+  }];
+  const industries = [{
+    value: 'general',
+    label: '通用'
+  }, {
+    value: 'technology',
+    label: '科技'
+  }, {
+    value: 'education',
+    label: '教育'
+  }, {
+    value: 'business',
+    label: '商业'
+  }, {
+    value: 'entertainment',
+    label: '娱乐'
+  }, {
+    value: 'lifestyle',
+    label: '生活方式'
   }];
   const handleGenerate = async () => {
-    if (!form.topic.trim()) {
-      toast({
-        title: "请输入主题",
-        description: "主题不能为空",
-        variant: "destructive"
-      });
+    if (!prompt.trim()) {
       return;
     }
-    try {
-      // 模拟AI生成脚本
-      const generatedNodes = generateScriptNodes(form);
-      onGenerate(generatedNodes);
-      onOpenChange(false);
-      toast({
-        title: "脚本生成成功",
-        description: `已生成 ${generatedNodes.length} 个节点`
-      });
-    } catch (error) {
-      toast({
-        title: "生成失败",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  };
-  const generateScriptNodes = ({
-    topic,
-    duration,
-    style,
-    description
-  }) => {
-    const nodeCount = Math.ceil(duration / 15);
-    const baseNodes = [];
-
-    // 根据风格生成不同的节点结构
-    const templates = {
-      professional: ['开场介绍', '核心内容', '总结呼吁'],
-      casual: ['开场白', '主要内容', '互动环节', '结尾'],
-      educational: ['引入问题', '知识讲解', '案例分析', '总结回顾'],
-      promotional: ['产品展示', '功能介绍', '使用场景', '购买引导']
+    const options = {
+      style,
+      duration,
+      tone,
+      industry
     };
-    const selectedTemplate = templates[style] || templates.professional;
-    for (let i = 0; i < Math.min(nodeCount, selectedTemplate.length); i++) {
-      baseNodes.push({
-        id: `generated-${Date.now()}-${i}`,
-        text: `${selectedTemplate[i]}: ${topic}${description ? ` - ${description}` : ''}`,
-        generationType: i === 0 ? 'digital_human' : 'text2video',
-        provider: 'tongyi',
-        shotType: i === 0 ? 'medium' : 'wide',
-        transition: i === 0 ? 'fade' : 'slide',
-        colorStyle: style === 'professional' ? 'cinematic' : 'vibrant',
-        duration: Math.floor(duration / nodeCount),
-        assets: {}
-      });
-    }
-    return baseNodes;
+    await onGenerate(prompt, options);
+    setPrompt('');
   };
   return <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>智能脚本生成</DialogTitle>
-          <DialogDescription>
-            输入主题和参数，AI将为您生成结构化脚本
-          </DialogDescription>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5" />
+            AI脚本生成
+          </DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
           <div>
-            <Label>视频主题</Label>
-            <Input value={form.topic} onChange={e => setForm({
-            ...form,
-            topic: e.target.value
-          })} placeholder="例如：产品发布会介绍" />
+            <Label>视频主题描述</Label>
+            <Textarea value={prompt} onChange={e => setPrompt(e.target.value)} placeholder="描述您想要生成的视频内容，例如：制作一个关于人工智能发展的科普视频..." rows={4} />
           </div>
-          
-          <div>
-            <Label>视频时长: {form.duration}秒</Label>
-            <Slider value={[form.duration]} onValueChange={([value]) => setForm({
-            ...form,
-            duration: value
-          })} min={15} max={300} step={15} />
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>视频时长 (秒)</Label>
+              <Input type="number" min="10" max="300" value={duration} onChange={e => setDuration(parseInt(e.target.value) || 60)} />
+            </div>
+
+            <div>
+              <Label>行业领域</Label>
+              <Select value={industry} onValueChange={setIndustry}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {industries.map(ind => <SelectItem key={ind.value} value={ind.value}>{ind.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          
-          <div>
-            <Label>视频风格</Label>
-            <Select value={form.style} onValueChange={value => setForm({
-            ...form,
-            style: value
-          })}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {styles.map(style => <SelectItem key={style.value} value={style.value}>
-                    {style.label}
-                  </SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div>
-            <Label>补充描述（可选）</Label>
-            <Textarea value={form.description} onChange={e => setForm({
-            ...form,
-            description: e.target.value
-          })} placeholder="补充说明视频的具体要求..." rows={3} />
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>创作风格</Label>
+              <Select value={style} onValueChange={setStyle}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {styles.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>情感基调</Label>
+              <Select value={tone} onValueChange={setTone}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {tones.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
-        
-        <div className="flex justify-end gap-2">
+
+        <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             取消
           </Button>
-          <Button onClick={handleGenerate}>
-            生成脚本
+          <Button onClick={handleGenerate} disabled={isGenerating || !prompt.trim()}>
+            {isGenerating ? <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                生成中...
+              </> : <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                生成脚本
+              </>}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>;
 }

@@ -1,121 +1,88 @@
 // @ts-ignore;
-import React, { useState } from 'react';
+import React from 'react';
 // @ts-ignore;
-import { Card, CardContent, CardHeader, CardTitle, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Badge } from '@/components/ui';
+import { Card, CardContent, Badge, Button } from '@/components/ui';
 // @ts-ignore;
-import { Trash2, Settings, Image, Video, Mic, FileText } from 'lucide-react';
-// @ts-ignore;
-import { cn } from '@/lib/utils';
+import { Play, Copy, Trash2, Eye, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 export function TimelineNodeCard({
   node,
   index,
-  onUpdate,
-  onDelete,
-  onConfigure
+  isSelected,
+  onSelect,
+  onPreview,
+  onDuplicate,
+  onDelete
 }) {
-  const [isDragging, setIsDragging] = useState(false);
-  const generationTypes = [{
-    value: 'text2video',
-    label: '文生视频',
-    icon: FileText
-  }, {
-    value: 'image2video',
-    label: '图生视频',
-    icon: Image
-  }, {
-    value: 'digital_human',
-    label: '数字人',
-    icon: Video
-  }];
-  const providers = [{
-    value: 'tongyi',
-    label: '阿里云通义万相'
-  }, {
-    value: 'digital_api',
-    label: '数字人专用API'
-  }, {
-    value: 'baidu',
-    label: '百度智能云'
-  }];
-  const GenerationIcon = generationTypes.find(t => t.value === node.generationType)?.icon || FileText;
-
-  // 添加空函数检查，防止 onUpdate 未定义
-  const handleUpdate = (nodeId, updates) => {
-    if (typeof onUpdate === 'function') {
-      onUpdate(nodeId, updates);
+  const getStatusIcon = status => {
+    switch (status) {
+      case 'completed':
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'processing':
+        return <Clock className="w-4 h-4 text-blue-500 animate-spin" />;
+      case 'failed':
+        return <XCircle className="w-4 h-4 text-red-500" />;
+      default:
+        return <AlertCircle className="w-4 h-4 text-slate-400" />;
     }
   };
-  return <Card className={cn("w-80 flex-shrink-0 transition-all duration-200", isDragging && "opacity-50 scale-95")}>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium">节点 {index + 1}</CardTitle>
-          <div className="flex gap-1">
-            <Button variant="ghost" size="sm" onClick={() => onConfigure && onConfigure(node)}>
-              <Settings className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => onDelete && onDelete(node.id)} className="text-destructive hover:text-destructive">
-              <Trash2 className="h-4 w-4" />
-            </Button>
+  const getStatusColor = status => {
+    switch (status) {
+      case 'completed':
+        return 'success';
+      case 'processing':
+        return 'default';
+      case 'failed':
+        return 'destructive';
+      default:
+        return 'secondary';
+    }
+  };
+  const getTypeLabel = type => {
+    const typeMap = {
+      'text2video': '文本生成',
+      'image2video': '图片生成',
+      'digitalhuman': '数字人',
+      'transition': '转场'
+    };
+    return typeMap[type] || type;
+  };
+  return <Card className={`cursor-pointer transition-all hover:shadow-lg ${isSelected ? 'ring-2 ring-blue-500 bg-slate-700' : 'bg-slate-800 border-slate-700'}`} onClick={onSelect}>
+      <CardContent className="p-3">
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-white">{index + 1}</span>
+            <span className="text-sm text-slate-300 truncate">{node.title}</span>
           </div>
+          <Badge variant={getStatusColor(node.status)} className="text-xs">
+            {getStatusIcon(node.status)}
+            <span className="ml-1">{node.status || 'draft'}</span>
+          </Badge>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div>
-          <label className="text-xs font-medium mb-1 block">生成方式</label>
-          <Select value={node.generationType} onValueChange={value => handleUpdate(node.id, {
-          generationType: value
-        })}>
-            <SelectTrigger className="h-8 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {generationTypes.map(type => <SelectItem key={type.value} value={type.value} className="text-sm">
-                  <div className="flex items-center gap-2">
-                    <type.icon className="h-3 w-3" />
-                    {type.label}
-                  </div>
-                </SelectItem>)}
-            </SelectContent>
-          </Select>
+        
+        <div className="text-xs text-slate-400 mb-2">
+          {getTypeLabel(node.generationType)} • {node.duration || 5}s
         </div>
-
-        <div>
-          <label className="text-xs font-medium mb-1 block">AI服务商</label>
-          <Select value={node.provider} onValueChange={value => handleUpdate(node.id, {
-          provider: value
-        })}>
-            <SelectTrigger className="h-8 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {providers.map(provider => <SelectItem key={provider.value} value={provider.value} className="text-sm">
-                  {provider.label}
-                </SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <label className="text-xs font-medium mb-1 block">素材</label>
-          <div className="flex gap-2">
-            {node.assets?.image && <Badge variant="secondary" className="text-xs">
-                <Image className="h-3 w-3 mr-1" />
-                图片
-              </Badge>}
-            {node.assets?.audio && <Badge variant="secondary" className="text-xs">
-                <Mic className="h-3 w-3 mr-1" />
-                音频
-              </Badge>}
-            {node.assets?.subtitle && <Badge variant="secondary" className="text-xs">
-                <FileText className="h-3 w-3 mr-1" />
-                字幕
-              </Badge>}
-          </div>
-        </div>
-
-        <div className="text-xs text-muted-foreground">
-          {node.text?.substring(0, 50)}...
+        
+        <div className="flex gap-1">
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={e => {
+          e.stopPropagation();
+          onPreview();
+        }} title="预览">
+            <Eye className="w-3 h-3" />
+          </Button>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={e => {
+          e.stopPropagation();
+          onDuplicate();
+        }} title="复制">
+            <Copy className="w-3 h-3" />
+          </Button>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-red-400 hover:text-red-300" onClick={e => {
+          e.stopPropagation();
+          onDelete();
+        }} title="删除">
+            <Trash2 className="w-3 h-3" />
+          </Button>
         </div>
       </CardContent>
     </Card>;

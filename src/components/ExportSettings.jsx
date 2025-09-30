@@ -1,107 +1,206 @@
 // @ts-ignore;
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 // @ts-ignore;
-import { Card, CardContent, CardHeader, CardTitle, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch, Label } from '@/components/ui';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Tabs, TabsContent, TabsList, TabsTrigger, Label, Switch, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Separator, Badge } from '@/components/ui';
 // @ts-ignore;
-import { Settings, Film, Image } from 'lucide-react';
+import { Download, Settings, Eye, Save, RotateCcw } from 'lucide-react';
 
-export function ExportSettings({
-  settings,
-  onSettingsChange
-}) {
-  const [exportSettings, setExportSettings] = useState({
-    resolution: '1080p',
-    format: 'mp4',
-    watermark: false,
-    quality: 'high',
-    fps: 30
+import { ExportPreview } from './ExportPreview';
+import { FieldSelector } from './FieldSelector';
+import { FormatSettings } from './FormatSettings';
+export function ExportSettings() {
+  const [exportFormat, setExportFormat] = useState('pdf');
+  const [selectedFields, setSelectedFields] = useState([]);
+  const [settings, setSettings] = useState({
+    includeHeader: true,
+    includeFooter: true,
+    pageSize: 'A4',
+    orientation: 'portrait',
+    dateFormat: 'YYYY-MM-DD',
+    currencyFormat: 'CNY',
+    decimalPlaces: 2,
+    includeCharts: false,
+    watermark: '',
+    password: '',
+    quality: 'high'
   });
-  const handleSettingChange = (key, value) => {
-    const newSettings = {
-      ...exportSettings,
-      [key]: value
-    };
-    setExportSettings(newSettings);
-    onSettingsChange(newSettings);
+  const availableFields = [{
+    id: 'name',
+    label: '姓名',
+    type: 'text',
+    required: true
+  }, {
+    id: 'email',
+    label: '邮箱',
+    type: 'text',
+    required: true
+  }, {
+    id: 'phone',
+    label: '电话',
+    type: 'text'
+  }, {
+    id: 'department',
+    label: '部门',
+    type: 'text'
+  }, {
+    id: 'position',
+    label: '职位',
+    type: 'text'
+  }, {
+    id: 'salary',
+    label: '薪资',
+    type: 'number'
+  }, {
+    id: 'joinDate',
+    label: '入职日期',
+    type: 'date'
+  }, {
+    id: 'status',
+    label: '状态',
+    type: 'text'
+  }, {
+    id: 'address',
+    label: '地址',
+    type: 'text'
+  }, {
+    id: 'notes',
+    label: '备注',
+    type: 'text'
+  }];
+  useEffect(() => {
+    // 默认选择所有必填字段
+    const requiredFields = availableFields.filter(f => f.required).map(f => f.id);
+    setSelectedFields(requiredFields);
+  }, []);
+  const handleFieldToggle = fieldId => {
+    setSelectedFields(prev => prev.includes(fieldId) ? prev.filter(id => id !== fieldId) : [...prev, fieldId]);
   };
-  return <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Settings className="w-4 h-4" />
-          导出设置
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div>
-            <Label>分辨率</Label>
-            <Select value={exportSettings.resolution} onValueChange={value => handleSettingChange('resolution', value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="720p">720P (HD)</SelectItem>
-                <SelectItem value="1080p">1080P (Full HD)</SelectItem>
-                <SelectItem value="4k">4K (Ultra HD)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+  const handleSelectAll = () => {
+    if (selectedFields.length === availableFields.length) {
+      setSelectedFields(availableFields.filter(f => f.required).map(f => f.id));
+    } else {
+      setSelectedFields(availableFields.map(f => f.id));
+    }
+  };
+  const handleSettingChange = (key, value) => {
+    setSettings(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+  const handleReset = () => {
+    const requiredFields = availableFields.filter(f => f.required).map(f => f.id);
+    setSelectedFields(requiredFields);
+    setSettings({
+      includeHeader: true,
+      includeFooter: true,
+      pageSize: 'A4',
+      orientation: 'portrait',
+      dateFormat: 'YYYY-MM-DD',
+      currencyFormat: 'CNY',
+      decimalPlaces: 2,
+      includeCharts: false,
+      watermark: '',
+      password: '',
+      quality: 'high'
+    });
+  };
+  const handleExport = () => {
+    console.log('Exporting with settings:', {
+      format: exportFormat,
+      fields: selectedFields,
+      settings
+    });
+    // 实际导出逻辑
+  };
+  const handleSaveTemplate = () => {
+    console.log('Saving template:', {
+      format: exportFormat,
+      fields: selectedFields,
+      settings
+    });
+    // 保存模板逻辑
+  };
+  return <div className="w-full max-w-7xl mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">导出设置</h1>
+          <p className="text-muted-foreground mt-1">配置您的数据导出格式和选项</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleReset}>
+            <RotateCcw className="w-4 h-4 mr-2" />
+            重置
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleSaveTemplate}>
+            <Save className="w-4 h-4 mr-2" />
+            保存模板
+          </Button>
+          <Button size="sm" onClick={handleExport}>
+            <Download className="w-4 h-4 mr-2" />
+            导出
+          </Button>
+        </div>
+      </div>
 
-          <div>
-            <Label>视频格式</Label>
-            <Select value={exportSettings.format} onValueChange={value => handleSettingChange('format', value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="mp4">MP4</SelectItem>
-                <SelectItem value="mov">MOV</SelectItem>
-                <SelectItem value="avi">AVI</SelectItem>
-                <SelectItem value="webm">WebM</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      <Tabs defaultValue="settings" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 max-w-[400px]">
+          <TabsTrigger value="settings" className="flex items-center gap-2">
+            <Settings className="w-4 h-4" />
+            设置
+          </TabsTrigger>
+          <TabsTrigger value="preview" className="flex items-center gap-2">
+            <Eye className="w-4 h-4" />
+            预览
+          </TabsTrigger>
+        </TabsList>
 
-          <div>
-            <Label>视频质量</Label>
-            <Select value={exportSettings.quality} onValueChange={value => handleSettingChange('quality', value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="low">低质量 (小文件)</SelectItem>
-                <SelectItem value="medium">中等质量</SelectItem>
-                <SelectItem value="high">高质量 (大文件)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <TabsContent value="settings" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <FormatSettings format={exportFormat} onFormatChange={setExportFormat} settings={settings} onSettingChange={handleSettingChange} />
 
-          <div>
-            <Label>帧率 (FPS)</Label>
-            <Select value={exportSettings.fps.toString()} onValueChange={value => handleSettingChange('fps', parseInt(value))}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="24">24 FPS (电影)</SelectItem>
-                <SelectItem value="30">30 FPS (标准)</SelectItem>
-                <SelectItem value="60">60 FPS (流畅)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+              <FieldSelector fields={availableFields} selectedFields={selectedFields} onFieldToggle={handleFieldToggle} onSelectAll={handleSelectAll} />
+            </div>
 
-          <div className="flex items-center justify-between">
-            <Label htmlFor="watermark">添加水印</Label>
-            <Switch id="watermark" checked={exportSettings.watermark} onCheckedChange={checked => handleSettingChange('watermark', checked)} />
-          </div>
-
-          <div className="pt-4 border-t">
-            <div className="text-sm text-gray-500">
-              <p>预估文件大小: {exportSettings.quality === 'high' ? '50-100MB' : exportSettings.quality === 'medium' ? '20-50MB' : '10-20MB'}</p>
-              <p>处理时间: 2-5分钟</p>
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">导出信息</CardTitle>
+                  <CardDescription>当前配置摘要</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">格式:</span>
+                      <Badge variant="secondary" className="uppercase">{exportFormat}</Badge>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">字段数:</span>
+                      <span>{selectedFields.length} / {availableFields.length}</span>
+                    </div>
+                  </div>
+                  <Separator />
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-sm">已选字段</h4>
+                    <div className="flex flex-wrap gap-1">
+                      {selectedFields.map(fieldId => {
+                      const field = availableFields.find(f => f.id === fieldId);
+                      return field ? <Badge key={fieldId} variant="outline" className="text-xs">
+                            {field.label}
+                          </Badge> : null;
+                    })}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>;
+        </TabsContent>
+
+        <TabsContent value="preview">
+          <ExportPreview format={exportFormat} fields={availableFields.filter(f => selectedFields.includes(f.id))} settings={settings} />
+        </TabsContent>
+      </Tabs>
+    </div>;
 }

@@ -36,3 +36,7 @@ export * from './ScriptGeneratorModal.jsx';
 export * from './AssetUploadDialog.jsx';
 export * from './AssetGrid.jsx';
 export * from './AssetPreviewDialog.jsx';
+export * from './AdvancedTimeline.jsx';
+export * from './ExportPreview.jsx';
+export * from './FieldSelector.jsx';
+export * from './FormatSettings.jsx';

@@ -1,202 +1,275 @@
 // @ts-ignore;
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Button, Input, Textarea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Label } from '@/components/ui';
 // @ts-ignore;
-import { Settings } from 'lucide-react';
+import { Settings, Save } from 'lucide-react';
 
 export function NodeConfigurationModal({
+  open,
+  onOpenChange,
   node,
-  isOpen,
-  onClose,
-  onUpdate
+  onSave
 }) {
-  // 添加空值保护，确保 node 存在且有默认值
-  const [config, setConfig] = React.useState(() => {
-    if (!node) {
-      return {
-        id: '',
-        title: '',
-        duration: 5,
-        content: '',
-        type: 'text2video',
-        provider: 'tongyi',
-        shotType: 'medium',
-        transition: 'none',
-        colorStyle: 'natural'
-      };
-    }
-    return {
-      id: node.id || '',
-      title: node.title || '',
-      duration: node.duration || 5,
-      content: node.content || '',
-      type: node.type || 'text2video',
-      provider: node.provider || 'tongyi',
-      shotType: node.shotType || 'medium',
-      transition: node.transition || 'none',
-      colorStyle: node.colorStyle || 'natural'
-    };
+  const [formData, setFormData] = useState({
+    title: '',
+    text: '',
+    generationType: 'text2video',
+    provider: 'default',
+    shotType: 'medium',
+    transition: 'fade',
+    colorStyle: 'natural',
+    duration: 5,
+    assets: {},
+    customParams: {}
   });
-
-  // 当 node 变化时更新配置
-  React.useEffect(() => {
+  useEffect(() => {
     if (node) {
-      setConfig({
-        id: node.id || '',
+      setFormData({
         title: node.title || '',
-        duration: node.duration || 5,
-        content: node.content || '',
-        type: node.type || 'text2video',
-        provider: node.provider || 'tongyi',
+        text: node.text || '',
+        generationType: node.generationType || 'text2video',
+        provider: node.provider || 'default',
         shotType: node.shotType || 'medium',
-        transition: node.transition || 'none',
-        colorStyle: node.colorStyle || 'natural'
+        transition: node.transition || 'fade',
+        colorStyle: node.colorStyle || 'natural',
+        duration: node.duration || 5,
+        assets: node.assets || {},
+        customParams: node.customParams || {}
+      });
+    } else {
+      setFormData({
+        title: '',
+        text: '',
+        generationType: 'text2video',
+        provider: 'default',
+        shotType: 'medium',
+        transition: 'fade',
+        colorStyle: 'natural',
+        duration: 5,
+        assets: {},
+        customParams: {}
       });
     }
   }, [node]);
-  const handleSave = () => {
-    if (!config.id) return;
-    onUpdate(config.id, config);
-    onClose();
+  const handleSubmit = () => {
+    onSave(formData);
+    onOpenChange(false);
   };
-
-  // 如果 node 不存在，不渲染模态框
-  if (!node) {
-    return null;
-  }
-  return <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+  const generationTypes = [{
+    value: 'text2video',
+    label: '文本生成视频'
+  }, {
+    value: 'image2video',
+    label: '图片生成视频'
+  }, {
+    value: 'digitalhuman',
+    label: '数字人视频'
+  }, {
+    value: 'transition',
+    label: '转场效果'
+  }];
+  const providers = [{
+    value: 'default',
+    label: '默认引擎'
+  }, {
+    value: 'openai',
+    label: 'OpenAI'
+  }, {
+    value: 'stability',
+    label: 'Stability AI'
+  }, {
+    value: 'runway',
+    label: 'Runway'
+  }];
+  const shotTypes = [{
+    value: 'extreme-close-up',
+    label: '极特写'
+  }, {
+    value: 'close-up',
+    label: '特写'
+  }, {
+    value: 'medium',
+    label: '中景'
+  }, {
+    value: 'long',
+    label: '远景'
+  }, {
+    value: 'extreme-long',
+    label: '极远景'
+  }];
+  const transitions = [{
+    value: 'fade',
+    label: '淡入淡出'
+  }, {
+    value: 'slide',
+    label: '滑动'
+  }, {
+    value: 'zoom',
+    label: '缩放'
+  }, {
+    value: 'dissolve',
+    label: '溶解'
+  }, {
+    value: 'cut',
+    label: '剪切'
+  }];
+  const colorStyles = [{
+    value: 'natural',
+    label: '自然'
+  }, {
+    value: 'vibrant',
+    label: '鲜艳'
+  }, {
+    value: 'cinematic',
+    label: '电影感'
+  }, {
+    value: 'monochrome',
+    label: '黑白'
+  }, {
+    value: 'warm',
+    label: '暖色调'
+  }, {
+    value: 'cool',
+    label: '冷色调'
+  }];
+  return <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings className="w-5 h-5" />
-            节点配置 - {config.title || '未命名节点'}
+            节点配置
           </DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>节点标题</Label>
-              <Input value={config.title} onChange={e => setConfig({
-              ...config,
-              title: e.target.value
-            })} placeholder="请输入节点标题" />
-            </div>
-            <div>
-              <Label>时长(秒)</Label>
-              <Input type="number" value={config.duration} onChange={e => setConfig({
-              ...config,
-              duration: parseInt(e.target.value) || 5
-            })} min={1} max={60} />
-            </div>
+          <div>
+            <Label>节点标题</Label>
+            <Input value={formData.title} onChange={e => setFormData({
+            ...formData,
+            title: e.target.value
+          })} placeholder="输入节点标题" />
           </div>
 
           <div>
-            <Label>内容描述</Label>
-            <Textarea value={config.content} onChange={e => setConfig({
-            ...config,
-            content: e.target.value
-          })} rows={4} placeholder="请输入视频内容描述" />
+            <Label>文本内容</Label>
+            <Textarea value={formData.text} onChange={e => setFormData({
+            ...formData,
+            text: e.target.value
+          })} placeholder="输入要生成的文本内容" rows={4} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>生成方式</Label>
-              <Select value={config.type} onValueChange={value => setConfig({
-              ...config,
-              type: value
+              <Select value={formData.generationType} onValueChange={value => setFormData({
+              ...formData,
+              generationType: value
             })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="text2video">文生视频</SelectItem>
-                  <SelectItem value="image2video">图生视频</SelectItem>
-                  <SelectItem value="digital_human">数字人</SelectItem>
+                  {generationTypes.map(type => <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
+
             <div>
               <Label>AI服务商</Label>
-              <Select value={config.provider} onValueChange={value => setConfig({
-              ...config,
+              <Select value={formData.provider} onValueChange={value => setFormData({
+              ...formData,
               provider: value
             })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="tongyi">阿里云通义万相</SelectItem>
-                  <SelectItem value="digital_human">数字人API</SelectItem>
-                  <SelectItem value="minmax">MinMax</SelectItem>
-                  <SelectItem value="keling">可灵</SelectItem>
+                  {providers.map(provider => <SelectItem key={provider.value} value={provider.value}>{provider.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>镜头景别</Label>
-              <Select value={config.shotType} onValueChange={value => setConfig({
-              ...config,
+              <Select value={formData.shotType} onValueChange={value => setFormData({
+              ...formData,
               shotType: value
             })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="close">特写</SelectItem>
-                  <SelectItem value="medium">中景</SelectItem>
-                  <SelectItem value="long">远景</SelectItem>
-                  <SelectItem value="wide">全景</SelectItem>
+                  {shotTypes.map(shot => <SelectItem key={shot.value} value={shot.value}>{shot.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
+
             <div>
               <Label>转场效果</Label>
-              <Select value={config.transition} onValueChange={value => setConfig({
-              ...config,
+              <Select value={formData.transition} onValueChange={value => setFormData({
+              ...formData,
               transition: value
             })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">无</SelectItem>
-                  <SelectItem value="fade">淡入淡出</SelectItem>
-                  <SelectItem value="slide">滑动</SelectItem>
-                  <SelectItem value="zoom">缩放</SelectItem>
+                  {transitions.map(transition => <SelectItem key={transition.value} value={transition.value}>{transition.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>色彩风格</Label>
-              <Select value={config.colorStyle} onValueChange={value => setConfig({
-              ...config,
+              <Select value={formData.colorStyle} onValueChange={value => setFormData({
+              ...formData,
               colorStyle: value
             })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="natural">自然</SelectItem>
-                  <SelectItem value="vivid">鲜艳</SelectItem>
-                  <SelectItem value="warm">暖色</SelectItem>
-                  <SelectItem value="cool">冷色</SelectItem>
-                  <SelectItem value="monochrome">黑白</SelectItem>
+                  {colorStyles.map(style => <SelectItem key={style.value} value={style.value}>{style.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
+
+            <div>
+              <Label>时长 (秒)</Label>
+              <Input type="number" min="1" max="60" value={formData.duration} onChange={e => setFormData({
+              ...formData,
+              duration: parseInt(e.target.value) || 5
+            })} />
+            </div>
+          </div>
+
+          <div>
+            <Label>自定义参数 (JSON)</Label>
+            <Textarea value={JSON.stringify(formData.customParams, null, 2)} onChange={e => {
+            try {
+              const parsed = JSON.parse(e.target.value);
+              setFormData({
+                ...formData,
+                customParams: parsed
+              });
+            } catch {
+              // 忽略无效JSON
+            }
+          }} placeholder='{"key": "value"}' rows={3} />
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             取消
           </Button>
-          <Button onClick={handleSave} disabled={!config.title.trim()}>
+          <Button onClick={handleSubmit}>
+            <Save className="w-4 h-4 mr-1" />
             保存配置
           </Button>
         </DialogFooter>
