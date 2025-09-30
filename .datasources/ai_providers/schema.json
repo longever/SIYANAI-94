@@ -1,0 +1,43 @@
+
+{
+  "name": "ai_providers",
+  "title": "AI服务提供商",
+  "schemas": [
+    {
+      "name": "name",
+      "title": "服务商名称",
+      "type": "String"
+    },
+    {
+      "name": "logo",
+      "title": "服务商Logo",
+      "type": "Image"
+    },
+    {
+      "name": "description",
+      "title": "服务商描述",
+      "type": "MultiLineString"
+    },
+    {
+      "name": "api_endpoint",
+      "title": "API端点",
+      "type": "Url"
+    },
+    {
+      "name": "api_key_placeholder",
+      "title": "API密钥占位符",
+      "type": "String"
+    },
+    {
+      "name": "pricing_model",
+      "title": "定价模式",
+      "type": "String"
+    },
+    {
+      "name": "is_active",
+      "title": "是否启用",
+      "type": "Boolean"
+    }
+  ]
+}
+  

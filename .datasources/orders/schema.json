@@ -1,0 +1,47 @@
+
+{
+  "name": "orders",
+  "title": "订单管理",
+  "schemas": [
+    {
+      "name": "user_id",
+      "title": "用户ID",
+      "type": "String"
+    },
+    {
+      "name": "provider_id",
+      "title": "服务商ID",
+      "type": "String"
+    },
+    {
+      "name": "service_type",
+      "title": "服务类型",
+      "type": "String"
+    },
+    {
+      "name": "amount",
+      "title": "订单金额",
+      "type": "Number"
+    },
+    {
+      "name": "currency",
+      "title": "货币",
+      "type": "String"
+    },
+    {
+      "name": "status",
+      "title": "订单状态",
+      "type": "String"
+    },
+    {
+      "name": "payment_method",
+      "title": "支付方式",
+      "type": "String"
+    },
+    {
+      "name": "payment_id",
+      "title": "支付ID",
+      "type": "String"
+    }
+  ]
+}
