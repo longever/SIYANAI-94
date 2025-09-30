@@ -1,696 +1,220 @@
 // @ts-ignore;
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 // @ts-ignore;
-import { Search, Upload, Grid, List, Filter, X, Download, Trash2, Eye, Play, Volume2, Package, Calendar, FileText, Image as ImageIcon, Video, Music, Box3D, CheckSquare, Square, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Button, useToast } from '@/components/ui';
 // @ts-ignore;
-import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Dialog, DialogContent, DialogHeader, DialogTitle, Badge, Tabs, TabsContent, TabsList, TabsTrigger, ScrollArea, Separator, Checkbox, Label, Slider, Popover, PopoverContent, PopoverTrigger, useToast } from '@/components/ui';
+import { Search, Upload, X, Image, Video, Music, FileText, Play } from 'lucide-react';
 
-const FILE_TYPES = {
-  image: {
-    icon: ImageIcon,
-    label: '图片',
-    extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']
-  },
-  video: {
-    icon: Video,
-    label: '视频',
-    extensions: ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm']
-  },
-  audio: {
-    icon: Music,
-    label: '音频',
-    extensions: ['mp3', 'wav', 'flac', 'aac', 'ogg']
-  },
-  model: {
-    icon: Box3D,
-    label: '3D模型',
-    extensions: ['obj', 'fbx', 'gltf', 'glb', 'stl']
-  }
-};
-const SIZE_UNITS = ['B', 'KB', 'MB', 'GB'];
+import { AssetUploadDialog } from './AssetUploadDialog';
+import { getAssetDownloadUrl } from '@/lib/assetUtils';
 export function AssetLibrary({
+  open,
+  onOpenChange,
   onAssetSelect,
-  onInsertToCreator,
   $w
 }) {
   const [assets, setAssets] = useState([]);
   const [filteredAssets, setFilteredAssets] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedType, setSelectedType] = useState('all');
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState('grid');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedAssets, setSelectedAssets] = useState([]);
-  const [previewAsset, setPreviewAsset] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [filters, setFilters] = useState({
-    type: 'all',
-    tags: [],
-    dateRange: 'all',
-    sizeRange: [0, 1000]
-  });
-  const fileInputRef = useRef(null);
   const {
     toast
   } = useToast();
-
-  // 加载素材数据
+  useEffect(() => {
+    if (open) {
+      loadAssets();
+    }
+  }, [open]);
+  useEffect(() => {
+    filterAssets();
+  }, [assets, searchTerm, selectedType]);
   const loadAssets = async () => {
     try {
       setLoading(true);
-      const result = await $w.cloud.callDataSource({
+      const response = await $w.cloud.callDataSource({
         dataSourceName: 'asset_library',
         methodName: 'wedaGetRecordsV2',
         params: {
-          select: {
-            $master: true
-          },
           orderBy: [{
             createdAt: 'desc'
           }],
-          getCount: true
+          getCount: true,
+          pageSize: 100,
+          pageNumber: 1,
+          select: {
+            $master: true
+          }
         }
       });
-
-      // 获取下载URL
-      const assetsWithUrls = await Promise.all((result.records || []).map(async asset => {
-        try {
-          const urlResult = await $w.cloud.callFunction({
-            name: 'getAssetDownloadUrl',
-            data: {
-              assetId: asset._id
-            }
-          });
-          return {
-            ...asset,
-            url: urlResult.downloadUrl || asset.fileUrl,
-            thumbnail: asset.type === 'image' ? urlResult.downloadUrl || asset.fileUrl : null
-          };
-        } catch (error) {
-          console.error('获取URL失败:', error);
-          return asset;
-        }
-      }));
-      setAssets(assetsWithUrls);
-      setFilteredAssets(assetsWithUrls);
+      if (response.records) {
+        const tcb = await $w.cloud.getCloudInstance();
+        const assetsWithUrls = await Promise.all(response.records.map(async asset => {
+          try {
+            const urlResult = await tcb.getTempFileURL({
+              fileList: [asset.url]
+            });
+            return {
+              ...asset,
+              thumbnail: asset.type === 'image' ? urlResult.fileList[0].tempFileURL : null,
+              downloadUrl: urlResult.fileList[0].tempFileURL
+            };
+          } catch (error) {
+            console.error('获取URL失败:', error);
+            return asset;
+          }
+        }));
+        setAssets(assetsWithUrls);
+      }
     } catch (error) {
+      console.error('Error loading assets:', error);
       toast({
         title: '加载失败',
-        description: error.message || '无法加载素材列表',
+        description: '无法加载素材库，请稍后重试',
         variant: 'destructive'
       });
     } finally {
       setLoading(false);
     }
   };
-
-  // 处理文件上传 - 使用云函数上传到云存储
-  const handleFileUpload = async files => {
-    if (!files || files.length === 0) return;
-    setUploading(true);
-    setUploadProgress(0);
-    try {
-      const uploadedAssets = [];
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const fileType = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'other';
-
-        // 读取文件为base64
-        const base64Data = await new Promise(resolve => {
-          const reader = new FileReader();
-          reader.onload = e => resolve(e.target.result.split(',')[1]);
-          reader.readAsDataURL(file);
-        });
-
-        // 调用云函数上传到云存储
-        const uploadResult = await $w.cloud.callFunction({
-          name: 'uploadAsset',
-          data: {
-            filename: file.name,
-            fileContent: base64Data,
-            mimeType: file.type,
-            size: file.size
-          }
-        });
-        if (uploadResult.code === 0) {
-          // 创建素材记录
-          const assetData = {
-            name: file.name,
-            type: fileType,
-            size: file.size,
-            mime_type: file.type,
-            fileUrl: uploadResult.fileID,
-            tags: [],
-            usage_count: 0,
-            download_count: 0,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          };
-          const createResult = await $w.cloud.callDataSource({
-            dataSourceName: 'asset_library',
-            methodName: 'wedaCreateV2',
-            params: {
-              data: assetData
-            }
-          });
-          if (createResult.id) {
-            uploadedAssets.push({
-              ...assetData,
-              _id: createResult.id
-            });
-          }
-        }
-        setUploadProgress((i + 1) / files.length * 100);
-      }
-      toast({
-        title: '上传成功',
-        description: `成功上传 ${uploadedAssets.length} 个文件`
-      });
-      await loadAssets();
-    } catch (error) {
-      toast({
-        title: '上传失败',
-        description: error.message || '上传过程中出现错误',
-        variant: 'destructive'
-      });
-    } finally {
-      setUploading(false);
-      setUploadProgress(0);
+  const filterAssets = () => {
+    let filtered = assets;
+    if (searchTerm) {
+      filtered = filtered.filter(asset => asset.name.toLowerCase().includes(searchTerm.toLowerCase()) || asset.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())));
     }
-  };
-
-  // 删除素材 - 同时删除云存储文件
-  const handleDeleteAsset = async assetId => {
-    try {
-      const asset = assets.find(a => a._id === assetId);
-      if (!asset) return;
-
-      // 先删除云存储文件
-      if (asset.fileUrl) {
-        await $w.cloud.callFunction({
-          name: 'deleteAsset',
-          data: {
-            assetId
-          }
-        });
-      }
-
-      // 再删除数据库记录
-      await $w.cloud.callDataSource({
-        dataSourceName: 'asset_library',
-        methodName: 'wedaDeleteV2',
-        params: {
-          filter: {
-            where: {
-              _id: {
-                $eq: assetId
-              }
-            }
-          }
-        }
-      });
-      toast({
-        title: '删除成功',
-        description: '素材已删除'
-      });
-      await loadAssets();
-    } catch (error) {
-      toast({
-        title: '删除失败',
-        description: error.message,
-        variant: 'destructive'
-      });
+    if (selectedType !== 'all') {
+      filtered = filtered.filter(asset => asset.type === selectedType);
     }
-  };
-
-  // 批量删除
-  const handleBatchDelete = async () => {
-    if (selectedAssets.length === 0) return;
-    try {
-      const deletePromises = selectedAssets.map(assetId => handleDeleteAsset(assetId));
-      await Promise.allSettled(deletePromises);
-      toast({
-        title: '删除完成',
-        description: `成功删除 ${selectedAssets.length} 个素材`
-      });
-      setSelectedAssets([]);
-      await loadAssets();
-    } catch (error) {
-      toast({
-        title: '批量删除失败',
-        description: error.message,
-        variant: 'destructive'
-      });
-    }
-  };
-
-  // 批量下载
-  const handleBatchDownload = async () => {
-    if (selectedAssets.length === 0) return;
-    try {
-      let successCount = 0;
-      for (const assetId of selectedAssets) {
-        const asset = assets.find(a => a._id === assetId);
-        if (!asset) continue;
-        try {
-          const result = await $w.cloud.callFunction({
-            name: 'getAssetDownloadUrl',
-            data: {
-              assetId
-            }
-          });
-          if (result.downloadUrl) {
-            // 创建下载链接
-            const link = document.createElement('a');
-            link.href = result.downloadUrl;
-            link.download = asset.name;
-            link.style.display = 'none';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-            // 更新下载次数
-            await $w.cloud.callDataSource({
-              dataSourceName: 'asset_library',
-              methodName: 'wedaUpdateV2',
-              params: {
-                data: {
-                  download_count: (asset.download_count || 0) + 1
-                },
-                filter: {
-                  where: {
-                    _id: {
-                      $eq: asset._id
-                    }
-                  }
-                }
-              }
-            });
-            successCount++;
-
-            // 添加延迟避免浏览器限制
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
-        } catch (error) {
-          console.error(`下载失败: ${asset.name}`, error);
-        }
-      }
-      toast({
-        title: '批量下载完成',
-        description: `成功下载 ${successCount} 个文件`
-      });
-      setSelectedAssets([]);
-      await loadAssets();
-    } catch (error) {
-      toast({
-        title: '批量下载失败',
-        description: error.message,
-        variant: 'destructive'
-      });
-    }
-  };
-
-  // 下载单个素材
-  const handleDownloadAsset = async asset => {
-    try {
-      const result = await $w.cloud.callFunction({
-        name: 'getAssetDownloadUrl',
-        data: {
-          assetId: asset._id
-        }
-      });
-      if (result.downloadUrl) {
-        // 创建下载链接
-        const link = document.createElement('a');
-        link.href = result.downloadUrl;
-        link.download = asset.name;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // 更新下载次数
-        await $w.cloud.callDataSource({
-          dataSourceName: 'asset_library',
-          methodName: 'wedaUpdateV2',
-          params: {
-            data: {
-              download_count: (asset.download_count || 0) + 1
-            },
-            filter: {
-              where: {
-                _id: {
-                  $eq: asset._id
-                }
-              }
-            }
-          }
-        });
-        toast({
-          title: '下载开始',
-          description: '文件下载已开始'
-        });
-      }
-    } catch (error) {
-      toast({
-        title: '下载失败',
-        description: error.message,
-        variant: 'destructive'
-      });
-    }
-  };
-
-  // 应用筛选
-  const applyFilters = () => {
-    let filtered = [...assets];
-
-    // 类型筛选
-    if (filters.type !== 'all') {
-      filtered = filtered.filter(asset => asset.type === filters.type);
-    }
-
-    // 搜索筛选
-    if (searchQuery) {
-      filtered = filtered.filter(asset => asset.name.toLowerCase().includes(searchQuery.toLowerCase()) || asset.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())));
-    }
-
-    // 时间筛选
-    const now = new Date();
-    if (filters.dateRange !== 'all') {
-      const daysMap = {
-        today: 1,
-        week: 7,
-        month: 30,
-        year: 365
-      };
-      const days = daysMap[filters.dateRange];
-      if (days) {
-        const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-        filtered = filtered.filter(asset => new Date(asset.createdAt) >= cutoff);
-      }
-    }
-
-    // 大小筛选
-    filtered = filtered.filter(asset => {
-      const sizeInMB = asset.size / (1024 * 1024);
-      return sizeInMB >= filters.sizeRange[0] && sizeInMB <= filters.sizeRange[1];
-    });
     setFilteredAssets(filtered);
   };
-
-  // 切换选择状态
-  const toggleAssetSelection = assetId => {
-    setSelectedAssets(prev => prev.includes(assetId) ? prev.filter(id => id !== assetId) : [...prev, assetId]);
-  };
-
-  // 全选/取消全选
-  const toggleSelectAll = () => {
-    if (selectedAssets.length === filteredAssets.length) {
-      setSelectedAssets([]);
-    } else {
-      setSelectedAssets(filteredAssets.map(asset => asset._id));
-    }
-  };
-
-  // 格式化文件大小
-  const formatFileSize = bytes => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + SIZE_UNITS[i];
-  };
-
-  // 格式化日期
-  const formatDate = dateString => {
-    return new Date(dateString).toLocaleDateString('zh-CN');
-  };
-  useEffect(() => {
+  const handleUploadSuccess = () => {
     loadAssets();
-  }, []);
-  useEffect(() => {
-    applyFilters();
-  }, [assets, searchQuery, filters]);
-  return <div className="h-full flex bg-gray-50 dark:bg-gray-900">
-      {/* 左侧筛选面板 */}
-      <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4">
-        <h3 className="text-lg font-semibold mb-4">筛选条件</h3>
-        
-        <div className="space-y-4">
-          <div>
-            <Label className="text-sm font-medium mb-2 block">文件类型</Label>
-            <Select value={filters.type} onValueChange={value => setFilters(prev => ({
-            ...prev,
-            type: value
-          }))}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部类型</SelectItem>
-                {Object.entries(FILE_TYPES).map(([key, config]) => <SelectItem key={key} value={key}>
-                    <div className="flex items-center gap-2">
-                      <config.icon className="w-4 h-4" />
-                      {config.label}
-                    </div>
-                  </SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label className="text-sm font-medium mb-2 block">上传时间</Label>
-            <Select value={filters.dateRange} onValueChange={value => setFilters(prev => ({
-            ...prev,
-            dateRange: value
-          }))}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部时间</SelectItem>
-                <SelectItem value="today">今天</SelectItem>
-                <SelectItem value="week">本周</SelectItem>
-                <SelectItem value="month">本月</SelectItem>
-                <SelectItem value="year">今年</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label className="text-sm font-medium mb-2 block">文件大小</Label>
-            <div className="space-y-2">
-              <Slider value={filters.sizeRange} onValueChange={value => setFilters(prev => ({
-              ...prev,
-              sizeRange: value
-            }))} max={1000} step={10} className="w-full" />
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>{filters.sizeRange[0]}MB</span>
-                <span>{filters.sizeRange[1]}MB</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 主内容区域 */}
-      <div className="flex-1 flex flex-col">
-        {/* 顶部操作栏 */}
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4 flex-1">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input placeholder="搜索文件名或标签..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10" />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {selectedAssets.length > 0 && <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={handleBatchDownload} disabled={selectedAssets.length === 0}>
-                    <Download className="w-4 h-4 mr-1" />
-                    下载 ({selectedAssets.length})
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={handleBatchDelete} disabled={selectedAssets.length === 0} className="text-red-600">
-                    <Trash2 className="w-4 h-4 mr-1" />
-                    删除 ({selectedAssets.length})
-                  </Button>
-                </div>}
-
-              <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}>
-                {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid className="w-4 h-4" />}
-              </Button>
-
-              <Button variant="default" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                {uploading ? <>
-                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                    上传中... {uploadProgress}%
-                  </> : <>
-                    <Upload className="w-4 h-4 mr-1" />
-                    上传素材
-                  </>}
-              </Button>
-
-              <input ref={fileInputRef} type="file" multiple className="hidden" onChange={e => handleFileUpload(e.target.files)} accept="image/*,video/*,audio/*,.obj,.fbx,.gltf,.glb,.stl" />
-            </div>
-          </div>
-
-          {selectedAssets.length > 0 && <div className="mt-3 flex items-center gap-2">
-              <Checkbox checked={selectedAssets.length === filteredAssets.length} onCheckedChange={toggleSelectAll} />
-              <span className="text-sm text-gray-600">
-                已选择 {selectedAssets.length} 个文件
-              </span>
-            </div>}
-        </div>
-
-        {/* 素材展示区 */}
-        <ScrollArea className="flex-1 p-4">
-          {loading ? <div className="flex items-center justify-center h-64">
-              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-            </div> : filteredAssets.length === 0 ? <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-              <Package className="w-12 h-12 mb-4 text-gray-300" />
-              <p>暂无素材</p>
-              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="mt-4">
-                <Upload className="w-4 h-4 mr-1" />
-                上传素材
-              </Button>
-            </div> : viewMode === 'grid' ? <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {filteredAssets.map(asset => {
-            const FileIcon = FILE_TYPES[asset.type]?.icon || FileText;
-            return <div key={asset._id} className={`relative group cursor-pointer rounded-lg border transition-all hover:shadow-lg ${selectedAssets.includes(asset._id) ? 'border-blue-500 bg-blue-50' : 'border-gray-200 dark:border-gray-700'}`}>
-                    <div className="absolute top-2 left-2 z-10" onClick={e => {
-                e.stopPropagation();
-                toggleAssetSelection(asset._id);
-              }}>
-                      <Checkbox checked={selectedAssets.includes(asset._id)} />
-                    </div>
-
-                    <div className="aspect-square bg-gray-100 dark:bg-gray-800 rounded-t-lg flex items-center justify-center overflow-hidden" onClick={() => setPreviewAsset(asset)}>
-                      {asset.type === 'image' && asset.thumbnail ? <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" /> : <FileIcon className="w-12 h-12 text-gray-400" />}
-                    </div>
-
-                    <div className="p-3">
-                      <p className="text-sm font-medium truncate">{asset.name}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {formatFileSize(asset.size)} · {formatDate(asset.createdAt)}
-                      </p>
-                      {asset.tags?.length > 0 && <div className="flex gap-1 mt-2 flex-wrap">
-                          {asset.tags.slice(0, 2).map(tag => <Badge key={tag} variant="secondary" className="text-xs">
-                              {tag}
-                            </Badge>)}
-                        </div>}
-                    </div>
-                  </div>;
-          })}
-            </div> : <div className="space-y-2">
-              {filteredAssets.map(asset => {
-            const FileIcon = FILE_TYPES[asset.type]?.icon || FileText;
-            return <div key={asset._id} className={`flex items-center gap-4 p-3 rounded-lg border transition-all cursor-pointer ${selectedAssets.includes(asset._id) ? 'border-blue-500 bg-blue-50' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50'}`}>
-                    <Checkbox checked={selectedAssets.includes(asset._id)} onCheckedChange={() => toggleAssetSelection(asset._id)} />
-                    
-                    <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center" onClick={() => setPreviewAsset(asset)}>
-                      {asset.type === 'image' && asset.thumbnail ? <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover rounded" /> : <FileIcon className="w-6 h-6 text-gray-400" />}
-                    </div>
-
-                    <div className="flex-1 min-w-0" onClick={() => setPreviewAsset(asset)}>
-                      <p className="font-medium truncate">{asset.name}</p>
-                      <p className="text-sm text-gray-500">
-                        {formatFileSize(asset.size)} · {formatDate(asset.createdAt)}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => setPreviewAsset(asset)}>
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDownloadAsset(asset)}>
-                        <Download className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDeleteAsset(asset._id)} className="text-red-600">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>;
-          })}
-            </div>}
-        </ScrollArea>
-      </div>
-
-      {/* 预览弹窗 */}
-      <Dialog open={!!previewAsset} onOpenChange={open => !open && setPreviewAsset(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
+    setIsUploadOpen(false);
+  };
+  const getTypeIcon = type => {
+    const icons = {
+      image: <Image className="w-4 h-4" />,
+      video: <Video className="w-4 h-4" />,
+      audio: <Music className="w-4 h-4" />,
+      document: <FileText className="w-4 h-4" />
+    };
+    return icons[type] || <FileText className="w-4 h-4" />;
+  };
+  const getTypeColor = type => {
+    const colors = {
+      image: 'bg-green-100 text-green-800',
+      video: 'bg-red-100 text-red-800',
+      audio: 'bg-blue-100 text-blue-800',
+      document: 'bg-yellow-100 text-yellow-800'
+    };
+    return colors[type] || 'bg-gray-100 text-gray-800';
+  };
+  const assetTypes = [{
+    value: 'all',
+    label: '全部'
+  }, {
+    value: 'image',
+    label: '图片'
+  }, {
+    value: 'video',
+    label: '视频'
+  }, {
+    value: 'audio',
+    label: '音频'
+  }, {
+    value: 'document',
+    label: '文档'
+  }];
+  return <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-6xl max-h-[80vh]">
           <DialogHeader>
-            <DialogTitle>{previewAsset?.name}</DialogTitle>
+            <DialogTitle className="flex items-center justify-between">
+              <span>选择素材</span>
+              <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </DialogTitle>
           </DialogHeader>
           
-          {previewAsset && <div className="flex flex-col gap-4">
-              <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
-                {previewAsset.type === 'image' && <img src={previewAsset.url} alt={previewAsset.name} className="w-full h-full object-contain" />}
-                
-                {previewAsset.type === 'video' && <video src={previewAsset.url} controls className="w-full h-full" />}
-                
-                {previewAsset.type === 'audio' && <div className="flex items-center justify-center h-64">
-                    <audio src={previewAsset.url} controls className="w-full max-w-md" />
-                  </div>}
-                
-                {previewAsset.type === 'model' && <div className="flex items-center justify-center h-64">
-                    <div className="text-center">
-                      <Box3D className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500">3D模型预览</p>
-                      <p className="text-sm text-gray-400 mt-2">
-                        文件大小: {formatFileSize(previewAsset.size)}
-                      </p>
-                    </div>
-                  </div>}
+          <div className="flex flex-col h-full">
+            {/* 搜索和筛选 */}
+            <div className="mb-4 flex gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input placeholder="搜索素材名称或标签..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
               </div>
+              
+              <Select value={selectedType} onValueChange={setSelectedType}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="选择类型" />
+                </SelectTrigger>
+                <SelectContent>
+                  {assetTypes.map(type => <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>)}
+                </SelectContent>
+              </Select>
 
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium">文件大小:</span>
-                  <span className="ml-2">{formatFileSize(previewAsset.size)}</span>
-                </div>
-                <div>
-                  <span className="font-medium">上传时间:</span>
-                  <span className="ml-2">{formatDate(previewAsset.createdAt)}</span>
-                </div>
-                <div>
-                  <span className="font-medium">文件类型:</span>
-                  <span className="ml-2">{previewAsset.mime_type}</span>
-                </div>
-                <div>
-                  <span className="font-medium">使用次数:</span>
-                  <span className="ml-2">{previewAsset.usage_count || 0}</span>
-                </div>
-              </div>
+              <Button onClick={() => setIsUploadOpen(true)}>
+                <Upload className="w-4 h-4 mr-2" />
+                上传素材
+              </Button>
+            </div>
 
-              {previewAsset.tags?.length > 0 && <div>
-                  <span className="font-medium">标签:</span>
-                  <div className="flex gap-2 mt-2 flex-wrap">
-                    {previewAsset.tags.map(tag => <Badge key={tag} variant="secondary">
-                        {tag}
-                      </Badge>)}
+            {/* 素材网格 */}
+            <div className="flex-1 overflow-y-auto">
+              {loading ? <div className="flex items-center justify-center h-64">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                </div> : filteredAssets.length > 0 ? <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {filteredAssets.map(asset => <div key={asset._id} className="group cursor-pointer border rounded-lg overflow-hidden hover:shadow-lg transition-shadow" onClick={() => {
+                onAssetSelect(asset);
+              }}>
+                      <div className="aspect-video bg-gray-100 relative">
+                        {asset.type === 'image' && asset.thumbnail ? <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" /> : asset.type === 'video' && asset.thumbnail ? <div className="relative w-full h-full">
+                            <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="bg-white/90 rounded-full p-2">
+                                <Play className="w-6 h-6 text-gray-800" />
+                              </div>
+                            </div>
+                          </div> : asset.type === 'audio' ? <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500">
+                            <Music className="w-8 h-8 text-white" />
+                          </div> : <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                            <FileText className="w-8 h-8 text-gray-400" />
+                          </div>}
+                      </div>
+                      
+                      <div className="p-3">
+                        <h3 className="font-medium text-sm truncate">{asset.name}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(asset.type)}`}>
+                            {getTypeIcon(asset.type)}
+                            <span className="ml-1 capitalize">{asset.type}</span>
+                          </span>
+                          <span className="text-xs text-gray-500">{asset.size}</span>
+                        </div>
+                      </div>
+                    </div>)}
+                </div> : <div className="text-center py-12">
+                  <div className="text-gray-400 mb-4">
+                    <Search className="w-12 h-12 mx-auto" />
                   </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">没有找到素材</h3>
+                  <p className="text-gray-600 mb-4">
+                    {searchTerm || selectedType !== 'all' ? '尝试调整搜索条件或筛选器' : '开始上传您的第一个素材吧'}
+                  </p>
+                  <Button onClick={() => setIsUploadOpen(true)}>
+                    <Upload className="w-4 h-4 mr-2" />
+                    上传素材
+                  </Button>
                 </div>}
-
-              <div className="flex gap-2 pt-4">
-                <Button onClick={() => {
-              onInsertToCreator?.(previewAsset);
-              setPreviewAsset(null);
-            }} className="flex-1">
-                  插入到创作中心
-                </Button>
-                <Button variant="outline" onClick={() => handleDownloadAsset(previewAsset)}>
-                  <Download className="w-4 h-4 mr-2" />
-                  下载
-                </Button>
-                <Button variant="outline" onClick={() => {
-              handleDeleteAsset(previewAsset._id);
-              setPreviewAsset(null);
-            }} className="text-red-600">
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  删除
-                </Button>
-              </div>
-            </div>}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
-    </div>;
+
+      <AssetUploadDialog open={isUploadOpen} onOpenChange={setIsUploadOpen} onSuccess={handleUploadSuccess} $w={$w} />
+    </>;
 }

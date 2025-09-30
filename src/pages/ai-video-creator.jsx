@@ -1,189 +1,303 @@
 // @ts-ignore;
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore;
-import { Card, CardContent, CardHeader, CardTitle, Tabs, TabsContent, TabsList, TabsTrigger, Button, useToast } from '@/components/ui';
+import { Button, Card, CardContent, CardHeader, CardTitle, Tabs, TabsContent, TabsList, TabsTrigger, useToast } from '@/components/ui';
 // @ts-ignore;
-import { Play, Download, Share2, Settings, Plus } from 'lucide-react';
+import { Play, Pause, Trash2, Image, Music, Video, Plus, Settings, Download, Sparkles } from 'lucide-react';
 
-import { Text2VideoPanel } from '@/components/Text2VideoPanel';
-import { Image2VideoPanel } from '@/components/Image2VideoPanel';
-import { DigitalHumanPanel } from '@/components/DigitalHumanPanel';
-import { VideoPreviewWindow } from '@/components/VideoPreviewWindow';
+import { EnhancedAssetLibrary } from '@/components/EnhancedAssetLibrary';
 import { TimelineNodeCard } from '@/components/TimelineNodeCard';
 import { NodeConfigurationModal } from '@/components/NodeConfigurationModal';
 import { ScriptGeneratorModal } from '@/components/ScriptGeneratorModal';
+import { VideoPreviewWindow } from '@/components/VideoPreviewWindow';
+import { Text2VideoPanel } from '@/components/Text2VideoPanel';
+import { Image2VideoPanel } from '@/components/Image2VideoPanel';
+import { DigitalHumanPanel } from '@/components/DigitalHumanPanel';
 export default function AIVideoCreator(props) {
-  const {
-    $w
-  } = props;
-  const [activeTab, setActiveTab] = useState('text2video');
+  const [selectedAssets, setSelectedAssets] = useState([]);
+  const [isAssetLibraryOpen, setIsAssetLibraryOpen] = useState(false);
+  const [currentTab, setCurrentTab] = useState('text2video');
   const [timelineNodes, setTimelineNodes] = useState([]);
   const [selectedNode, setSelectedNode] = useState(null);
-  const [showNodeConfig, setShowNodeConfig] = useState(false);
-  const [showScriptGenerator, setShowScriptGenerator] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isNodeConfigOpen, setIsNodeConfigOpen] = useState(false);
+  const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [aiMode, setAiMode] = useState('creative');
   const {
     toast
   } = useToast();
+  const videoRef = useRef(null);
 
-  // 添加时间线节点
-  const addTimelineNode = nodeData => {
-    const newNode = {
-      id: Date.now().toString(),
-      type: activeTab,
-      data: nodeData,
-      duration: nodeData.duration || 5,
-      position: timelineNodes.length
+  // 素材选择处理
+  const handleAssetSelect = asset => {
+    const newAsset = {
+      ...asset,
+      id: `asset_${Date.now()}`,
+      selectedAt: new Date().toISOString()
     };
-    setTimelineNodes([...timelineNodes, newNode]);
+    setSelectedAssets(prev => [...prev, newAsset]);
+    setIsAssetLibraryOpen(false);
     toast({
-      title: '节点已添加',
-      description: `${nodeData.title || '新节点'} 已添加到时间线`
+      title: '素材已添加',
+      description: `${asset.name} 已添加到AI创作中心`
     });
   };
 
-  // 更新节点
-  const updateTimelineNode = (nodeId, updatedData) => {
+  // 移除素材
+  const handleRemoveAsset = assetId => {
+    setSelectedAssets(prev => prev.filter(asset => asset.id !== assetId));
+    toast({
+      title: '素材已移除',
+      description: '素材已从AI创作中心移除'
+    });
+  };
+
+  // 素材预览组件
+  const AssetPreview = ({
+    asset
+  }) => {
+    const [isPlaying, setIsPlaying] = useState(false);
+    const mediaRef = useRef(null);
+    const handlePlayPause = e => {
+      e.stopPropagation();
+      if (mediaRef.current) {
+        if (isPlaying) {
+          mediaRef.current.pause();
+        } else {
+          mediaRef.current.play();
+        }
+        setIsPlaying(!isPlaying);
+      }
+    };
+    const formatTime = time => {
+      if (!time || isNaN(time)) return '0:00';
+      const minutes = Math.floor(time / 60);
+      const seconds = Math.floor(time % 60);
+      return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    };
+    return <div className="relative group bg-white rounded-lg border p-3 hover:shadow-md transition-all">
+        <div className="aspect-video bg-gray-100 rounded-md overflow-hidden mb-2">
+          {asset.type === 'image' && asset.thumbnail && <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" />}
+          
+          {asset.type === 'video' && asset.thumbnail && <div className="relative w-full h-full">
+              <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button size="sm" variant="secondary" className="bg-white/90 hover:bg-white" onClick={handlePlayPause}>
+                  {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+                </Button>
+              </div>
+              <video ref={mediaRef} src={asset.downloadUrl} className="hidden" onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} />
+            </div>}
+          
+          {asset.type === 'audio' && <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500">
+              <div className="text-center text-white">
+                <Music className="w-8 h-8 mx-auto mb-1" />
+                <p className="text-xs font-medium truncate">{asset.name}</p>
+              </div>
+              <audio ref={mediaRef} src={asset.downloadUrl} className="hidden" onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} />
+            </div>}
+        </div>
+        
+        <div className="space-y-1">
+          <p className="text-sm font-medium truncate">{asset.name}</p>
+          <p className="text-xs text-gray-500 capitalize">{asset.type} • {asset.size}</p>
+        </div>
+        
+        <Button size="sm" variant="ghost" className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white shadow-md" onClick={() => handleRemoveAsset(asset.id)}>
+          <Trash2 size={14} />
+        </Button>
+      </div>;
+  };
+
+  // 时间轴操作
+  const handleAddNode = (type, asset) => {
+    const newNode = {
+      id: `node_${Date.now()}`,
+      type,
+      asset,
+      startTime: currentTime,
+      duration: asset.type === 'video' ? asset.duration || 5 : 3,
+      properties: {
+        aiMode,
+        prompt: '',
+        style: 'cinematic'
+      }
+    };
+    setTimelineNodes(prev => [...prev, newNode]);
+    toast({
+      title: 'AI节点已添加',
+      description: `${type} 节点已添加到AI时间轴`
+    });
+  };
+  const handleDeleteNode = nodeId => {
+    setTimelineNodes(prev => prev.filter(node => node.id !== nodeId));
+  };
+  const handleUpdateNode = (nodeId, updates) => {
     setTimelineNodes(prev => prev.map(node => node.id === nodeId ? {
       ...node,
-      data: {
-        ...node.data,
-        ...updatedData
-      }
+      ...updates
     } : node));
   };
 
-  // 删除节点
-  const deleteTimelineNode = nodeId => {
-    setTimelineNodes(prev => prev.filter(node => node.id !== nodeId));
-    toast({
-      title: '节点已删除',
-      description: '时间线节点已移除'
-    });
+  // 预览控制
+  const handlePlayPause = () => {
+    setIsPlaying(!isPlaying);
   };
-
-  // 生成视频
-  const generateVideo = async () => {
-    if (timelineNodes.length === 0) {
-      toast({
-        title: '无法生成',
-        description: '请先添加至少一个创作节点',
-        variant: 'destructive'
-      });
-      return;
-    }
-    setIsGenerating(true);
+  const handleGenerateVideo = async () => {
     try {
-      const result = await $w.cloud.callFunction({
+      const response = await props.$w.cloud.callFunction({
         name: 'generateVideo',
         data: {
           nodes: timelineNodes,
-          config: {
-            resolution: '1920x1080',
-            fps: 30,
-            quality: 'high'
-          }
+          assets: selectedAssets,
+          aiMode,
+          prompt: 'AI生成的视频内容'
         }
       });
-      if (result.success) {
-        toast({
-          title: '生成成功',
-          description: '视频已生成，可在导出分享页面查看'
-        });
-
-        // 跳转到导出分享页面
-        $w.utils.navigateTo({
-          pageId: 'export-share',
-          params: {
-            videoId: result.videoId
-          }
-        });
+      toast({
+        title: 'AI生成成功',
+        description: 'AI视频已生成，正在下载...'
+      });
+      if (response.downloadUrl) {
+        window.open(response.downloadUrl, '_blank');
       }
     } catch (error) {
       toast({
-        title: '生成失败',
-        description: error.message || '视频生成过程中出现错误',
+        title: 'AI生成失败',
+        description: error.message || 'AI视频生成失败，请稍后重试',
         variant: 'destructive'
       });
-    } finally {
-      setIsGenerating(false);
     }
   };
-  return <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      {/* 顶部工具栏 */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">AI 视频创作中心</h1>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={() => setShowScriptGenerator(true)}>
-              <Settings className="w-4 h-4 mr-2" />
-              脚本生成器
+  const formatTime = time => {
+    if (!time || isNaN(time)) return '0:00';
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+  return <div className="h-screen flex flex-col bg-gradient-to-br from-gray-50 to-blue-50">
+      {/* 顶部AI工具栏 */}
+      <div className="bg-white border-b px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <Sparkles className="w-5 h-5 text-purple-600" />
+            <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              AI视频创作中心
+            </h1>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Button size="sm" variant="outline" onClick={() => setIsAssetLibraryOpen(true)} className="border-purple-200 text-purple-600 hover:bg-purple-50">
+              <Plus className="w-4 h-4 mr-2" />
+              添加AI素材
             </Button>
-            <Button variant="default" size="sm" onClick={generateVideo} disabled={isGenerating || timelineNodes.length === 0}>
-              {isGenerating ? '生成中...' : '生成视频'}
+            <Button size="sm" variant="outline" onClick={() => setIsScriptModalOpen(true)} className="border-purple-200 text-purple-600 hover:bg-purple-50">
+              <Sparkles className="w-4 h-4 mr-2" />
+              AI脚本生成
+            </Button>
+            <Button size="sm" className="bg-gradient-to-r from-purple-600 to-pink-600 text-white" onClick={handleGenerateVideo}>
+              <Download className="w-4 h-4 mr-2" />
+              AI生成视频
             </Button>
           </div>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <Button size="sm" variant="ghost" onClick={handlePlayPause}>
+            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+          </Button>
+          <span className="text-sm text-gray-600">
+            {formatTime(currentTime)} / {formatTime(duration)}
+          </span>
         </div>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* 左侧创作面板 */}
-        <div className="w-96 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-            <TabsList className="grid grid-cols-3">
-              <TabsTrigger value="text2video">文本转视频</TabsTrigger>
-              <TabsTrigger value="image2video">图片转视频</TabsTrigger>
-              <TabsTrigger value="digitalhuman">数字人</TabsTrigger>
-            </TabsList>
-
-            <div className="flex-1 overflow-y-auto">
-              <TabsContent value="text2video" className="mt-0">
-                <Text2VideoPanel onAddToTimeline={addTimelineNode} $w={$w} />
-              </TabsContent>
-
-              <TabsContent value="image2video" className="mt-0">
-                <Image2VideoPanel onAddToTimeline={addTimelineNode} $w={$w} />
-              </TabsContent>
-
-              <TabsContent value="digitalhuman" className="mt-0">
-                <DigitalHumanPanel onAddToTimeline={addTimelineNode} $w={$w} />
-              </TabsContent>
-            </div>
-          </Tabs>
-        </div>
-
-        {/* 中间时间线区域 */}
-        <div className="flex-1 flex flex-col">
-          <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-            <h2 className="text-lg font-semibold">时间线</h2>
+        {/* 左侧AI素材预览区 */}
+        <div className="w-80 bg-white border-r flex flex-col">
+          <div className="p-4 border-b bg-gradient-to-r from-purple-50 to-pink-50">
+            <h2 className="font-semibold text-sm text-purple-800">AI素材库</h2>
+            <p className="text-xs text-purple-600 mt-1">
+              {selectedAssets.length} 个AI素材
+            </p>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-6">
-            {timelineNodes.length === 0 ? <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                <Plus className="w-12 h-12 mb-4 text-gray-300" />
-                <p>从左侧添加创作节点</p>
-              </div> : <div className="space-y-4">
-                {timelineNodes.map((node, index) => <TimelineNodeCard key={node.id} node={node} index={index} onEdit={() => {
-              setSelectedNode(node);
-              setShowNodeConfig(true);
-            }} onDelete={() => deleteTimelineNode(node.id)} />)}
+          <div className="flex-1 overflow-y-auto p-4">
+            {selectedAssets.length === 0 ? <div className="text-center py-8">
+                <div className="text-purple-300 mb-2">
+                  <Image className="w-12 h-12 mx-auto" />
+                </div>
+                <p className="text-sm text-gray-500 mb-2">暂无AI素材</p>
+                <Button size="sm" variant="outline" className="border-purple-200 text-purple-600 hover:bg-purple-50" onClick={() => setIsAssetLibraryOpen(true)}>
+                  添加AI素材
+                </Button>
+              </div> : <div className="grid grid-cols-1 gap-3">
+                {selectedAssets.map(asset => <AssetPreview key={asset.id} asset={asset} />)}
               </div>}
           </div>
         </div>
 
-        {/* 右侧预览区域 */}
-        <div className="w-96 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700">
-          <VideoPreviewWindow nodes={timelineNodes} onNodeSelect={setSelectedNode} />
+        {/* 中间主工作区 */}
+        <div className="flex-1 flex flex-col">
+          <Tabs value={currentTab} onValueChange={setCurrentTab} className="flex-1">
+            <TabsList className="w-full justify-start rounded-none border-b bg-white">
+              <TabsTrigger value="text2video" className="data-[state=active]:text-purple-600">
+                文本生视频
+              </TabsTrigger>
+              <TabsTrigger value="image2video" className="data-[state=active]:text-purple-600">
+                图片生视频
+              </TabsTrigger>
+              <TabsTrigger value="digitalhuman" className="data-[state=active]:text-purple-600">
+                数字人
+              </TabsTrigger>
+              <TabsTrigger value="timeline" className="data-[state=active]:text-purple-600">
+                AI时间轴
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="text2video" className="flex-1 p-0 m-0">
+              <Text2VideoPanel selectedAssets={selectedAssets} onAddNode={handleAddNode} aiMode={aiMode} onAiModeChange={setAiMode} />
+            </TabsContent>
+            
+            <TabsContent value="image2video" className="flex-1 p-0 m-0">
+              <Image2VideoPanel selectedAssets={selectedAssets} onAddNode={handleAddNode} aiMode={aiMode} />
+            </TabsContent>
+            
+            <TabsContent value="digitalhuman" className="flex-1 p-0 m-0">
+              <DigitalHumanPanel selectedAssets={selectedAssets} onAddNode={handleAddNode} aiMode={aiMode} />
+            </TabsContent>
+            
+            <TabsContent value="timeline" className="flex-1 p-0 m-0">
+              <div className="h-full flex">
+                <div className="flex-1 p-4">
+                  <TimelineNodeCard nodes={timelineNodes} onDeleteNode={handleDeleteNode} onUpdateNode={handleUpdateNode} onAddNode={handleAddNode} selectedAssets={selectedAssets} onNodeClick={setSelectedNode} />
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* 右侧AI预览窗口 */}
+        <div className="w-96 bg-white border-l">
+          <VideoPreviewWindow ref={videoRef} nodes={timelineNodes} isPlaying={isPlaying} currentTime={currentTime} onTimeUpdate={setCurrentTime} onDurationChange={setDuration} aiMode={aiMode} />
         </div>
       </div>
 
-      {/* 节点配置弹窗 */}
-      <NodeConfigurationModal isOpen={showNodeConfig} onClose={() => {
-      setShowNodeConfig(false);
-      setSelectedNode(null);
-    }} node={selectedNode} onSave={updateTimelineNode} />
+      {/* 素材库弹窗 */}
+      <EnhancedAssetLibrary open={isAssetLibraryOpen} onOpenChange={setIsAssetLibraryOpen} onAssetSelect={handleAssetSelect} $w={props.$w} />
 
-      {/* 脚本生成器弹窗 */}
-      <ScriptGeneratorModal isOpen={showScriptGenerator} onClose={() => setShowScriptGenerator(false)} onGenerate={addTimelineNode} $w={$w} />
+      {/* 节点配置弹窗 */}
+      <NodeConfigurationModal open={isNodeConfigOpen} onOpenChange={setIsNodeConfigOpen} node={selectedNode} onUpdateNode={handleUpdateNode} availableAssets={selectedAssets} />
+
+      {/* AI脚本生成弹窗 */}
+      <ScriptGeneratorModal open={isScriptModalOpen} onOpenChange={setIsScriptModalOpen} onGenerateScript={script => {
+      // 处理生成的脚本
+      toast({
+        title: 'AI脚本已生成',
+        description: '脚本已应用到创作中心'
+      });
+    }} />
     </div>;
 }

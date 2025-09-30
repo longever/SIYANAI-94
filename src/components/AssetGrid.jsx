@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 // @ts-ignore;
 import { Card, CardContent, Badge, Button } from '@/components/ui';
 // @ts-ignore;
-import { Play, Music, Image, FileText, Download, Eye, Folder } from 'lucide-react';
+import { Play, Music, Image, FileText, Download, Eye, Folder, Trash2 } from 'lucide-react';
 
 import { AssetPreviewDialog } from './AssetPreviewDialog';
 import { getAssetDownloadUrl } from '@/lib/assetUtils';
@@ -119,7 +119,7 @@ export function AssetGrid({
   };
   return <>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {assets.map(asset => <Card key={asset._id} className="group hover:shadow-lg transition-shadow">
+        {assets.map(asset => <Card key={asset._id} className="group hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handlePreview(asset)}>
             <CardContent className="p-4">
               {/* 缩略图区域 */}
               <div className="relative aspect-video bg-gray-100 rounded-lg mb-3 overflow-hidden">
@@ -136,7 +136,10 @@ export function AssetGrid({
                 
                 {/* 悬停操作 */}
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <Button size="sm" variant="secondary" onClick={() => handlePreview(asset)} className="bg-white/90 hover:bg-white">
+                  <Button size="sm" variant="secondary" onClick={e => {
+                e.stopPropagation();
+                handlePreview(asset);
+              }} className="bg-white/90 hover:bg-white">
                     <Eye className="w-4 h-4 mr-1" />
                     预览
                   </Button>
@@ -178,13 +181,25 @@ export function AssetGrid({
 
               {/* 操作按钮 */}
               <div className="mt-3 flex gap-2">
-                <Button size="sm" variant="outline" className="flex-1" onClick={() => handlePreview(asset)}>
+                <Button size="sm" variant="outline" className="flex-1" onClick={e => {
+              e.stopPropagation();
+              handlePreview(asset);
+            }}>
                   <Eye className="w-3 h-3 mr-1" />
                   预览
                 </Button>
                 <Button size="sm" variant="outline" className="flex-1" onClick={e => handleDownload(asset, e)} disabled={downloading[asset._id]}>
                   {downloading[asset._id] ? <div className="w-3 h-3 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" /> : <Download className="w-3 h-3 mr-1" />}
                   下载
+                </Button>
+                <Button size="sm" variant="outline" className="flex-1 text-red-600 hover:text-red-700" onClick={e => {
+              e.stopPropagation();
+              if (confirm('确定要删除这个素材吗？')) {
+                onDelete(asset._id);
+              }
+            }}>
+                  <Trash2 className="w-3 h-3 mr-1" />
+                  删除
                 </Button>
               </div>
             </CardContent>
