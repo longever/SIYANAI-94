@@ -243,7 +243,73 @@ export function AssetLibrary({
     }
   };
 
-  // 下载素材
+  // 批量下载
+  const handleBatchDownload = async () => {
+    if (selectedAssets.length === 0) return;
+    try {
+      let successCount = 0;
+      for (const assetId of selectedAssets) {
+        const asset = assets.find(a => a._id === assetId);
+        if (!asset) continue;
+        try {
+          const result = await $w.cloud.callFunction({
+            name: 'getAssetDownloadUrl',
+            data: {
+              assetId
+            }
+          });
+          if (result.downloadUrl) {
+            // 创建下载链接
+            const link = document.createElement('a');
+            link.href = result.downloadUrl;
+            link.download = asset.name;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // 更新下载次数
+            await $w.cloud.callDataSource({
+              dataSourceName: 'asset_library',
+              methodName: 'wedaUpdateV2',
+              params: {
+                data: {
+                  download_count: (asset.download_count || 0) + 1
+                },
+                filter: {
+                  where: {
+                    _id: {
+                      $eq: asset._id
+                    }
+                  }
+                }
+              }
+            });
+            successCount++;
+
+            // 添加延迟避免浏览器限制
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        } catch (error) {
+          console.error(`下载失败: ${asset.name}`, error);
+        }
+      }
+      toast({
+        title: '批量下载完成',
+        description: `成功下载 ${successCount} 个文件`
+      });
+      setSelectedAssets([]);
+      await loadAssets();
+    } catch (error) {
+      toast({
+        title: '批量下载失败',
+        description: error.message,
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // 下载单个素材
   const handleDownloadAsset = async asset => {
     try {
       const result = await $w.cloud.callFunction({
@@ -257,7 +323,10 @@ export function AssetLibrary({
         const link = document.createElement('a');
         link.href = result.downloadUrl;
         link.download = asset.name;
+        link.style.display = 'none';
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
 
         // 更新下载次数
         await $w.cloud.callDataSource({
