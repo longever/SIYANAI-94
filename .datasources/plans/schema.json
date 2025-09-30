@@ -1,0 +1,114 @@
+
+{
+  "name": "plans",
+  "title": "会员套餐",
+  "schemas": [
+    {
+      "name": "name",
+      "title": "套餐名称",
+      "type": "String"
+    },
+    {
+      "name": "price",
+      "title": "价格",
+      "type": "Number"
+    },
+    {
+      "name": "duration",
+      "title": "有效期(天)",
+      "type": "Number"
+    },
+    {
+      "name": "features",
+      "title": "功能特性",
+      "type": "Array",
+      "items": {
+        "type": "String"
+      }
+    },
+    {
+      "name": "limitations",
+      "title": "功能限制",
+      "type": "Array",
+      "items": {
+        "type": "String"
+      }
+    },
+    {
+      "name": "description",
+      "title": "套餐描述",
+      "type": "MultiLineString"
+    },
+    {
+      "name": "level",
+      "title": "套餐等级",
+      "type": "String"
+    },
+    {
+      "name": "daily_quota",
+      "title": "每日配额",
+      "type": "Number"
+    },
+    {
+      "name": "max_resolution",
+      "title": "最大分辨率",
+      "type": "String"
+    },
+    {
+      "name": "watermark",
+      "title": "水印设置",
+      "type": "String"
+    },
+    {
+      "name": "commercial_license",
+      "title": "商用授权",
+      "type": "Boolean"
+    },
+    {
+      "name": "priority_queue",
+      "title": "优先队列",
+      "type": "Boolean"
+    },
+    {
+      "name": "batch_export",
+      "title": "批量导出",
+      "type": "Boolean"
+    },
+    {
+      "name": "custom_watermark",
+      "title": "自定义水印",
+      "type": "Boolean"
+    },
+    {
+      "name": "advanced_templates",
+      "title": "高级模板",
+      "type": "Boolean"
+    },
+    {
+      "name": "commercial_assets",
+      "title": "商用素材库",
+      "type": "Boolean"
+    },
+    {
+      "name": "dedicated_support",
+      "title": "专属客服",
+      "type": "Boolean"
+    },
+    {
+      "name": "is_popular",
+      "title": "是否推荐",
+      "type": "Boolean"
+    },
+    {
+      "name": "is_active",
+      "title": "是否启用",
+      "type": "Boolean"
+    },
+    {
+      "name": "sort_order",
+      "title": "排序",
+      "type": "Number"
+    }
+  ]
+}
+  
