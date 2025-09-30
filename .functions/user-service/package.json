@@ -1,0 +1,14 @@
+
+    {
+      "name": "user-service",
+      "version": "1.0.0",
+      "description": "用户管理云函数，提供注册、登录、订阅管理等功能",
+      "main": "index.js",
+      "dependencies": {
+        "@cloudbase/node-sdk": "^3.3.7",
+        "jsonwebtoken": "^9.0.2",
+        "bcryptjs": "^2.4.3",
+        "axios": "^1.6.0"
+      }
+    }
+  

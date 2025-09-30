@@ -1,0 +1,14 @@
+
+{
+  "name": "material-service",
+  "version": "1.0.0",
+  "description": "素材库管理、外部素材获取和下载服务云函数",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.3.7",
+    "uuid": "^9.0.0",
+    "mime-types": "^2.1.35",
+    "form-data": "^4.0.0"
+  }
+}
+  

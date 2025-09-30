@@ -1,0 +1,11 @@
+
+{
+  "name": "ai-engine-service",
+  "version": "1.0.0",
+  "description": "AI视频生成引擎服务，提供任务管理、视频生成和回调处理功能",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.10.0",
+    "uuid": "^9.0.0"
+  }
+}

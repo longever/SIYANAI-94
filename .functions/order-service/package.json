@@ -1,0 +1,12 @@
+
+{
+  "name": "order-service",
+  "version": "1.0.0",
+  "description": "订单管理云函数，提供订单创建、查询、支付回调和订阅取消功能",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.3.7",
+    "axios": "^1.6.7",
+    "uuid": "^9.0.1"
+  }
+}
