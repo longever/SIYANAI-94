@@ -22,8 +22,7 @@ export default function MembershipPage(props) {
   const [orders, setOrders] = useState([]);
   const [usageStats, setUsageStats] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
-  //临时使用固定用户ID
-  const userId = 'A001';
+ 
   // 获取用户信息
   const fetchUserInfo = async () => {
     try {
@@ -31,7 +30,7 @@ export default function MembershipPage(props) {
         name: 'user-service',
         data: {
           action: 'getMe',
-          userId: userId
+          userId: $w.auth.currentUser?.userId
         }
       });
       if (result.success) {
