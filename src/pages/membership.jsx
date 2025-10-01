@@ -22,14 +22,16 @@ export default function MembershipPage(props) {
   const [orders, setOrders] = useState([]);
   const [usageStats, setUsageStats] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
-
+  //临时使用固定用户ID
+  const userId = 'A001';
   // 获取用户信息
   const fetchUserInfo = async () => {
     try {
       const result = await $w.cloud.callFunction({
         name: 'user-service',
         data: {
-          action: 'getMe'
+          action: 'getMe',
+          userId: userId
         }
       });
       if (result.success) {
