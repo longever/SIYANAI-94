@@ -36,34 +36,34 @@ export default function VideoCreatorPro(props) {
         methodName: 'wedaGetRecordsV2',
         params: {
           filter: {
-            where: {
-              projectId: {
-                $ne: null
-              }
-            }
+            where: {}
           },
           select: {
             $master: true
           },
-          getCount: true
+          getCount: true,
+          orderBy: [{
+            createdAt: 'desc'
+          }]
         }
       });
-      if (result.records) {
+      if (result.records && result.records.length > 0) {
         // 按项目ID分组
         const projectMap = {};
         result.records.forEach(node => {
-          if (!projectMap[node.projectId]) {
-            projectMap[node.projectId] = {
-              id: node.projectId,
-              name: node.projectName || `项目 ${node.projectId}`,
+          const projectId = node.projectId || 'default_project';
+          if (!projectMap[projectId]) {
+            projectMap[projectId] = {
+              id: projectId,
+              name: node.projectName || `项目 ${projectId}`,
               nodes: [],
               totalDuration: 0,
               createdAt: node.createdAt,
               updatedAt: node.updatedAt
             };
           }
-          projectMap[node.projectId].nodes.push(node);
-          projectMap[node.projectId].totalDuration += node.duration || 5;
+          projectMap[projectId].nodes.push(node);
+          projectMap[projectId].totalDuration += node.duration || 5;
         });
         const projectList = Object.values(projectMap).map(project => ({
           ...project,
@@ -71,6 +71,18 @@ export default function VideoCreatorPro(props) {
           status: project.nodes.every(n => n.status === 'completed') ? 'completed' : project.nodes.some(n => n.status === 'failed') ? 'failed' : 'processing'
         }));
         setProjects(projectList);
+      } else {
+        // 如果没有项目数据，创建一个示例项目
+        setProjects([{
+          id: 'demo_project',
+          name: '示例项目',
+          nodes: result.records || [],
+          totalDuration: (result.records || []).reduce((sum, node) => sum + (node.duration || 5), 0),
+          nodeCount: (result.records || []).length,
+          status: 'pending',
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        }]);
       }
     } catch (error) {
       console.error('获取项目列表失败:', error);
@@ -79,6 +91,9 @@ export default function VideoCreatorPro(props) {
         description: error.message || '请稍后重试',
         variant: 'destructive'
       });
+
+      // 创建空项目列表避免页面报错
+      setProjects([]);
     } finally {
       setLoading(false);
     }
