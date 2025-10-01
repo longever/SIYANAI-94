@@ -23,52 +23,64 @@ export default function AssetLibrary(props) {
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  // 获取素材列表
+  // 获取素材列表 - 使用数据源API替代云函数
   const loadAssets = async () => {
     try {
       setLoading(true);
 
-      // 调用 material-service 获取素材列表
-      const result = await $w.cloud.callFunction({
-        name: 'material-service',
-        data: {
-          action: 'listMaterials',
-          params: {
-            page: 1,
-            pageSize: 100,
-            type: selectedType !== 'all' ? selectedType : undefined
+      // 使用数据源API查询素材库
+      const result = await $w.cloud.callDataSource({
+        dataSourceName: 'asset_library',
+        methodName: 'wedaGetRecordsV2',
+        params: {
+          pageSize: 100,
+          pageNumber: 1,
+          orderBy: [{
+            createdAt: 'desc'
+          }],
+          select: {
+            $master: true
           }
         }
       });
-      if (result.success) {
+      if (result.records) {
         // 获取云存储临时URL
         const tcb = await $w.cloud.getCloudInstance();
-        const assetsWithUrls = await Promise.all(result.data.list.map(async asset => {
+        const assetsWithUrls = await Promise.all(result.records.map(async asset => {
           try {
-            const urlResult = await tcb.getTempFileURL({
-              fileList: [asset.url]
-            });
+            if (asset.url) {
+              const urlResult = await tcb.getTempFileURL({
+                fileList: [asset.url]
+              });
+              return {
+                ...asset,
+                id: asset._id,
+                thumbnail: asset.type === 'image' ? urlResult.fileList[0].tempFileURL : null,
+                downloadUrl: urlResult.fileList[0].tempFileURL,
+                createdAt: asset.createdAt
+              };
+            }
             return {
               ...asset,
-              id: asset.id || asset._id,
-              thumbnail: asset.type === 'image' ? urlResult.fileList[0].tempFileURL : null,
-              downloadUrl: urlResult.fileList[0].tempFileURL,
-              createdAt: asset.createdAt || asset.created_at
+              id: asset._id,
+              thumbnail: null,
+              downloadUrl: null,
+              createdAt: asset.createdAt
             };
           } catch (error) {
             console.error('获取URL失败:', error);
             return {
               ...asset,
-              id: asset.id || asset._id,
+              id: asset._id,
               thumbnail: null,
               downloadUrl: null,
-              createdAt: asset.createdAt || asset.created_at
+              createdAt: asset.createdAt
             };
           }
         }));
         setAssets(assetsWithUrls);
       } else {
-        throw new Error(result.error || '获取素材列表失败');
+        throw new Error('获取素材列表失败');
       }
     } catch (error) {
       console.error('获取素材失败:', error);
@@ -127,22 +139,36 @@ export default function AssetLibrary(props) {
         return;
       }
 
-      // 调用 material-service 删除素材
-      const result = await $w.cloud.callFunction({
-        name: 'material-service',
-        data: {
-          action: 'deleteMaterial',
-          id: assetId
+      // 先从云存储删除文件
+      if (asset.url) {
+        const tcb = await $w.cloud.getCloudInstance();
+        await tcb.deleteFile({
+          fileList: [asset.url]
+        });
+      }
+
+      // 再从数据源删除记录
+      const result = await $w.cloud.callDataSource({
+        dataSourceName: 'asset_library',
+        methodName: 'wedaDeleteV2',
+        params: {
+          filter: {
+            where: {
+              _id: {
+                $eq: assetId
+              }
+            }
+          }
         }
       });
-      if (result.success) {
+      if (result.count > 0) {
         toast({
           title: '删除成功',
-          description: '素材已从云存储删除'
+          description: '素材已删除'
         });
         loadAssets(); // 重新加载列表
       } else {
-        throw new Error(result.error || '删除失败');
+        throw new Error('删除失败');
       }
     } catch (error) {
       console.error('删除素材失败:', error);
@@ -165,7 +191,7 @@ export default function AssetLibrary(props) {
         try {
           const base64Content = e.target.result.split(',')[1];
 
-          // 调用 upload-asset 云函数上传
+          // 使用 upload-asset 云函数上传
           const result = await $w.cloud.callFunction({
             name: 'upload-asset',
             data: {
@@ -177,7 +203,7 @@ export default function AssetLibrary(props) {
             }
           });
           if (result.success) {
-            // 保存到素材库
+            // 保存到数据源
             const saveResult = await $w.cloud.callDataSource({
               dataSourceName: 'asset_library',
               methodName: 'wedaCreateV2',
