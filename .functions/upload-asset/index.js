@@ -1,35 +1,49 @@
 
-const cloud = require('wx-server-sdk');
+const cloud = require('wx-server-sdk')
+const fs = require('fs')
+const path = require('path')
+
 cloud.init({
   env: cloud.DYNAMIC_CURRENT_ENV
-});
+})
 
 exports.main = async (event, context) => {
-  const { filename, fileContent, mimeType, size } = event;
+  const { filePath, fileName, fileType, metadata = {} } = event
   
   try {
-    // 生成唯一文件名
-    const fileExtension = filename.split('.').pop();
-    const uniqueFilename = `assets/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExtension}`;
-    
-    // 上传文件到云存储
+    // 上传到云存储
     const uploadResult = await cloud.uploadFile({
-      cloudPath: uniqueFilename,
-      fileContent: Buffer.from(fileContent, 'base64'),
-      contentType: mimeType
-    });
+      cloudPath: `assets/${Date.now()}_${fileName}`,
+      fileContent: fs.readFileSync(filePath)
+    })
+    
+    // 保存到数据库
+    const db = cloud.database()
+    const result = await db.collection('asset_library').add({
+      data: {
+        fileId: uploadResult.fileID,
+        fileName,
+        fileType,
+        fileSize: metadata.size || 0,
+        uploadTime: new Date(),
+        metadata,
+        status: 'active'
+      }
+    })
     
     return {
       success: true,
-      fileID: uploadResult.fileID,
-      filePath: uniqueFilename
-    };
+      data: {
+        id: result._id,
+        fileId: uploadResult.fileID,
+        url: uploadResult.fileID
+      }
+    }
   } catch (error) {
-    console.error('Upload error:', error);
+    console.error('Upload error:', error)
     return {
       success: false,
       error: error.message
-    };
+    }
   }
-};
-  
+}
