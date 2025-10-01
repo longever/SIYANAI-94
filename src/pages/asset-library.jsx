@@ -7,7 +7,9 @@ import { Plus, Search, Filter } from 'lucide-react';
 
 import AssetGrid from '@/components/AssetGrid';
 import AssetUploadDialog from '@/components/AssetUploadDialog';
-export default function AssetLibraryPage(props) {
+import EnhancedAssetLibrary from '@/components/EnhancedAssetLibrary';
+
+export default function AssetLibrary(props) {
   const {
     $w,
     style
@@ -142,10 +144,15 @@ export default function AssetLibraryPage(props) {
         <Tabs defaultValue="grid" className="w-full">
           <TabsList className="w-full justify-start rounded-none border-b px-6">
             <TabsTrigger value="grid">网格视图</TabsTrigger>
+            <TabsTrigger value="enhanced">高级视图</TabsTrigger>
           </TabsList>
 
           <TabsContent value="grid" className="p-6">
             <AssetGrid assets={filteredAssets} loading={loading} onDelete={handleDeleteAsset} onRefresh={loadAssets} />
+          </TabsContent>
+
+          <TabsContent value="enhanced" className="p-6">
+            <EnhancedAssetLibrary assets={filteredAssets} loading={loading} onDelete={handleDeleteAsset} onRefresh={loadAssets} />
           </TabsContent>
         </Tabs>
       </div>
