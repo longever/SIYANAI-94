@@ -27,6 +27,10 @@ export default function VideoCreatorPro(props) {
   const [generationProgress, setGenerationProgress] = useState(0);
   const [currentTaskId, setCurrentTaskId] = useState(null);
 
+  // 添加错误提示状态，避免重复提示
+  const [hasShownExportError, setHasShownExportError] = useState(false);
+  const [hasShownShareError, setHasShownShareError] = useState(false);
+
   // 获取项目列表
   const loadProjects = async () => {
     try {
@@ -111,14 +115,20 @@ export default function VideoCreatorPro(props) {
       });
       if (result.success) {
         setExportTasks(result.data.tasks || []);
+        // 重置错误提示状态
+        setHasShownExportError(false);
       }
     } catch (error) {
       console.error('获取导出任务失败:', error);
-      toast({
-        title: '获取导出任务失败',
-        description: error.message || '请稍后重试',
-        variant: 'destructive'
-      });
+      // 只在第一次失败时提示
+      if (!hasShownExportError) {
+        toast({
+          title: '获取导出任务失败',
+          description: error.message || '请稍后重试',
+          variant: 'destructive'
+        });
+        setHasShownExportError(true);
+      }
     }
   };
 
@@ -134,14 +144,20 @@ export default function VideoCreatorPro(props) {
       });
       if (result.success) {
         setShareLinks(result.data.links || []);
+        // 重置错误提示状态
+        setHasShownShareError(false);
       }
     } catch (error) {
       console.error('获取分享链接失败:', error);
-      toast({
-        title: '获取分享链接失败',
-        description: error.message || '请稍后重试',
-        variant: 'destructive'
-      });
+      // 只在第一次失败时提示
+      if (!hasShownShareError) {
+        toast({
+          title: '获取分享链接失败',
+          description: error.message || '请稍后重试',
+          variant: 'destructive'
+        });
+        setHasShownShareError(true);
+      }
     }
   };
 
@@ -382,6 +398,9 @@ export default function VideoCreatorPro(props) {
   // 刷新所有数据
   const refreshAllData = async () => {
     try {
+      // 重置错误提示状态
+      setHasShownExportError(false);
+      setHasShownShareError(false);
       await Promise.all([loadProjects(), loadExportTasks(), loadShareLinks()]);
       toast({
         title: '数据已更新',
