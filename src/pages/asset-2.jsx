@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, useToast, Skeleton } from '@/components/ui';
 // @ts-ignore;
 import { Upload, Search, RefreshCw, AlertCircle } from 'lucide-react';
- 
+
+import { AssetUploadDialog } from '@/components/AssetUploadDialog';
 export default function AssetLibrary2(props) {
   const {
     $w
@@ -313,8 +314,9 @@ export default function AssetLibrary2(props) {
         共 {filteredAssets.length} 个素材
       </div>
 
-      {/* 素材网格 */} 
+      {/* 素材网格 */}
     </div>
 
-     </div>;
+    <AssetUploadDialog open={isUploadOpen} onOpenChange={setIsUploadOpen} onSuccess={handleUploadSuccess} onUpload={handleUpload} uploading={uploading} />
+  </div>;
 }
