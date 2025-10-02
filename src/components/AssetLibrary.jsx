@@ -1,12 +1,12 @@
 // @ts-ignore;
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore;
 import { Dialog, DialogContent, DialogHeader, DialogTitle, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Button, useToast } from '@/components/ui';
 // @ts-ignore;
-import { Search, Upload, X, Image, Video, Music, FileText, Play } from 'lucide-react';
+import { Search, Upload, X, Image, Video, Music, FileText, Play, AlertCircle } from 'lucide-react';
 
 import { AssetUploadDialog } from './AssetUploadDialog';
-import { getAssetDownloadUrl } from '@/lib/assetUtils';
+import { getAssetThumbnailUrl, formatFileSize } from '@/lib/assetUtils';
 export function AssetLibrary({
   open,
   onOpenChange,
@@ -19,20 +19,17 @@ export function AssetLibrary({
   const [selectedType, setSelectedType] = useState('all');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const {
     toast
   } = useToast();
-  useEffect(() => {
-    if (open) {
-      loadAssets();
-    }
-  }, [open]);
-  useEffect(() => {
-    filterAssets();
-  }, [assets, searchTerm, selectedType]);
-  const loadAssets = async () => {
+
+  // 加载素材列表
+  const loadAssets = useCallback(async () => {
+    if (!open) return;
     try {
       setLoading(true);
+      setError(null);
       const response = await $w.cloud.callDataSource({
         dataSourceName: 'asset_library',
         methodName: 'wedaGetRecordsV2',
@@ -49,26 +46,30 @@ export function AssetLibrary({
         }
       });
       if (response.records) {
-        const tcb = await $w.cloud.getCloudInstance();
-        const assetsWithUrls = await Promise.all(response.records.map(async asset => {
+        // 为每个素材获取缩略图URL
+        const assetsWithThumbnails = await Promise.all(response.records.map(async asset => {
           try {
-            const urlResult = await tcb.getTempFileURL({
-              fileList: [asset.url]
-            });
+            const thumbnailUrl = await getAssetThumbnailUrl(asset, $w);
             return {
               ...asset,
-              thumbnail: asset.type === 'image' ? urlResult.fileList[0].tempFileURL : null,
-              downloadUrl: urlResult.fileList[0].tempFileURL
+              thumbnail: thumbnailUrl,
+              formattedSize: formatFileSize(asset.size || 0)
             };
-          } catch (error) {
-            console.error('获取URL失败:', error);
-            return asset;
+          } catch (err) {
+            console.error(`获取素材 ${asset.name} 的缩略图失败:`, err);
+            return {
+              ...asset,
+              thumbnail: null,
+              formattedSize: formatFileSize(asset.size || 0),
+              error: true
+            };
           }
         }));
-        setAssets(assetsWithUrls);
+        setAssets(assetsWithThumbnails);
       }
     } catch (error) {
-      console.error('Error loading assets:', error);
+      console.error('加载素材库失败:', error);
+      setError('无法加载素材库，请稍后重试');
       toast({
         title: '加载失败',
         description: '无法加载素材库，请稍后重试',
@@ -77,17 +78,25 @@ export function AssetLibrary({
     } finally {
       setLoading(false);
     }
-  };
-  const filterAssets = () => {
+  }, [open, $w, toast]);
+
+  // 筛选素材
+  const filterAssets = useCallback(() => {
     let filtered = assets;
     if (searchTerm) {
-      filtered = filtered.filter(asset => asset.name.toLowerCase().includes(searchTerm.toLowerCase()) || asset.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())));
+      filtered = filtered.filter(asset => asset.name?.toLowerCase().includes(searchTerm.toLowerCase()) || asset.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())));
     }
     if (selectedType !== 'all') {
       filtered = filtered.filter(asset => asset.type === selectedType);
     }
     setFilteredAssets(filtered);
-  };
+  }, [assets, searchTerm, selectedType]);
+  useEffect(() => {
+    loadAssets();
+  }, [loadAssets]);
+  useEffect(() => {
+    filterAssets();
+  }, [filterAssets]);
   const handleUploadSuccess = () => {
     loadAssets();
     setIsUploadOpen(false);
@@ -126,99 +135,148 @@ export function AssetLibrary({
     value: 'document',
     label: '文档'
   }];
-  return <>
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[80vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span>选择素材</span>
-            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-              <X className="w-4 h-4" />
-            </Button>
-          </DialogTitle>
-        </DialogHeader>
 
-        <div className="flex flex-col h-full">
-          {/* 搜索和筛选 */}
-          <div className="mb-4 flex gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input placeholder="搜索素材名称或标签..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
-            </div>
+  // 错误状态组件
+  const ErrorState = () => <div className="text-center py-12">
+          <AlertCircle className="w-12 h-12 mx-auto text-red-500 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">加载失败</h3>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Button onClick={loadAssets} variant="outline">
+            重新加载
+          </Button>
+        </div>;
 
-            <Select value={selectedType} onValueChange={setSelectedType}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="选择类型" />
-              </SelectTrigger>
-              <SelectContent>
-                {assetTypes.map(type => <SelectItem key={type.value} value={type.value}>
-                  {type.label}
-                </SelectItem>)}
-              </SelectContent>
-            </Select>
+  // 空状态组件
+  const EmptyState = () => <div className="text-center py-12">
+          <Search className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            {searchTerm || selectedType !== 'all' ? '没有找到匹配的素材' : '还没有素材'}
+          </h3>
+          <p className="text-gray-600 mb-4">
+            {searchTerm || selectedType !== 'all' ? '尝试调整搜索条件或筛选器' : '开始上传您的第一个素材吧'}
+          </p>
+          <Button onClick={() => setIsUploadOpen(true)}>
+            <Upload className="w-4 h-4 mr-2" />
+            上传素材
+          </Button>
+        </div>;
 
-            <Button onClick={() => setIsUploadOpen(true)}>
-              <Upload className="w-4 h-4 mr-2" />
-              上传素材
-            </Button>
-          </div>
+  // 加载状态组件
+  const LoadingState = () => <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>;
 
-          {/* 素材网格 */}
-          <div className="flex-1 overflow-y-auto">
-            {loading ? <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-            </div> : filteredAssets.length > 0 ? <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {filteredAssets.map(asset => <div key={asset._id} className="group cursor-pointer border rounded-lg overflow-hidden hover:shadow-lg transition-shadow" onClick={() => onAssetSelect(asset)}>
-                <div className="aspect-video bg-gray-100 relative">
-                  {asset.type === 'image' && asset.thumbnail && <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" />}
-
-                  {asset.type === 'video' && asset.thumbnail && <div className="relative w-full h-full">
-                    <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="bg-white/90 rounded-full p-2">
-                        <Play className="w-6 h-6 text-gray-800" />
-                      </div>
+  // 素材卡片组件
+  const AssetCard = ({
+    asset
+  }) => <div key={asset._id} className="group cursor-pointer border rounded-lg overflow-hidden hover:shadow-lg transition-shadow" onClick={() => onAssetSelect(asset)}>
+          <div className="aspect-video bg-gray-100 relative">
+            {asset.type === 'image' && asset.thumbnail && <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" onError={e => {
+        e.target.style.display = 'none';
+        e.target.parentElement.innerHTML = `
+                    <div class="w-full h-full flex items-center justify-center bg-gray-200">
+                      <span class="text-gray-400 text-sm">图片加载失败</span>
                     </div>
-                  </div>}
+                  `;
+      }} />}
+            
+            {asset.type === 'image' && !asset.thumbnail && <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                <Image className="w-8 h-8 text-gray-400" />
+              </div>}
 
-                  {asset.type === 'audio' && <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500">
-                    <Music className="w-8 h-8 text-white" />
-                  </div>}
-
-                  {asset.type === 'document' && <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                    <FileText className="w-8 h-8 text-gray-400" />
-                  </div>}
-                </div>
-
-                <div className="p-3">
-                  <h3 className="font-medium text-sm truncate">{asset.name}</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(asset.type)}`}>
-                      {getTypeIcon(asset.type)}
-                      <span className="ml-1 capitalize">{asset.type}</span>
-                    </span>
-                    <span className="text-xs text-gray-500">{asset.size}</span>
+            {asset.type === 'video' && asset.thumbnail && <div className="relative w-full h-full">
+                <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" onError={e => {
+          e.target.style.display = 'none';
+          e.target.parentElement.innerHTML = `
+                      <div class="w-full h-full flex items-center justify-center bg-gray-200">
+                        <span class="text-gray-400 text-sm">缩略图加载失败</span>
+                      </div>
+                    `;
+        }} />
+                <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="bg-white/90 rounded-full p-2">
+                    <Play className="w-6 h-6 text-gray-800" />
                   </div>
                 </div>
-              </div>)}
-            </div> : <div className="text-center py-12">
-              <div className="text-gray-400 mb-4">
-                <Search className="w-12 h-12 mx-auto" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">没有找到素材</h3>
-              <p className="text-gray-600 mb-4">
-                {searchTerm || selectedType !== 'all' ? '尝试调整搜索条件或筛选器' : '开始上传您的第一个素材吧'}
-              </p>
-              <Button onClick={() => setIsUploadOpen(true)}>
-                <Upload className="w-4 h-4 mr-2" />
-                上传素材
-              </Button>
-            </div>}
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+              </div>}
 
-    <AssetUploadDialog open={isUploadOpen} onOpenChange={setIsUploadOpen} onSuccess={handleUploadSuccess} $w={$w} />
-  </>;
+            {asset.type === 'video' && !asset.thumbnail && <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500 to-pink-500">
+                <Video className="w-8 h-8 text-white" />
+              </div>}
+
+            {asset.type === 'audio' && <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-500">
+                <Music className="w-8 h-8 text-white" />
+              </div>}
+
+            {asset.type === 'document' && <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-yellow-500 to-orange-500">
+                <FileText className="w-8 h-8 text-white" />
+              </div>}
+          </div>
+
+          <div className="p-3">
+            <h3 className="font-medium text-sm truncate" title={asset.name}>{asset.name}</h3>
+            <div className="flex items-center gap-2 mt-1">
+              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(asset.type)}`}>
+                {getTypeIcon(asset.type)}
+                <span className="ml-1 capitalize">{asset.type}</span>
+              </span>
+              <span className="text-xs text-gray-500">{asset.formattedSize}</span>
+            </div>
+            {asset.error && <div className="mt-1 text-xs text-red-500">
+                加载失败
+              </div>}
+          </div>
+        </div>;
+  return <>
+          <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-6xl max-h-[80vh]">
+              <DialogHeader>
+                <DialogTitle className="flex items-center justify-between">
+                  <span>选择素材</span>
+                  <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="hover:bg-gray-100">
+                    <X className="w-4 h-4" />
+                  </Button>
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="flex flex-col h-full">
+                {/* 搜索和筛选 */}
+                <div className="mb-4 flex gap-4">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Input placeholder="搜索素材名称或标签..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
+                  </div>
+
+                  <Select value={selectedType} onValueChange={setSelectedType}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="选择类型" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {assetTypes.map(type => <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>)}
+                    </SelectContent>
+                  </Select>
+
+                  <Button onClick={() => setIsUploadOpen(true)}>
+                    <Upload className="w-4 h-4 mr-2" />
+                    上传素材
+                  </Button>
+                </div>
+
+                {/* 素材网格 */}
+                <div className="flex-1 overflow-y-auto">
+                  {loading && <LoadingState />}
+                  {!loading && error && <ErrorState />}
+                  {!loading && !error && filteredAssets.length > 0 && <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {filteredAssets.map(asset => <AssetCard key={asset._id} asset={asset} />)}
+                    </div>}
+                  {!loading && !error && filteredAssets.length === 0 && <EmptyState />}
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <AssetUploadDialog open={isUploadOpen} onOpenChange={setIsUploadOpen} onSuccess={handleUploadSuccess} $w={$w} />
+        </>;
 }
