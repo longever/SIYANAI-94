@@ -2,26 +2,27 @@
 'use strict';
 
 const cloudbase = require('@cloudbase/node-sdk');
-const tcb = cloudbase.init();
-const db = tcb.database();
-const _ = db.command;
-
-// 腾讯云COS SDK（替换AWS SDK）
-const COS = require('cos-nodejs-sdk-v5');
-const cos = new COS({
-  SecretId: process.env.TENCENTCLOUD_SECRETID,
-  SecretKey: process.env.TENCENTCLOUD_SECRETKEY,
-});
-
+const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const ffmpeg = require('fluent-ffmpeg');
 const axios = require('axios');
 const fs = require('fs-extra');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
-// COS配置
-const bucket = process.env.COS_BUCKET || 'media-bucket-1250000000';
-const region = process.env.COS_REGION || 'ap-beijing';
+// 初始化云开发
+const app = cloudbase.init();
+const models = app.models;
+
+// 腾讯云 COS 配置（替换 AWS S3）
+const COS = require('cos-nodejs-sdk-v5');
+const cos = new COS({
+  SecretId: process.env.COS_SECRET_ID || process.env.TENCENTCLOUD_SECRETID,
+  SecretKey: process.env.COS_SECRET_KEY || process.env.TENCENTCLOUD_SECRETKEY,
+});
+
+const bucketName = process.env.COS_BUCKET || 'media-bucket-1250000000';
+const region = process.env.COS_REGION || 'ap-shanghai';
 
 // 工具函数
 async function downloadFile(url, filePath) {
@@ -45,7 +46,7 @@ async function uploadFile(filePath, key) {
   
   return new Promise((resolve, reject) => {
     cos.putObject({
-      Bucket: bucket,
+      Bucket: bucketName,
       Region: region,
       Key: key,
       Body: fileContent,
@@ -62,7 +63,7 @@ async function uploadFile(filePath, key) {
 async function generateSignedUrl(key, expiresIn = 3600) {
   return new Promise((resolve, reject) => {
     cos.getObjectUrl({
-      Bucket: bucket,
+      Bucket: bucketName,
       Region: region,
       Key: key,
       Sign: true,
@@ -80,7 +81,7 @@ async function generateSignedUrl(key, expiresIn = 3600) {
 async function deleteFile(key) {
   return new Promise((resolve, reject) => {
     cos.deleteObject({
-      Bucket: bucket,
+      Bucket: bucketName,
       Region: region,
       Key: key,
     }, (err, data) => {
@@ -130,15 +131,15 @@ async function transcodeVideo(videoUrl, targetFormat) {
     const url = await generateSignedUrl(key);
     
     // 保存记录
-    await db.collection('asset_library').add({
-      originalUrl: videoUrl,
-      processedUrl: url,
-      format: targetFormat,
-      type: 'transcode',
-      status: 'completed',
-      s3Key: key,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    await models.asset_library.create({
+      data: {
+        originalUrl: videoUrl,
+        processedUrl: url,
+        format: targetFormat,
+        type: 'transcode',
+        status: 'completed',
+        s3Key: key,
+      },
     });
     
     return url;
@@ -179,15 +180,15 @@ async function mergeAudioVideo(videoUrl, audioUrl) {
     const url = await generateSignedUrl(key);
     
     // 保存记录
-    await db.collection('asset_library').add({
-      originalUrl: videoUrl,
-      audioUrl: audioUrl,
-      processedUrl: url,
-      type: 'merge',
-      status: 'completed',
-      s3Key: key,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    await models.asset_library.create({
+      data: {
+        originalUrl: videoUrl,
+        audioUrl: audioUrl,
+        processedUrl: url,
+        type: 'merge',
+        status: 'completed',
+        s3Key: key,
+      },
     });
     
     return url;
@@ -231,14 +232,14 @@ async function concatVideos(videoUrls) {
     const url = await generateSignedUrl(key);
     
     // 保存记录
-    await db.collection('asset_library').add({
-      originalUrls: videoUrls,
-      processedUrl: url,
-      type: 'concat',
-      status: 'completed',
-      s3Key: key,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    await models.asset_library.create({
+      data: {
+        originalUrls: videoUrls,
+        processedUrl: url,
+        type: 'concat',
+        status: 'completed',
+        s3Key: key,
+      },
     });
     
     return url;
@@ -249,13 +250,21 @@ async function concatVideos(videoUrls) {
 
 // 获取下载URL
 async function getDownloadUrl(id) {
-  const record = await db.collection('asset_library').doc(id).get();
+  const record = await models.asset_library.get({
+    filter: {
+      where: {
+        _id: {
+          $eq: id,
+        },
+      },
+    },
+  });
   
-  if (!record.data) {
+  if (!record.data || !record.data.records || record.data.records.length === 0) {
     throw new Error('记录不存在');
   }
   
-  const item = record.data;
+  const item = record.data.records[0];
   const url = await generateSignedUrl(item.s3Key);
   
   return url;
@@ -263,19 +272,35 @@ async function getDownloadUrl(id) {
 
 // 删除媒体
 async function deleteMedia(id) {
-  const record = await db.collection('asset_library').doc(id).get();
+  const record = await models.asset_library.get({
+    filter: {
+      where: {
+        _id: {
+          $eq: id,
+        },
+      },
+    },
+  });
   
-  if (!record.data) {
+  if (!record.data || !record.data.records || record.data.records.length === 0) {
     throw new Error('记录不存在');
   }
   
-  const item = record.data;
+  const item = record.data.records[0];
   
   // 删除COS文件
   await deleteFile(item.s3Key);
   
   // 删除数据库记录
-  await db.collection('asset_library').doc(id).remove();
+  await models.asset_library.delete({
+    filter: {
+      where: {
+        _id: {
+          $eq: id,
+        },
+      },
+    },
+  });
 }
 
 // 主函数
@@ -327,3 +352,4 @@ exports.main = async (event, context) => {
     return { code: 1, message: error.message || '处理失败' };
   }
 };
+  
