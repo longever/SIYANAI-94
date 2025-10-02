@@ -317,6 +317,6 @@ export default function AssetLibrary2(props) {
       {/* 素材网格 */}
     </div>
 
-    <AssetUploadDialog open={isUploadOpen} onOpenChange={setIsUploadOpen} onSuccess={handleUploadSuccess} onUpload={handleUpload} uploading={uploading} />
+    <AssetUploadDialog open={isUploadOpen} onOpenChange={setIsUploadOpen} onUploadSuccess={handleUploadSuccess} />
   </div>;
 }
