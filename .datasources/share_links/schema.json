@@ -1,0 +1,85 @@
+
+{
+  "name": "share_links",
+  "title": "分享链接",
+  "schemas": [
+    {
+      "name": "asset_id",
+      "title": "关联资产ID",
+      "type": "String"
+    },
+    {
+      "name": "project_id",
+      "title": "关联项目ID",
+      "type": "String"
+    },
+    {
+      "name": "share_type",
+      "title": "分享类型",
+      "type": "String"
+    },
+    {
+      "name": "access_type",
+      "title": "访问权限",
+      "type": "String"
+    },
+    {
+      "name": "access_password",
+      "title": "访问密码",
+      "type": "String"
+    },
+    {
+      "name": "expires_at",
+      "title": "有效期",
+      "type": "DateTime",
+      "format": "timestamp-ms"
+    },
+    {
+      "name": "access_count",
+      "title": "访问次数",
+      "type": "Number"
+    },
+    {
+      "name": "max_access_count",
+      "title": "最大访问次数",
+      "type": "Number"
+    },
+    {
+      "name": "is_enabled",
+      "title": "是否启用",
+      "type": "Boolean"
+    },
+    {
+      "name": "allow_download",
+      "title": "允许下载",
+      "type": "Boolean"
+    },
+    {
+      "name": "allow_embed",
+      "title": "允许嵌入",
+      "type": "Boolean"
+    },
+    {
+      "name": "share_url",
+      "title": "分享链接",
+      "type": "Url"
+    },
+    {
+      "name": "short_code",
+      "title": "短链接代码",
+      "type": "String"
+    },
+    {
+      "name": "last_accessed_at",
+      "title": "最后访问时间",
+      "type": "DateTime",
+      "format": "timestamp-ms"
+    },
+    {
+      "name": "metadata",
+      "title": "元数据",
+      "type": "Object"
+    }
+  ]
+}
+  
