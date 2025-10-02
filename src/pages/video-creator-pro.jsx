@@ -141,158 +141,111 @@ export default function VideoCreatorPro(props) {
     }
   };
 
-  // 获取导出任务列表 - 从generation_tasks数据源获取
-  const loadExportTasks = async () => {
-    try {
-      const result = await $w.cloud.callDataSource({
-        dataSourceName: 'generation_tasks',
-        methodName: 'wedaGetRecordsV2',
-        params: {
-          filter: {
-            where: {
-              task_type: {
-                $in: ['text_to_video', 'image_to_video', 'video_export']
-              }
-            }
-          },
-          select: {
-            $master: true
-          },
-          orderBy: [{
-            createdAt: 'desc'
-          }],
-          getCount: true
-        }
-      });
-      if (result.records && result.records.length > 0) {
-        // 转换数据结构以匹配组件期望的格式
-        const tasks = result.records.map(task => ({
-          id: task._id,
-          projectId: task.project_id || 'unknown_project',
-          projectName: task.input_text || `任务 ${task._id.substring(0, 8)}`,
-          status: task.status === 'completed' ? 'completed' : task.status === 'failed' ? 'failed' : 'processing',
-          progress: task.progress || 0,
-          createdAt: task.createdAt,
-          completedAt: task.completed_at || null,
-          fileUrl: task.output_url || '',
-          fileSize: 0,
-          // 从URL获取文件大小
-          errorMessage: task.error_message || '',
-          taskType: task.task_type,
-          estimatedDuration: task.estimated_duration || 0,
-          actualDuration: task.actual_duration || 0
-        }));
-        setExportTasks(tasks);
-      } else {
-        setExportTasks([]);
-      }
+  // // 获取导出任务列表
+  // const loadExportTasks = async () => {
+  //   try {
+  //     const result = await $w.cloud.callFunction({
+  //       name: 'media-service',
+  //       data: {
+  //         action: 'getExportTasks',
+  //         userId: $w.auth.currentUser?.userId
+  //       }
+  //     });
+  //     if (result && result.success) {
+  //       setExportTasks(result.data?.tasks || []);
+  //       // 重置错误提示状态
+  //       setHasShownExportError(false);
+  //     } else {
+  //       // 云函数调用失败时使用本地模拟数据
+  //       setExportTasks([{
+  //         id: 'task_1',
+  //         projectId: 'demo_project_1',
+  //         projectName: '示例项目 1',
+  //         status: 'completed',
+  //         progress: 100,
+  //         createdAt: Date.now() - 3600000,
+  //         completedAt: Date.now() - 1800000,
+  //         fileUrl: 'https://example.com/video1.mp4',
+  //         fileSize: 1024000
+  //       }]);
+  //     }
+  //   } catch (error) {
+  //     console.error('获取导出任务失败:', error);
+  //     // 只在第一次失败时提示
+  //     if (!hasShownExportError) {
+  //       toast({
+  //         title: '获取导出任务失败',
+  //         description: error.message || '请稍后重试',
+  //         variant: 'destructive'
+  //       });
+  //       setHasShownExportError(true);
+  //     }
 
-      // 重置错误提示状态
-      setHasShownExportError(false);
-    } catch (error) {
-      console.error('获取导出任务失败:', error);
-      // 只在第一次失败时提示
-      if (!hasShownExportError) {
-        toast({
-          title: '获取导出任务失败',
-          description: error.message || '请稍后重试',
-          variant: 'destructive'
-        });
-        setHasShownExportError(true);
-      }
+  //     // 使用本地模拟数据
+  //     setExportTasks([{
+  //       id: 'task_1',
+  //       projectId: 'demo_project_1',
+  //       projectName: '示例项目 1',
+  //       status: 'completed',
+  //       progress: 100,
+  //       createdAt: Date.now() - 3600000,
+  //       completedAt: Date.now() - 1800000,
+  //       fileUrl: 'https://example.com/video1.mp4',
+  //       fileSize: 1024000
+  //     }]);
+  //   }
+  // };
 
-      // 使用本地模拟数据
-      setExportTasks([{
-        id: 'task_1',
-        projectId: 'demo_project_1',
-        projectName: '示例项目 1',
-        status: 'completed',
-        progress: 100,
-        createdAt: Date.now() - 3600000,
-        completedAt: Date.now() - 1800000,
-        fileUrl: 'https://example.com/video1.mp4',
-        fileSize: 1024000
-      }]);
-    }
-  };
+  // // 获取分享链接列表
+  // const loadShareLinks = async () => {
+  //   try {
+  //     const result = await $w.cloud.callFunction({
+  //       name: 'media-service',
+  //       data: {
+  //         action: 'getShareLinks',
+  //         userId: $w.auth.currentUser?.userId
+  //       }
+  //     });
+  //     if (result && result.success) {
+  //       setShareLinks(result.data?.links || []);
+  //       // 重置错误提示状态
+  //       setHasShownShareError(false);
+  //     } else {
+  //       // 云函数调用失败时使用本地模拟数据
+  //       setShareLinks([{
+  //         id: 'link_1',
+  //         projectId: 'demo_project_1',
+  //         projectName: '示例项目 1',
+  //         shareUrl: 'https://share.example.com/abc123',
+  //         createdAt: Date.now() - 3600000,
+  //         expiresAt: Date.now() + 6 * 24 * 3600000,
+  //         accessCount: 5
+  //       }]);
+  //     }
+  //   } catch (error) {
+  //     console.error('获取分享链接失败:', error);
+  //     // 只在第一次失败时提示
+  //     if (!hasShownShareError) {
+  //       toast({
+  //         title: '获取分享链接失败',
+  //         description: error.message || '请稍后重试',
+  //         variant: 'destructive'
+  //       });
+  //       setHasShownShareError(true);
+  //     }
 
-  // 获取分享链接列表 - 从projects数据源获取分享信息
-  const loadShareLinks = async () => {
-    try {
-      // 获取所有项目，筛选出已分享的项目
-      const result = await $w.cloud.callDataSource({
-        dataSourceName: 'projects',
-        methodName: 'wedaGetRecordsV2',
-        params: {
-          filter: {
-            where: {
-              $and: [{
-                status: {
-                  $eq: 'completed'
-                }
-              }, {
-                thumbnail_url: {
-                  $nempty: true
-                }
-              }]
-            }
-          },
-          select: {
-            $master: true
-          },
-          orderBy: [{
-            updatedAt: 'desc'
-          }],
-          getCount: true
-        }
-      });
-      if (result.records && result.records.length > 0) {
-        // 转换数据结构以匹配组件期望的格式
-        const links = result.records.map(project => ({
-          id: project._id,
-          projectId: project._id,
-          projectName: project.title || '未命名项目',
-          shareUrl: project.thumbnail_url || '#',
-          createdAt: project.createdAt,
-          expiresAt: project.updatedAt + 7 * 24 * 3600 * 1000,
-          // 默认7天有效期
-          accessCount: 0,
-          thumbnailUrl: project.thumbnail_url,
-          description: project.description || '',
-          duration: project.duration_seconds || 0,
-          style: project.style || 'default'
-        }));
-        setShareLinks(links);
-      } else {
-        setShareLinks([]);
-      }
-
-      // 重置错误提示状态
-      setHasShownShareError(false);
-    } catch (error) {
-      console.error('获取分享链接失败:', error);
-      // 只在第一次失败时提示
-      if (!hasShownShareError) {
-        toast({
-          title: '获取分享链接失败',
-          description: error.message || '请稍后重试',
-          variant: 'destructive'
-        });
-        setHasShownShareError(true);
-      }
-
-      // 使用本地模拟数据
-      setShareLinks([{
-        id: 'link_1',
-        projectId: 'demo_project_1',
-        projectName: '示例项目 1',
-        shareUrl: 'https://share.example.com/abc123',
-        createdAt: Date.now() - 3600000,
-        expiresAt: Date.now() + 6 * 24 * 3600000,
-        accessCount: 5
-      }]);
-    }
-  };
+  //     // 使用本地模拟数据
+  //     setShareLinks([{
+  //       id: 'link_1',
+  //       projectId: 'demo_project_1',
+  //       projectName: '示例项目 1',
+  //       shareUrl: 'https://share.example.com/abc123',
+  //       createdAt: Date.now() - 3600000,
+  //       expiresAt: Date.now() + 6 * 24 * 3600000,
+  //       accessCount: 5
+  //     }]);
+  //   }
+  // };
 
   // 批量生成视频
   const handleBatchGenerate = async selectedProjects => {
@@ -308,39 +261,51 @@ export default function VideoCreatorPro(props) {
       setIsGenerating(true);
       setGenerationProgress(0);
 
-      // 为每个项目创建生成任务
-      const createTasks = selectedProjects.map(async project => {
-        const taskData = {
-          project_id: project.id,
-          task_type: 'video_export',
-          input_text: project.name,
-          estimated_duration: project.totalDuration || 30,
-          status: 'pending',
-          progress: 0,
-          createdAt: Date.now(),
-          updatedAt: Date.now()
-        };
-        return $w.cloud.callDataSource({
-          dataSourceName: 'generation_tasks',
-          methodName: 'wedaCreateV2',
-          params: {
-            data: taskData
-          }
-        });
+      // 调用批量生成云函数
+      const result = await $w.cloud.callFunction({
+        name: 'generateVideo',
+        data: {
+          action: 'batchGenerate',
+          projects: selectedProjects.map(project => ({
+            projectId: project.id,
+            projectName: project.name,
+            nodes: project.nodes,
+            exportConfig: {
+              format: 'mp4',
+              quality: 'high',
+              resolution: '1920x1080',
+              fps: 30
+            }
+          }))
+        }
       });
-      const results = await Promise.all(createTasks);
-      if (results.every(r => r && r.id)) {
+      if (result && result.success) {
+        setCurrentTaskId(result.batchId);
+
+        // 记录导出历史
+        try {
+          await $w.cloud.callFunction({
+            name: 'order-service',
+            data: {
+              action: 'recordExport',
+              batchId: result.batchId,
+              projectCount: selectedProjects.length,
+              totalDuration: selectedProjects.reduce((sum, p) => sum + p.totalDuration, 0)
+            }
+          });
+        } catch (recordError) {
+          console.warn('记录导出历史失败:', recordError);
+        }
         toast({
           title: '批量生成已启动',
-          description: `已创建 ${selectedProjects.length} 个导出任务`,
+          description: `正在处理 ${selectedProjects.length} 个项目`,
           variant: 'success'
         });
 
         // 开始轮询任务状态
-        const taskIds = results.map(r => r.id);
-        pollBatchStatus(taskIds);
+        pollBatchStatus(result.batchId);
       } else {
-        throw new Error('部分任务创建失败');
+        throw new Error(result?.error || '批量生成失败');
       }
     } catch (error) {
       console.error('批量生成失败:', error);
@@ -354,37 +319,41 @@ export default function VideoCreatorPro(props) {
   };
 
   // 轮询批量任务状态
-  const pollBatchStatus = async taskIds => {
+  const pollBatchStatus = async batchId => {
     const checkStatus = async () => {
       try {
-        const results = await Promise.all(taskIds.map(taskId => $w.cloud.callDataSource({
-          dataSourceName: 'generation_tasks',
-          methodName: 'wedaGetItemV2',
-          params: {
-            filter: {
-              where: {
-                _id: {
-                  $eq: taskId
-                }
-              }
-            },
-            select: {
-              $master: true
-            }
+        const result = await $w.cloud.callFunction({
+          name: 'generateVideo',
+          data: {
+            action: 'getBatchStatus',
+            batchId
           }
-        })));
-        const tasks = results.map(r => r).filter(Boolean);
-        const completedCount = tasks.filter(t => t.status === 'completed').length;
-        const failedCount = tasks.filter(t => t.status === 'failed').length;
-        const totalCount = tasks.length;
-        const progress = Math.round((completedCount + failedCount) / totalCount * 100);
-        setGenerationProgress(progress);
-        if (completedCount + failedCount === totalCount) {
-          return true;
+        });
+        if (result && result.success) {
+          const progress = result.data?.progress || 0;
+          setGenerationProgress(progress);
+          if (result.data?.status === 'completed') {
+            setIsGenerating(false);
+            loadExportTasks();
+            toast({
+              title: '批量生成完成',
+              description: `成功生成 ${result.data.completedCount || 0} 个视频`,
+              variant: 'success'
+            });
+            return true;
+          } else if (result.data?.status === 'failed') {
+            setIsGenerating(false);
+            toast({
+              title: '批量生成失败',
+              description: result.data.error || '部分任务处理失败',
+              variant: 'destructive'
+            });
+            return true;
+          }
         }
         return false;
       } catch (error) {
-        console.error('检查任务状态失败:', error);
+        console.error('检查批量状态失败:', error);
         return true;
       }
     };
@@ -397,20 +366,12 @@ export default function VideoCreatorPro(props) {
       const completed = await checkStatus();
       if (completed || attempts >= maxAttempts) {
         clearInterval(interval);
-        setIsGenerating(false);
-        loadExportTasks(); // 重新加载任务列表
-
         if (attempts >= maxAttempts) {
+          setIsGenerating(false);
           toast({
             title: '批量生成超时',
-            description: '部分任务可能仍在处理中',
+            description: '请稍后重试',
             variant: 'destructive'
-          });
-        } else {
-          toast({
-            title: '批量生成完成',
-            description: '所有任务已处理完成',
-            variant: 'success'
           });
         }
       }
@@ -420,65 +381,34 @@ export default function VideoCreatorPro(props) {
   // 创建分享链接
   const createShareLink = async (projectId, options = {}) => {
     try {
-      // 更新项目状态为已分享
-      const result = await $w.cloud.callDataSource({
-        dataSourceName: 'projects',
-        methodName: 'wedaUpdateV2',
-        params: {
-          data: {
-            shared: true,
-            share_expires_at: Date.now() + (options.expiresIn || 7 * 24 * 3600 * 1000),
-            allow_download: options.allowDownload !== false,
-            share_password: options.password || null,
-            updatedAt: Date.now()
-          },
-          filter: {
-            where: {
-              _id: {
-                $eq: projectId
-              }
-            }
+      const result = await $w.cloud.callFunction({
+        name: 'media-service',
+        data: {
+          action: 'createShareLink',
+          projectId,
+          options: {
+            expiresIn: options.expiresIn || 7 * 24 * 3600,
+            // 默认7天
+            password: options.password || null,
+            allowDownload: options.allowDownload !== false
           }
         }
       });
-      if (result && result.count > 0) {
-        // 获取项目信息
-        const project = await $w.cloud.callDataSource({
-          dataSourceName: 'projects',
-          methodName: 'wedaGetItemV2',
-          params: {
-            filter: {
-              where: {
-                _id: {
-                  $eq: projectId
-                }
-              }
-            },
-            select: {
-              $master: true
-            }
-          }
+      if (result && result.success) {
+        toast({
+          title: '分享链接创建成功',
+          description: '链接已复制到剪贴板',
+          variant: 'success'
         });
-        if (project) {
-          const shareUrl = `${window.location.origin}/share/${projectId}`;
-          toast({
-            title: '分享链接创建成功',
-            description: '链接已复制到剪贴板',
-            variant: 'success'
-          });
 
-          // 复制到剪贴板
-          if (navigator.clipboard) {
-            navigator.clipboard.writeText(shareUrl);
-          }
-          loadShareLinks();
-          return {
-            shareUrl,
-            project
-          };
+        // 复制到剪贴板
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(result.data?.shareUrl || '');
         }
+        loadShareLinks();
+        return result.data;
       } else {
-        throw new Error('创建分享链接失败');
+        throw new Error(result?.error || '创建分享链接失败');
       }
     } catch (error) {
       console.error('创建分享链接失败:', error);
@@ -494,25 +424,14 @@ export default function VideoCreatorPro(props) {
   // 删除分享链接
   const deleteShareLink = async linkId => {
     try {
-      const result = await $w.cloud.callDataSource({
-        dataSourceName: 'projects',
-        methodName: 'wedaUpdateV2',
-        params: {
-          data: {
-            shared: false,
-            share_expires_at: 0,
-            updatedAt: Date.now()
-          },
-          filter: {
-            where: {
-              _id: {
-                $eq: linkId
-              }
-            }
-          }
+      const result = await $w.cloud.callFunction({
+        name: 'media-service',
+        data: {
+          action: 'deleteShareLink',
+          linkId
         }
       });
-      if (result && result.count > 0) {
+      if (result && result.success) {
         toast({
           title: '分享链接已删除',
           description: '链接已失效',
@@ -520,7 +439,7 @@ export default function VideoCreatorPro(props) {
         });
         loadShareLinks();
       } else {
-        throw new Error('删除分享链接失败');
+        throw new Error(result?.error || '删除分享链接失败');
       }
     } catch (error) {
       console.error('删除分享链接失败:', error);
@@ -535,58 +454,30 @@ export default function VideoCreatorPro(props) {
   // 下载导出文件
   const downloadExport = async taskId => {
     try {
-      const task = await $w.cloud.callDataSource({
-        dataSourceName: 'generation_tasks',
-        methodName: 'wedaGetItemV2',
-        params: {
-          filter: {
-            where: {
-              _id: {
-                $eq: taskId
-              }
-            }
-          },
-          select: {
-            $master: true
-          }
+      const result = await $w.cloud.callFunction({
+        name: 'media-service',
+        data: {
+          action: 'getDownloadUrl',
+          taskId
         }
       });
-      if (task && task.output_url) {
+      if (result && result.success && result.data?.downloadUrl) {
         // 创建下载链接
         const link = document.createElement('a');
-        link.href = task.output_url;
-        link.download = `video-${task.project_id || taskId}.mp4`;
+        link.href = result.data.downloadUrl;
+        link.download = result.data.filename || `video-${Date.now()}.mp4`;
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-
-        // 更新下载次数
-        await $w.cloud.callDataSource({
-          dataSourceName: 'generation_tasks',
-          methodName: 'wedaUpdateV2',
-          params: {
-            data: {
-              download_count: (task.download_count || 0) + 1,
-              updatedAt: Date.now()
-            },
-            filter: {
-              where: {
-                _id: {
-                  $eq: taskId
-                }
-              }
-            }
-          }
-        });
         toast({
           title: '下载开始',
           description: '文件下载已开始',
           variant: 'success'
         });
       } else {
-        throw new Error('文件尚未准备好');
+        throw new Error(result?.error || '获取下载链接失败');
       }
     } catch (error) {
       console.error('下载失败:', error);
