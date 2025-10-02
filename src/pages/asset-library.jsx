@@ -9,7 +9,7 @@ import { AssetGrid } from '@/components/AssetGrid';
 import { AssetUploadDialog } from '@/components/AssetUploadDialog';
 import { EnhancedAssetLibrary } from '@/components/EnhancedAssetLibrary';
 
-export default function AssetLibrary(props) {
+export default function AssetLibraryPage(props) {
   const {
     $w,
     style
