@@ -6,6 +6,7 @@ import EXPORT_SHARE from '../pages/export-share.jsx';
 import INDEX from '../pages/index.jsx';
 import MEMBERSHIP from '../pages/membership.jsx';
 import VIDEO_CREATOR-PRO from '../pages/video-creator-pro.jsx';
+import ASSET_2 from '../pages/asset-2.jsx';
 export const routers = [{
   id: "ai-video-creator",
   component: AI_VIDEO-CREATOR
@@ -30,4 +31,7 @@ export const routers = [{
 }, {
   id: "video-creator-pro",
   component: VIDEO_CREATOR-PRO
+}, {
+  id: "asset-2",
+  component: ASSET_2
 }]
