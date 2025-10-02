@@ -4,9 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, useToast, Skeleton } from '@/components/ui';
 // @ts-ignore;
 import { Upload, Search, RefreshCw, AlertCircle } from 'lucide-react';
-
-import { AssetGrid } from '@/components/AssetGrid';
-import { AssetUploadDialog } from '@/components/AssetUploadDialog';
+ 
 export default function AssetLibrary2(props) {
   const {
     $w
@@ -315,26 +313,8 @@ export default function AssetLibrary2(props) {
         共 {filteredAssets.length} 个素材
       </div>
 
-      {/* 素材网格 */}
-      {loading ? <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {[...Array(8)].map((_, i) => <div key={i} className="aspect-square bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse" />)}
-      </div> : filteredAssets.length > 0 ? <AssetGrid assets={filteredAssets} onDelete={handleDelete} onRefresh={loadAssets} /> : <div className="text-center py-12">
-        <div className="text-slate-400 mb-4">
-          <Search className="w-12 h-12 mx-auto" />
-        </div>
-        <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
-          {searchTerm || selectedType !== 'all' ? '没有找到匹配的素材' : '素材库为空'}
-        </h3>
-        <p className="text-slate-600 dark:text-slate-400 mb-4">
-          {searchTerm || selectedType !== 'all' ? '尝试调整搜索条件或筛选器' : '开始上传您的第一个素材吧'}
-        </p>
-        <Button onClick={() => setIsUploadOpen(true)}>
-          <Upload className="w-4 h-4 mr-2" />
-          上传素材
-        </Button>
-      </div>}
+      {/* 素材网格 */} 
     </div>
 
-    <AssetUploadDialog open={isUploadOpen} onOpenChange={setIsUploadOpen} onSuccess={handleUploadSuccess} onUpload={handleUpload} uploading={uploading} />
-  </div>;
+     </div>;
 }
