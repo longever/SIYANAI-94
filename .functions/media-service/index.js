@@ -1,355 +1,230 @@
 
-'use strict';
+    'use strict';
 
-const cloudbase = require('@cloudbase/node-sdk');
-const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
-const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
-const ffmpeg = require('fluent-ffmpeg');
-const axios = require('axios');
-const fs = require('fs-extra');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+    const cloudbase = require('@cloudbase/node-sdk');
+    
+    // 初始化 CloudBase
+    const app = cloudbase.init({
+      env: cloudbase.SYMBOL_CURRENT_ENV
+    });
 
-// 初始化云开发
-const app = cloudbase.init();
-const models = app.models;
+    // 文件操作类型定义
+    const OPERATIONS = {
+      UPLOAD: 'upload',
+      DOWNLOAD: 'download',
+      DELETE: 'delete',
+      GET_TEMP_URL: 'getTempUrl'
+    };
 
-// 腾讯云 COS 配置（替换 AWS S3）
-const COS = require('cos-nodejs-sdk-v5');
-const cos = new COS({
-  SecretId: process.env.COS_SECRET_ID || process.env.TENCENTCLOUD_SECRETID,
-  SecretKey: process.env.COS_SECRET_KEY || process.env.TENCENTCLOUD_SECRETKEY,
-});
-
-const bucketName = process.env.COS_BUCKET || 'media-bucket-1250000000';
-const region = process.env.COS_REGION || 'ap-shanghai';
-
-// 工具函数
-async function downloadFile(url, filePath) {
-  const response = await axios({
-    method: 'GET',
-    url: url,
-    responseType: 'stream',
-  });
-  
-  const writer = fs.createWriteStream(filePath);
-  response.data.pipe(writer);
-  
-  return new Promise((resolve, reject) => {
-    writer.on('finish', resolve);
-    writer.on('error', reject);
-  });
-}
-
-async function uploadFile(filePath, key) {
-  const fileContent = await fs.readFile(filePath);
-  
-  return new Promise((resolve, reject) => {
-    cos.putObject({
-      Bucket: bucketName,
-      Region: region,
-      Key: key,
-      Body: fileContent,
-    }, (err, data) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(key);
+    /**
+     * 主函数入口
+     * @param {Object} event - 事件参数
+     * @param {Object} context - 上下文
+     * @returns {Promise<Object>} 返回结果
+     */
+    exports.main = async (event, context) => {
+      const { action, ...params } = event;
+      
+      try {
+        switch (action) {
+          case OPERATIONS.UPLOAD:
+            return await handleUpload(params);
+          case OPERATIONS.DOWNLOAD:
+            return await handleDownload(params);
+          case OPERATIONS.DELETE:
+            return await handleDelete(params);
+          case OPERATIONS.GET_TEMP_URL:
+            return await handleGetTempUrl(params);
+          default:
+            return {
+              success: false,
+              error: `Unsupported action: ${action}`
+            };
+        }
+      } catch (error) {
+        console.error('Media service error:', error);
+        return {
+          success: false,
+          error: error.message || 'Internal server error'
+        };
       }
-    });
-  });
-}
+    };
 
-async function generateSignedUrl(key, expiresIn = 3600) {
-  return new Promise((resolve, reject) => {
-    cos.getObjectUrl({
-      Bucket: bucketName,
-      Region: region,
-      Key: key,
-      Sign: true,
-      Expires: expiresIn,
-    }, (err, data) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(data.Url);
+    /**
+     * 处理文件上传
+     * @param {Object} params - 上传参数
+     * @param {Buffer|string} params.file - 文件内容
+     * @param {string} params.fileName - 文件名
+     * @param {string} params.contentType - 文件类型
+     * @param {string} params.folder - 上传目录
+     * @returns {Promise<Object>} 上传结果
+     */
+    async function handleUpload(params) {
+      const { file, fileName, contentType, folder = 'uploads' } = params;
+      
+      if (!file || !fileName) {
+        throw new Error('File and fileName are required');
       }
-    });
-  });
-}
 
-async function deleteFile(key) {
-  return new Promise((resolve, reject) => {
-    cos.deleteObject({
-      Bucket: bucketName,
-      Region: region,
-      Key: key,
-    }, (err, data) => {
-      if (err) {
-        reject(err);
+      // 构建云存储路径
+      const timestamp = Date.now();
+      const safeFileName = fileName.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+      const cloudPath = `${folder}/${timestamp}_${safeFileName}`;
+
+      // 处理文件内容
+      let fileContent;
+      if (Buffer.isBuffer(file)) {
+        fileContent = file;
+      } else if (typeof file === 'string') {
+        // 处理 base64 字符串
+        const base64Data = file.replace(/^data:.*;base64,/, '');
+        fileContent = Buffer.from(base64Data, 'base64');
       } else {
-        resolve(data);
+        throw new Error('Invalid file format');
       }
-    });
-  });
-}
 
-function getTempPath(filename) {
-  return path.join('/tmp', filename);
-}
+      // 上传到云存储
+      const result = await app.uploadFile({
+        cloudPath,
+        fileContent
+      });
 
-async function cleanupTempFiles(...files) {
-  for (const file of files) {
-    if (await fs.pathExists(file)) {
-      await fs.remove(file);
+      if (result.code) {
+        throw new Error(result.message || 'Upload failed');
+      }
+
+      // 获取临时访问URL
+      const tempUrlResult = await app.getTempFileURL({
+        fileList: [result.fileID]
+      });
+
+      const fileUrl = tempUrlResult.fileList[0]?.tempFileURL;
+
+      return {
+        success: true,
+        fileId: result.fileID,
+        url: fileUrl,
+        fileName: safeFileName,
+        cloudPath
+      };
     }
-  }
-}
 
-// 转码功能
-async function transcodeVideo(videoUrl, targetFormat) {
-  const inputPath = getTempPath(`input_${uuidv4()}`);
-  const outputPath = getTempPath(`output_${uuidv4()}.${targetFormat}`);
-  
-  try {
-    await downloadFile(videoUrl, inputPath);
-    
-    await new Promise((resolve, reject) => {
-      ffmpeg(inputPath)
-        .format(targetFormat)
-        .videoCodec('libx264')
-        .audioCodec('aac')
-        .outputOptions('-movflags +faststart')
-        .on('end', resolve)
-        .on('error', reject)
-        .save(outputPath);
-    });
-    
-    const key = `transcoded/${uuidv4()}.${targetFormat}`;
-    await uploadFile(outputPath, key);
-    
-    const url = await generateSignedUrl(key);
-    
-    // 保存记录
-    await models.asset_library.create({
-      data: {
-        originalUrl: videoUrl,
-        processedUrl: url,
-        format: targetFormat,
-        type: 'transcode',
-        status: 'completed',
-        s3Key: key,
-      },
-    });
-    
-    return url;
-  } finally {
-    await cleanupTempFiles(inputPath, outputPath);
-  }
-}
+    /**
+     * 处理文件下载
+     * @param {Object} params - 下载参数
+     * @param {string} params.fileKey - 文件ID或路径
+     * @param {boolean} params.returnBuffer - 是否返回Buffer
+     * @returns {Promise<Object>} 下载结果
+     */
+    async function handleDownload(params) {
+      const { fileKey, returnBuffer = true } = params;
+      
+      if (!fileKey) {
+        throw new Error('fileKey is required');
+      }
 
-// 合并音视频
-async function mergeAudioVideo(videoUrl, audioUrl) {
-  const videoPath = getTempPath(`video_${uuidv4()}`);
-  const audioPath = getTempPath(`audio_${uuidv4()}`);
-  const outputPath = getTempPath(`merged_${uuidv4()}.mp4`);
-  
-  try {
-    await Promise.all([
-      downloadFile(videoUrl, videoPath),
-      downloadFile(audioUrl, audioPath),
-    ]);
-    
-    await new Promise((resolve, reject) => {
-      ffmpeg()
-        .input(videoPath)
-        .input(audioPath)
-        .outputOptions('-c:v copy')
-        .outputOptions('-c:a aac')
-        .outputOptions('-strict experimental')
-        .outputOptions('-map 0:v:0')
-        .outputOptions('-map 1:a:0')
-        .on('end', resolve)
-        .on('error', reject)
-        .save(outputPath);
-    });
-    
-    const key = `merged/${uuidv4()}.mp4`;
-    await uploadFile(outputPath, key);
-    
-    const url = await generateSignedUrl(key);
-    
-    // 保存记录
-    await models.asset_library.create({
-      data: {
-        originalUrl: videoUrl,
-        audioUrl: audioUrl,
-        processedUrl: url,
-        type: 'merge',
-        status: 'completed',
-        s3Key: key,
-      },
-    });
-    
-    return url;
-  } finally {
-    await cleanupTempFiles(videoPath, audioPath, outputPath);
-  }
-}
+      if (returnBuffer) {
+        // 直接下载文件内容
+        const result = await app.downloadFile({
+          fileID: fileKey
+        });
 
-// 拼接视频
-async function concatVideos(videoUrls) {
-  const inputPaths = [];
-  const listPath = getTempPath(`list_${uuidv4()}.txt`);
-  const outputPath = getTempPath(`concat_${uuidv4()}.mp4`);
-  
-  try {
-    // 下载所有视频
-    for (let i = 0; i < videoUrls.length; i++) {
-      const path = getTempPath(`video_${i}_${uuidv4()}`);
-      await downloadFile(videoUrls[i], path);
-      inputPaths.push(path);
+        if (result.code) {
+          throw new Error(result.message || 'Download failed');
+        }
+
+        return {
+          success: true,
+          buffer: result.fileContent,
+          contentType: 'application/octet-stream'
+        };
+      } else {
+        // 返回临时URL
+        const tempUrlResult = await app.getTempFileURL({
+          fileList: [fileKey]
+        });
+
+        const fileUrl = tempUrlResult.fileList[0]?.tempFileURL;
+        
+        if (!fileUrl) {
+          throw new Error('Failed to get file URL');
+        }
+
+        return {
+          success: true,
+          url: fileUrl,
+          redirect: true
+        };
+      }
     }
-    
-    // 创建列表文件
-    const listContent = inputPaths.map(p => `file '${p}'`).join('\n');
-    await fs.writeFile(listPath, listContent);
-    
-    await new Promise((resolve, reject) => {
-      ffmpeg()
-        .input(listPath)
-        .inputOptions('-f concat')
-        .inputOptions('-safe 0')
-        .outputOptions('-c copy')
-        .on('end', resolve)
-        .on('error', reject)
-        .save(outputPath);
-    });
-    
-    const key = `concatenated/${uuidv4()}.mp4`;
-    await uploadFile(outputPath, key);
-    
-    const url = await generateSignedUrl(key);
-    
-    // 保存记录
-    await models.asset_library.create({
-      data: {
-        originalUrls: videoUrls,
-        processedUrl: url,
-        type: 'concat',
-        status: 'completed',
-        s3Key: key,
-      },
-    });
-    
-    return url;
-  } finally {
-    await cleanupTempFiles(...inputPaths, listPath, outputPath);
-  }
-}
 
-// 获取下载URL
-async function getDownloadUrl(id) {
-  const record = await models.asset_library.get({
-    filter: {
-      where: {
-        _id: {
-          $eq: id,
-        },
-      },
-    },
-  });
-  
-  if (!record.data || !record.data.records || record.data.records.length === 0) {
-    throw new Error('记录不存在');
-  }
-  
-  const item = record.data.records[0];
-  const url = await generateSignedUrl(item.s3Key);
-  
-  return url;
-}
+    /**
+     * 处理文件删除
+     * @param {Object} params - 删除参数
+     * @param {string|string[]} params.fileKey - 文件ID或文件ID数组
+     * @returns {Promise<Object>} 删除结果
+     */
+    async function handleDelete(params) {
+      const { fileKey } = params;
+      
+      if (!fileKey) {
+        throw new Error('fileKey is required');
+      }
 
-// 删除媒体
-async function deleteMedia(id) {
-  const record = await models.asset_library.get({
-    filter: {
-      where: {
-        _id: {
-          $eq: id,
-        },
-      },
-    },
-  });
-  
-  if (!record.data || !record.data.records || record.data.records.length === 0) {
-    throw new Error('记录不存在');
-  }
-  
-  const item = record.data.records[0];
-  
-  // 删除COS文件
-  await deleteFile(item.s3Key);
-  
-  // 删除数据库记录
-  await models.asset_library.delete({
-    filter: {
-      where: {
-        _id: {
-          $eq: id,
-        },
-      },
-    },
-  });
-}
+      const fileList = Array.isArray(fileKey) ? fileKey : [fileKey];
 
-// 主函数
-exports.main = async (event, context) => {
-  const { action, data } = event;
-  
-  try {
-    switch (action) {
-      case 'transcode':
-        if (!data.videoUrl || !data.targetFormat) {
-          return { code: 1, message: '参数错误：videoUrl和targetFormat不能为空' };
-        }
-        const transcodeUrl = await transcodeVideo(data.videoUrl, data.targetFormat);
-        return { code: 0, data: { url: transcodeUrl } };
-        
-      case 'merge-audio-video':
-        if (!data.videoUrl || !data.audioUrl) {
-          return { code: 1, message: '参数错误：videoUrl和audioUrl不能为空' };
-        }
-        const mergeUrl = await mergeAudioVideo(data.videoUrl, data.audioUrl);
-        return { code: 0, data: { url: mergeUrl } };
-        
-      case 'concat-videos':
-        if (!Array.isArray(data.videoUrls) || data.videoUrls.length < 2) {
-          return { code: 1, message: '参数错误：videoUrls必须是包含至少2个URL的数组' };
-        }
-        const concatUrl = await concatVideos(data.videoUrls);
-        return { code: 0, data: { url: concatUrl } };
-        
-      case 'get-media':
-        if (!data.id) {
-          return { code: 1, message: '参数错误：id不能为空' };
-        }
-        const downloadUrl = await getDownloadUrl(data.id);
-        return { code: 0, data: { downloadUrl } };
-        
-      case 'delete-media':
-        if (!data.id) {
-          return { code: 1, message: '参数错误：id不能为空' };
-        }
-        await deleteMedia(data.id);
-        return { code: 0, message: '删除成功' };
-        
-      default:
-        return { code: 1, message: '无效的操作' };
+      const result = await app.deleteFile({
+        fileList
+      });
+
+      if (result.code) {
+        throw new Error(result.message || 'Delete failed');
+      }
+
+      const successList = result.fileList.filter(item => item.code === 'SUCCESS');
+      const failedList = result.fileList.filter(item => item.code !== 'SUCCESS');
+
+      return {
+        success: true,
+        deletedCount: successList.length,
+        failedCount: failedList.length,
+        details: result.fileList
+      };
     }
-  } catch (error) {
-    console.error('Error:', error);
-    return { code: 1, message: error.message || '处理失败' };
-  }
-};
+
+    /**
+     * 获取文件临时访问URL
+     * @param {Object} params - 参数
+     * @param {string|string[]} params.fileKey - 文件ID或文件ID数组
+     * @param {number} params.expiresIn - 过期时间（秒）
+     * @returns {Promise<Object>} URL结果
+     */
+    async function handleGetTempUrl(params) {
+      const { fileKey, expiresIn = 3600 } = params;
+      
+      if (!fileKey) {
+        throw new Error('fileKey is required');
+      }
+
+      const fileList = Array.isArray(fileKey) ? fileKey : [fileKey];
+
+      const result = await app.getTempFileURL({
+        fileList: fileList.map(fileID => ({
+          fileID,
+          maxAge: expiresIn
+        }))
+      });
+
+      if (result.code) {
+        throw new Error(result.message || 'Failed to get temp URL');
+      }
+
+      return {
+        success: true,
+        urls: result.fileList.map(item => ({
+          fileId: item.fileID,
+          url: item.tempFileURL
+        }))
+      };
+    }
   

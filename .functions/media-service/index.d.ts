@@ -1,48 +1,72 @@
 
-interface TranscodeRequest {
-  videoUrl: string;
-  targetFormat: string;
-}
+    interface UploadParams {
+      file: Buffer | string;
+      fileName: string;
+      contentType?: string;
+      folder?: string;
+    }
 
-interface MergeRequest {
-  videoUrl: string;
-  audioUrl: string;
-}
+    interface UploadResult {
+      success: boolean;
+      fileId: string;
+      url: string;
+      fileName: string;
+      cloudPath: string;
+      error?: string;
+    }
 
-interface ConcatRequest {
-  videoUrls: string[];
-}
+    interface DownloadParams {
+      fileKey: string;
+      returnBuffer?: boolean;
+    }
 
-interface MediaIdRequest {
-  id: string;
-}
+    interface DownloadResult {
+      success: boolean;
+      buffer?: Buffer;
+      contentType?: string;
+      url?: string;
+      redirect?: boolean;
+      error?: string;
+    }
 
-type EventAction = 
-  | 'transcode'
-  | 'merge-audio-video'
-  | 'concat-videos'
-  | 'get-media'
-  | 'delete-media';
+    interface DeleteParams {
+      fileKey: string | string[];
+    }
 
-interface CloudFunctionEvent {
-  action: EventAction;
-  data: 
-    | TranscodeRequest
-    | MergeRequest
-    | ConcatRequest
-    | MediaIdRequest;
-}
+    interface DeleteResult {
+      success: boolean;
+      deletedCount: number;
+      failedCount: number;
+      details: Array<{
+        fileID: string;
+        code: string;
+        message?: string;
+      }>;
+      error?: string;
+    }
 
-interface SuccessResponse<T = any> {
-  code: 0;
-  data: T;
-}
+    interface GetTempUrlParams {
+      fileKey: string | string[];
+      expiresIn?: number;
+    }
 
-interface ErrorResponse {
-  code: 1;
-  message: string;
-}
+    interface GetTempUrlResult {
+      success: boolean;
+      urls: Array<{
+        fileId: string;
+        url: string;
+      }>;
+      error?: string;
+    }
 
-type CloudFunctionResponse = SuccessResponse | ErrorResponse;
+    type MediaAction = 'upload' | 'download' | 'delete' | 'getTempUrl';
 
-export declare function main(event: CloudFunctionEvent, context: any): Promise<CloudFunctionResponse>;
+    interface CloudFunctionEvent {
+      action: MediaAction;
+      [key: string]: any;
+    }
+
+    export declare function main(event: CloudFunctionEvent, context: any): Promise<
+      UploadResult | DownloadResult | DeleteResult | GetTempUrlResult
+    >;
+  
