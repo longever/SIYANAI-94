@@ -7,7 +7,7 @@ import { Upload, Search, RefreshCw, AlertCircle } from 'lucide-react';
 
 import { AssetGrid } from '@/components/AssetGrid';
 import { AssetUploadDialog } from '@/components/AssetUploadDialog';
-export default function AssetLibrary(props) {
+export default function AssetLibraryPage(props) {
   const {
     $w
   } = props;
