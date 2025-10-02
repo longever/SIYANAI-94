@@ -5,7 +5,7 @@ import { Card, CardContent, Button, AlertDialog, AlertDialogAction, AlertDialogC
 // @ts-ignore;
 import { Download, Trash2, Eye, ExternalLink, Image, Video, FileAudio, FileText, Calendar, Tag } from 'lucide-react';
 
-export default function AssetGrid({
+export function AssetGrid({
   assets,
   onDelete,
   onRefresh

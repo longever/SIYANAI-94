@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Button,
 // @ts-ignore;
 import { Upload, X, FileImage, FileVideo, FileAudio, File } from 'lucide-react';
 
-export default function AssetUploadDialog({
+export function AssetUploadDialog({
   open,
   onOpenChange,
   onUploadSuccess
@@ -99,50 +99,50 @@ export default function AssetUploadDialog({
     setFiles(files.filter((_, i) => i !== index));
   };
   return <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>上传素材</DialogTitle>
-        </DialogHeader>
-        
-        <div className="space-y-4">
-          <div>
-            <Label>选择文件</Label>
-            <div className="mt-2">
-              <Input type="file" multiple onChange={handleFileSelect} accept="image/*,video/*,audio/*" className="cursor-pointer" />
-            </div>
+    <DialogContent className="sm:max-w-[500px]">
+      <DialogHeader>
+        <DialogTitle>上传素材</DialogTitle>
+      </DialogHeader>
+
+      <div className="space-y-4">
+        <div>
+          <Label>选择文件</Label>
+          <div className="mt-2">
+            <Input type="file" multiple onChange={handleFileSelect} accept="image/*,video/*,audio/*" className="cursor-pointer" />
           </div>
-
-          {files.length > 0 && <div className="space-y-2">
-              <Label>已选择文件</Label>
-              {files.map((file, index) => <div key={index} className="flex items-center justify-between p-2 border rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    {getFileIcon(file.type)}
-                    <span className="text-sm">{file.name}</span>
-                    <span className="text-xs text-gray-500">
-                      {(file.size / 1024 / 1024).toFixed(2)} MB
-                    </span>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => removeFile(index)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>)}
-            </div>}
-
-          {uploading && <div className="space-y-2">
-              <Label>上传进度</Label>
-              <Progress value={progress} className="w-full" />
-              <p className="text-sm text-gray-500 text-center">{Math.round(progress)}%</p>
-            </div>}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={uploading}>
-            取消
-          </Button>
-          <Button onClick={handleUpload} disabled={files.length === 0 || uploading}>
-            {uploading ? "上传中..." : "开始上传"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>;
+        {files.length > 0 && <div className="space-y-2">
+          <Label>已选择文件</Label>
+          {files.map((file, index) => <div key={index} className="flex items-center justify-between p-2 border rounded-lg">
+            <div className="flex items-center space-x-2">
+              {getFileIcon(file.type)}
+              <span className="text-sm">{file.name}</span>
+              <span className="text-xs text-gray-500">
+                {(file.size / 1024 / 1024).toFixed(2)} MB
+              </span>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => removeFile(index)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>)}
+        </div>}
+
+        {uploading && <div className="space-y-2">
+          <Label>上传进度</Label>
+          <Progress value={progress} className="w-full" />
+          <p className="text-sm text-gray-500 text-center">{Math.round(progress)}%</p>
+        </div>}
+      </div>
+
+      <DialogFooter>
+        <Button variant="outline" onClick={() => onOpenChange(false)} disabled={uploading}>
+          取消
+        </Button>
+        <Button onClick={handleUpload} disabled={files.length === 0 || uploading}>
+          {uploading ? "上传中..." : "开始上传"}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>;
 }
