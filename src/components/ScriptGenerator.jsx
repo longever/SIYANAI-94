@@ -1,149 +1,189 @@
 // @ts-ignore;
 import React, { useState } from 'react';
 // @ts-ignore;
-import { Card, CardContent, CardHeader, CardTitle, Button, Input, Textarea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Label, Slider, useToast } from '@/components/ui';
+import { Button, Input, Textarea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Card, CardContent, CardHeader, CardTitle, Badge, Tabs, TabsContent, TabsList, TabsTrigger, useToast } from '@/components/ui';
 // @ts-ignore;
-import { Wand2, Sparkles } from 'lucide-react';
+import { Sparkles, Clock, Palette } from 'lucide-react';
 
 export function ScriptGenerator({
   onGenerate
 }) {
   const [topic, setTopic] = useState('');
   const [duration, setDuration] = useState(60);
-  const [style, setStyle] = useState('educational');
-  const [tone, setTone] = useState('professional');
+  const [style, setStyle] = useState('professional');
+  const [customPrompt, setCustomPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const {
     toast
   } = useToast();
-  const generateScript = async () => {
+  const styles = [{
+    value: 'professional',
+    label: '专业正式',
+    icon: '💼'
+  }, {
+    value: 'casual',
+    label: '轻松随意',
+    icon: '😊'
+  }, {
+    value: 'creative',
+    label: '创意有趣',
+    icon: '🎨'
+  }, {
+    value: 'emotional',
+    label: '情感共鸣',
+    icon: '❤️'
+  }, {
+    value: 'educational',
+    label: '教育科普',
+    icon: '📚'
+  }];
+  const handleGenerate = async () => {
     if (!topic.trim()) {
       toast({
         title: "请输入主题",
-        description: "请填写视频主题以生成脚本",
+        description: "请填写视频主题",
         variant: "destructive"
       });
       return;
     }
     setIsGenerating(true);
-
-    // 模拟AI生成脚本
-    setTimeout(() => {
-      const segments = generateScriptSegments(topic, duration, style, tone);
-      onGenerate(segments);
+    try {
+      // 模拟生成脚本
+      const generatedScript = {
+        title: topic,
+        totalDuration: duration,
+        style: style,
+        nodes: generateNodesFromPrompt(topic, duration, style)
+      };
+      onGenerate(generatedScript);
       toast({
         title: "脚本生成成功",
-        description: `已生成包含 ${segments.length} 个节点的脚本`
+        description: `已生成包含 ${generatedScript.nodes.length} 个节点的脚本`
       });
+    } catch (error) {
+      toast({
+        title: "生成失败",
+        description: "脚本生成失败，请重试",
+        variant: "destructive"
+      });
+    } finally {
       setIsGenerating(false);
-    }, 2000);
+    }
   };
-  const generateScriptSegments = (topic, duration, style, tone) => {
-    const segmentCount = Math.ceil(duration / 15);
-    const segments = [];
-    const styles = {
-      educational: {
-        intro: "欢迎来到本期视频，今天我们将学习",
-        body: "让我们深入了解",
-        outro: "总结一下今天的内容"
-      },
-      entertaining: {
-        intro: "嘿，朋友们！今天有个超有趣的话题",
-        body: "你们绝对想不到",
-        outro: "喜欢的话别忘了点赞关注"
-      },
-      promotional: {
-        intro: "你是否正在寻找",
-        body: "让我告诉你一个绝佳的选择",
-        outro: "现在就行动吧"
-      }
-    };
-    const currentStyle = styles[style] || styles.educational;
-    for (let i = 0; i < segmentCount; i++) {
-      let content = '';
-      let type = 'text2video';
-      if (i === 0) {
-        content = `${currentStyle.intro} ${topic}`;
-        type = 'digital_human';
-      } else if (i === segmentCount - 1) {
-        content = `${currentStyle.outro}`;
-      } else {
-        content = `${currentStyle.body} ${topic} 的第 ${i} 个要点`;
-        type = i % 2 === 0 ? 'text2video' : 'image2video';
-      }
-      segments.push({
-        id: `segment-${Date.now()}-${i}`,
-        title: `段落 ${i + 1}`,
-        description: content,
-        type: type,
+  const generateNodesFromPrompt = (topic, duration, style) => {
+    const nodeCount = Math.max(3, Math.min(8, Math.floor(duration / 10)));
+    const nodes = [];
+    for (let i = 0; i < nodeCount; i++) {
+      nodes.push({
+        id: `generated-${Date.now()}-${i}`,
+        type: 'text2video',
         provider: 'tongyi',
-        duration: Math.floor(duration / segmentCount),
-        status: 'pending',
+        title: `第${i + 1}段：${topic} - ${getSegmentTitle(i, nodeCount)}`,
+        content: generateSegmentContent(topic, i, nodeCount, style),
+        duration: Math.floor(duration / nodeCount),
         assets: {
-          image: null,
+          images: [],
           audio: null,
-          subtitle: null
+          subtitle: ''
         },
-        cameraAngle: 'medium',
-        transition: i === 0 ? 'none' : 'fade',
-        colorStyle: 'natural',
-        enableMotion: true
+        settings: {
+          shotType: getShotTypeForSegment(i, nodeCount),
+          transition: i === 0 ? 'fade' : 'cut',
+          colorStyle: getColorStyleForStyle(style)
+        }
       });
     }
-    return segments;
+    return nodes;
   };
-  return <Card>
+  const getSegmentTitle = (index, total) => {
+    const positions = ['开场', '引入', '发展', '高潮', '转折', '深入', '总结', '结尾'];
+    return positions[index] || `片段${index + 1}`;
+  };
+  const generateSegmentContent = (topic, index, total, style) => {
+    const templates = {
+      professional: [`欢迎来到${topic}的专业解读`, `让我们深入了解${topic}的核心要点`, `${topic}的实际应用场景展示`, `总结${topic}的关键价值`],
+      casual: [`嘿，今天聊聊${topic}`, `你知道吗？${topic}超有趣的`, `来看看${topic}的酷炫效果`, `${topic}真的很棒，你觉得呢？`],
+      creative: [`想象一下，${topic}的世界`, `${topic}的无限可能`, `创意无限的${topic}展示`, `${topic}让想象成为现实`]
+    };
+    const styleTemplates = templates[style] || templates.professional;
+    return styleTemplates[index % styleTemplates.length];
+  };
+  const getShotTypeForSegment = (index, total) => {
+    const types = ['medium', 'close', 'medium', 'long'];
+    return types[index % types.length];
+  };
+  const getColorStyleForStyle = style => {
+    const map = {
+      professional: 'natural',
+      casual: 'warm',
+      creative: 'cinematic',
+      emotional: 'warm',
+      educational: 'natural'
+    };
+    return map[style] || 'natural';
+  };
+  return <Card className="bg-gray-900 border-gray-800">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Wand2 className="w-5 h-5" />
-          智能脚本生成器
+        <CardTitle className="flex items-center">
+          <Sparkles className="w-5 h-5 mr-2" />
+          智能脚本生成
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <Label>视频主题</Label>
-          <Input value={topic} onChange={e => setTopic(e.target.value)} placeholder="例如：人工智能入门教程" />
+          <label className="text-sm font-medium mb-2 block">视频主题</label>
+          <Input value={topic} onChange={e => setTopic(e.target.value)} placeholder="例如：人工智能的未来发展" className="bg-gray-800 border-gray-700" />
         </div>
-        
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium mb-2 block flex items-center">
+              <Clock className="w-4 h-4 mr-1" />
+              视频时长
+            </label>
+            <Select value={duration.toString()} onValueChange={v => setDuration(parseInt(v))}>
+              <SelectTrigger className="bg-gray-800 border-gray-700">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="30">30秒</SelectItem>
+                <SelectItem value="60">1分钟</SelectItem>
+                <SelectItem value="120">2分钟</SelectItem>
+                <SelectItem value="180">3分钟</SelectItem>
+                <SelectItem value="300">5分钟</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium mb-2 block flex items-center">
+              <Palette className="w-4 h-4 mr-1" />
+              视频风格
+            </label>
+            <Select value={style} onValueChange={setStyle}>
+              <SelectTrigger className="bg-gray-800 border-gray-700">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {styles.map(s => <SelectItem key={s.value} value={s.value}>
+                    {s.icon} {s.label}
+                  </SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         <div>
-          <Label>视频时长: {duration}秒</Label>
-          <Slider value={[duration]} onValueChange={([value]) => setDuration(value)} min={15} max={300} step={15} />
+          <label className="text-sm font-medium mb-2 block">自定义要求（可选）</label>
+          <Textarea value={customPrompt} onChange={e => setCustomPrompt(e.target.value)} placeholder="输入额外的要求，如特定的场景、语气等..." className="bg-gray-800 border-gray-700 min-h-[80px]" />
         </div>
-        
-        <div>
-          <Label>内容风格</Label>
-          <Select value={style} onValueChange={setStyle}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="educational">教育科普</SelectItem>
-              <SelectItem value="entertaining">娱乐搞笑</SelectItem>
-              <SelectItem value="promotional">产品推广</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div>
-          <Label>语调风格</Label>
-          <Select value={tone} onValueChange={setTone}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="professional">专业正式</SelectItem>
-              <SelectItem value="casual">轻松随意</SelectItem>
-              <SelectItem value="enthusiastic">热情活力</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <Button onClick={generateScript} disabled={isGenerating} className="w-full">
+
+        <Button onClick={handleGenerate} disabled={isGenerating} className="w-full bg-blue-600 hover:bg-blue-700">
           {isGenerating ? <>
-              <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
               生成中...
             </> : <>
-              <Wand2 className="w-4 h-4 mr-2" />
+              <Sparkles className="w-4 h-4 mr-2" />
               生成脚本
             </>}
         </Button>

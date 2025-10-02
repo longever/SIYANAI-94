@@ -1,15 +1,13 @@
 // @ts-ignore;
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 // @ts-ignore;
-import { Button, Card, CardContent, CardHeader, CardTitle, Tabs, TabsContent, TabsList, TabsTrigger, useToast, Badge, Progress, Skeleton } from '@/components/ui';
+import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Card, CardContent, CardHeader, CardTitle, Badge, Tabs, TabsContent, TabsList, TabsTrigger, ScrollArea, Collapsible, CollapsibleContent, CollapsibleTrigger, useToast } from '@/components/ui';
 // @ts-ignore;
-import { Play, Pause, Download, Share2, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw, Settings, Film, Layers, Package, ExternalLink, Copy, Eye } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Trash2, Copy, Upload, Film, Image, User, Settings, Play } from 'lucide-react';
 
-import { AdvancedTimeline } from '@/components/AdvancedTimeline';
-import { BatchExportQueue } from '@/components/BatchExportQueue';
-import { ShareCenter } from '@/components/ShareCenter';
-import { ExportSettings } from '@/components/ExportSettings';
-import { ExportConfigPanel } from '@/components/ExportConfigPanel';
+import { TimelineNodeCard } from '@/components/TimelineNodeCard';
+import { ScriptGenerator } from '@/components/ScriptGenerator';
+import { EnhancedAssetLibrary } from '@/components/EnhancedAssetLibrary';
 export default function VideoCreatorPro(props) {
   const {
     $w
@@ -17,572 +15,287 @@ export default function VideoCreatorPro(props) {
   const {
     toast
   } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('timeline');
-  const [projects, setProjects] = useState([]);
-  const [selectedProject, setSelectedProject] = useState(null);
-  const [exportTasks, setExportTasks] = useState([]);
-  const [shareLinks, setShareLinks] = useState([]);
+  const [videoName, setVideoName] = useState('未命名视频');
+  const [selectedTemplate, setSelectedTemplate] = useState('');
+  const [nodes, setNodes] = useState([]);
+  const [showAssetLibrary, setShowAssetLibrary] = useState(false);
+  const [selectedNodeId, setSelectedNodeId] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generationProgress, setGenerationProgress] = useState(0);
-  const [currentTaskId, setCurrentTaskId] = useState(null);
 
-  // 添加错误提示状态，避免重复提示
-  const [hasShownExportError, setHasShownExportError] = useState(false);
-  const [hasShownShareError, setHasShownShareError] = useState(false);
+  // 脚本模板选项
+  const scriptTemplates = [{
+    id: 'product-intro',
+    name: '产品介绍',
+    description: '适合产品展示和推广'
+  }, {
+    id: 'tutorial',
+    name: '教程讲解',
+    description: '适合知识分享和教学'
+  }, {
+    id: 'story',
+    name: '故事叙述',
+    description: '适合品牌故事和情感营销'
+  }, {
+    id: 'news',
+    name: '新闻播报',
+    description: '适合时事报道和资讯'
+  }];
 
-  // 获取项目列表
-  const loadProjects = async () => {
-    try {
-      setLoading(true);
+  // AI服务商选项
+  const aiProviders = [{
+    id: 'tongyi',
+    name: '阿里云通义万相',
+    type: 'text2video'
+  }, {
+    id: 'keling',
+    name: '可灵AI',
+    type: 'text2video'
+  }, {
+    id: 'digital-human',
+    name: '数字人API',
+    type: 'digital-human'
+  }, {
+    id: 'image2video',
+    name: '图生视频',
+    type: 'image2video'
+  }];
 
-      // 检查数据源是否存在
-      try {
-        const result = await $w.cloud.callDataSource({
-          dataSourceName: 'video_node',
-          methodName: 'wedaGetRecordsV2',
-          params: {
-            filter: {
-              where: {}
-            },
-            select: {
-              $master: true
-            },
-            getCount: true,
-            orderBy: [{
-              createdAt: 'desc'
-            }]
-          }
-        });
-        if (result.records && result.records.length > 0) {
-          // 按项目ID分组
-          const projectMap = {};
-          result.records.forEach(node => {
-            const projectId = node.projectId || 'default_project';
-            if (!projectMap[projectId]) {
-              projectMap[projectId] = {
-                id: projectId,
-                name: node.projectName || `项目 ${projectId}`,
-                nodes: [],
-                totalDuration: 0,
-                createdAt: node.createdAt,
-                updatedAt: node.updatedAt
-              };
-            }
-            projectMap[projectId].nodes.push(node);
-            projectMap[projectId].totalDuration += node.duration || 5;
-          });
-          const projectList = Object.values(projectMap).map(project => ({
-            ...project,
-            nodeCount: project.nodes.length,
-            status: project.nodes.every(n => n.status === 'completed') ? 'completed' : project.nodes.some(n => n.status === 'failed') ? 'failed' : 'processing'
-          }));
-          setProjects(projectList);
-        } else {
-          // 如果没有项目数据，创建空项目列表
-          setProjects([]);
-        }
-      } catch (dataSourceError) {
-        console.warn('数据源调用失败，使用本地数据:', dataSourceError);
-        // 数据源调用失败时，使用本地模拟数据
-        setProjects([{
-          id: 'demo_project_1',
-          name: '示例项目 1',
-          nodes: [{
-            _id: 'node_1',
-            type: 'text',
-            content: '欢迎使用视频创作工具',
-            duration: 5,
-            status: 'completed',
-            createdAt: Date.now() - 3600000
-          }, {
-            _id: 'node_2',
-            type: 'image',
-            content: '示例图片',
-            duration: 3,
-            status: 'completed',
-            createdAt: Date.now() - 1800000
-          }],
-          totalDuration: 8,
-          nodeCount: 2,
-          status: 'completed',
-          createdAt: Date.now() - 3600000,
-          updatedAt: Date.now()
-        }, {
-          id: 'demo_project_2',
-          name: '我的项目',
-          nodes: [{
-            _id: 'node_3',
-            type: 'video',
-            content: '产品展示视频',
-            duration: 10,
-            status: 'processing',
-            createdAt: Date.now() - 7200000
-          }],
-          totalDuration: 10,
-          nodeCount: 1,
-          status: 'processing',
-          createdAt: Date.now() - 7200000,
-          updatedAt: Date.now()
-        }]);
+  // 添加新节点
+  const addNode = (type = 'text2video', position = -1) => {
+    const newNode = {
+      id: Date.now().toString(),
+      type: type,
+      provider: aiProviders[0].id,
+      title: `节点 ${nodes.length + 1}`,
+      content: '',
+      duration: 5,
+      assets: {
+        images: [],
+        audio: null,
+        subtitle: ''
+      },
+      settings: {
+        shotType: 'medium',
+        transition: 'fade',
+        colorStyle: 'natural',
+        cameraMovement: 'static'
       }
-    } catch (error) {
-      console.error('获取项目列表失败:', error);
-      toast({
-        title: '获取项目列表失败',
-        description: error.message || '请稍后重试',
-        variant: 'destructive'
-      });
-
-      // 创建空项目列表避免页面报错
-      setProjects([]);
-    } finally {
-      setLoading(false);
+    };
+    if (position >= 0) {
+      const newNodes = [...nodes];
+      newNodes.splice(position + 1, 0, newNode);
+      setNodes(newNodes);
+    } else {
+      setNodes([...nodes, newNode]);
     }
   };
 
-  // // 获取导出任务列表
-  // const loadExportTasks = async () => {
-  //   try {
-  //     const result = await $w.cloud.callFunction({
-  //       name: 'media-service',
-  //       data: {
-  //         action: 'getExportTasks',
-  //         userId: $w.auth.currentUser?.userId
-  //       }
-  //     });
-  //     if (result && result.success) {
-  //       setExportTasks(result.data?.tasks || []);
-  //       // 重置错误提示状态
-  //       setHasShownExportError(false);
-  //     } else {
-  //       // 云函数调用失败时使用本地模拟数据
-  //       setExportTasks([{
-  //         id: 'task_1',
-  //         projectId: 'demo_project_1',
-  //         projectName: '示例项目 1',
-  //         status: 'completed',
-  //         progress: 100,
-  //         createdAt: Date.now() - 3600000,
-  //         completedAt: Date.now() - 1800000,
-  //         fileUrl: 'https://example.com/video1.mp4',
-  //         fileSize: 1024000
-  //       }]);
-  //     }
-  //   } catch (error) {
-  //     console.error('获取导出任务失败:', error);
-  //     // 只在第一次失败时提示
-  //     if (!hasShownExportError) {
-  //       toast({
-  //         title: '获取导出任务失败',
-  //         description: error.message || '请稍后重试',
-  //         variant: 'destructive'
-  //       });
-  //       setHasShownExportError(true);
-  //     }
+  // 更新节点
+  const updateNode = (nodeId, updates) => {
+    setNodes(nodes.map(node => node.id === nodeId ? {
+      ...node,
+      ...updates
+    } : node));
+  };
 
-  //     // 使用本地模拟数据
-  //     setExportTasks([{
-  //       id: 'task_1',
-  //       projectId: 'demo_project_1',
-  //       projectName: '示例项目 1',
-  //       status: 'completed',
-  //       progress: 100,
-  //       createdAt: Date.now() - 3600000,
-  //       completedAt: Date.now() - 1800000,
-  //       fileUrl: 'https://example.com/video1.mp4',
-  //       fileSize: 1024000
-  //     }]);
-  //   }
-  // };
+  // 删除节点
+  const deleteNode = nodeId => {
+    setNodes(nodes.filter(node => node.id !== nodeId));
+    toast({
+      title: "节点已删除",
+      description: "节点已成功移除"
+    });
+  };
 
-  // // 获取分享链接列表
-  // const loadShareLinks = async () => {
-  //   try {
-  //     const result = await $w.cloud.callFunction({
-  //       name: 'media-service',
-  //       data: {
-  //         action: 'getShareLinks',
-  //         userId: $w.auth.currentUser?.userId
-  //       }
-  //     });
-  //     if (result && result.success) {
-  //       setShareLinks(result.data?.links || []);
-  //       // 重置错误提示状态
-  //       setHasShownShareError(false);
-  //     } else {
-  //       // 云函数调用失败时使用本地模拟数据
-  //       setShareLinks([{
-  //         id: 'link_1',
-  //         projectId: 'demo_project_1',
-  //         projectName: '示例项目 1',
-  //         shareUrl: 'https://share.example.com/abc123',
-  //         createdAt: Date.now() - 3600000,
-  //         expiresAt: Date.now() + 6 * 24 * 3600000,
-  //         accessCount: 5
-  //       }]);
-  //     }
-  //   } catch (error) {
-  //     console.error('获取分享链接失败:', error);
-  //     // 只在第一次失败时提示
-  //     if (!hasShownShareError) {
-  //       toast({
-  //         title: '获取分享链接失败',
-  //         description: error.message || '请稍后重试',
-  //         variant: 'destructive'
-  //       });
-  //       setHasShownShareError(true);
-  //     }
+  // 复制节点
+  const duplicateNode = nodeId => {
+    const nodeToCopy = nodes.find(node => node.id === nodeId);
+    if (nodeToCopy) {
+      const newNode = {
+        ...nodeToCopy,
+        id: Date.now().toString(),
+        title: `${nodeToCopy.title} (复制)`
+      };
+      const index = nodes.findIndex(node => node.id === nodeId);
+      const newNodes = [...nodes];
+      newNodes.splice(index + 1, 0, newNode);
+      setNodes(newNodes);
+    }
+  };
 
-  //     // 使用本地模拟数据
-  //     setShareLinks([{
-  //       id: 'link_1',
-  //       projectId: 'demo_project_1',
-  //       projectName: '示例项目 1',
-  //       shareUrl: 'https://share.example.com/abc123',
-  //       createdAt: Date.now() - 3600000,
-  //       expiresAt: Date.now() + 6 * 24 * 3600000,
-  //       accessCount: 5
-  //     }]);
-  //   }
-  // };
+  // 拖拽排序
+  const handleDragEnd = result => {
+    if (!result.destination) return;
+    const items = Array.from(nodes);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    setNodes(items);
+  };
 
-  // 批量生成视频
-  const handleBatchGenerate = async selectedProjects => {
-    if (!selectedProjects || selectedProjects.length === 0) {
+  // 选择脚本模板
+  const handleTemplateSelect = async templateId => {
+    setSelectedTemplate(templateId);
+    try {
+      // 调用云函数获取模板内容
+      const result = await $w.cloud.callFunction({
+        name: 'ai-engine-service',
+        data: {
+          action: 'generateScriptFromTemplate',
+          templateId: templateId,
+          videoName: videoName
+        }
+      });
+      if (result.success) {
+        setNodes(result.data.nodes);
+        toast({
+          title: "脚本已生成",
+          description: `已根据${scriptTemplates.find(t => t.id === templateId)?.name}模板生成节点`
+        });
+      }
+    } catch (error) {
       toast({
-        title: '请选择项目',
-        description: '请先选择要生成的项目',
-        variant: 'destructive'
+        title: "生成失败",
+        description: error.message || "脚本生成失败，请重试",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // 生成视频
+  const handleGenerateVideo = async () => {
+    if (nodes.length === 0) {
+      toast({
+        title: "无法生成",
+        description: "请至少添加一个节点",
+        variant: "destructive"
       });
       return;
     }
+    setIsGenerating(true);
     try {
-      setIsGenerating(true);
-      setGenerationProgress(0);
-
-      // 调用批量生成云函数
       const result = await $w.cloud.callFunction({
         name: 'generateVideo',
         data: {
-          action: 'batchGenerate',
-          projects: selectedProjects.map(project => ({
-            projectId: project.id,
-            projectName: project.name,
-            nodes: project.nodes,
-            exportConfig: {
-              format: 'mp4',
-              quality: 'high',
-              resolution: '1920x1080',
-              fps: 30
-            }
-          }))
+          videoName: videoName,
+          nodes: nodes,
+          totalDuration: nodes.reduce((sum, node) => sum + node.duration, 0)
         }
       });
-      if (result && result.success) {
-        setCurrentTaskId(result.batchId);
-
-        // 记录导出历史
-        try {
-          await $w.cloud.callFunction({
-            name: 'order-service',
-            data: {
-              action: 'recordExport',
-              batchId: result.batchId,
-              projectCount: selectedProjects.length,
-              totalDuration: selectedProjects.reduce((sum, p) => sum + p.totalDuration, 0)
-            }
-          });
-        } catch (recordError) {
-          console.warn('记录导出历史失败:', recordError);
-        }
+      if (result.success) {
         toast({
-          title: '批量生成已启动',
-          description: `正在处理 ${selectedProjects.length} 个项目`,
-          variant: 'success'
+          title: "生成成功",
+          description: "视频正在后台生成中，请稍后查看"
         });
 
-        // 开始轮询任务状态
-        pollBatchStatus(result.batchId);
-      } else {
-        throw new Error(result?.error || '批量生成失败');
+        // 跳转到导出页面
+        $w.utils.navigateTo({
+          pageId: 'export-share',
+          params: {
+            taskId: result.taskId
+          }
+        });
       }
     } catch (error) {
-      console.error('批量生成失败:', error);
       toast({
-        title: '批量生成失败',
-        description: error.message || '请稍后重试',
-        variant: 'destructive'
+        title: "生成失败",
+        description: error.message || "视频生成失败，请重试",
+        variant: "destructive"
       });
+    } finally {
       setIsGenerating(false);
     }
   };
 
-  // 轮询批量任务状态
-  // const pollBatchStatus = async batchId => {
-  //   const checkStatus = async () => {
-  //     try {
-  //       const result = await $w.cloud.callFunction({
-  //         name: 'generateVideo',
-  //         data: {
-  //           action: 'getBatchStatus',
-  //           batchId
-  //         }
-  //       });
-  //       if (result && result.success) {
-  //         const progress = result.data?.progress || 0;
-  //         setGenerationProgress(progress);
-  //         if (result.data?.status === 'completed') {
-  //           setIsGenerating(false);
-  //           loadExportTasks();
-  //           toast({
-  //             title: '批量生成完成',
-  //             description: `成功生成 ${result.data.completedCount || 0} 个视频`,
-  //             variant: 'success'
-  //           });
-  //           return true;
-  //         } else if (result.data?.status === 'failed') {
-  //           setIsGenerating(false);
-  //           toast({
-  //             title: '批量生成失败',
-  //             description: result.data.error || '部分任务处理失败',
-  //             variant: 'destructive'
-  //           });
-  //           return true;
-  //         }
-  //       }
-  //       return false;
-  //     } catch (error) {
-  //       console.error('检查批量状态失败:', error);
-  //       return true;
-  //     }
-  //   };
+  // 计算总时长
+  const totalDuration = nodes.reduce((sum, node) => sum + node.duration, 0);
+  return <div className="min-h-screen bg-gray-950 text-white">
+      <div className="flex h-screen">
+        {/* 主编辑区域 */}
+        <div className="flex-1 flex flex-col">
+          {/* 顶部控制栏 */}
+          <div className="bg-gray-900 border-b border-gray-800 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <Input value={videoName} onChange={e => setVideoName(e.target.value)} className="bg-gray-800 border-gray-700 text-white w-64" placeholder="输入视频名称" />
+                
+                <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
+                  <SelectTrigger className="w-48 bg-gray-800 border-gray-700">
+                    <SelectValue placeholder="选择脚本模板" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {scriptTemplates.map(template => <SelectItem key={template.id} value={template.id}>
+                        {template.name}
+                      </SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <Badge variant="secondary" className="text-sm">
+                  总时长: {Math.floor(totalDuration / 60)}:{(totalDuration % 60).toString().padStart(2, '0')}
+                </Badge>
+                
+                <Button onClick={handleGenerateVideo} disabled={isGenerating || nodes.length === 0} className="bg-blue-600 hover:bg-blue-700">
+                  {isGenerating ? <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      生成中...
+                    </> : <>
+                      <Play className="w-4 h-4 mr-2" />
+                      生成视频
+                    </>}
+                </Button>
+              </div>
+            </div>
+          </div>
 
-  //   // 每5秒检查一次，最多检查72次（6分钟）
-  //   let attempts = 0;
-  //   const maxAttempts = 72;
-  //   const interval = setInterval(async () => {
-  //     attempts++;
-  //     const completed = await checkStatus();
-  //     if (completed || attempts >= maxAttempts) {
-  //       clearInterval(interval);
-  //       if (attempts >= maxAttempts) {
-  //         setIsGenerating(false);
-  //         toast({
-  //           title: '批量生成超时',
-  //           description: '请稍后重试',
-  //           variant: 'destructive'
-  //         });
-  //       }
-  //     }
-  //   }, 5000);
-  // };
-
-  // // 创建分享链接
-  // const createShareLink = async (projectId, options = {}) => {
-  //   try {
-  //     const result = await $w.cloud.callFunction({
-  //       name: 'media-service',
-  //       data: {
-  //         action: 'createShareLink',
-  //         projectId,
-  //         options: {
-  //           expiresIn: options.expiresIn || 7 * 24 * 3600,
-  //           // 默认7天
-  //           password: options.password || null,
-  //           allowDownload: options.allowDownload !== false
-  //         }
-  //       }
-  //     });
-  //     if (result && result.success) {
-  //       toast({
-  //         title: '分享链接创建成功',
-  //         description: '链接已复制到剪贴板',
-  //         variant: 'success'
-  //       });
-
-  //       // 复制到剪贴板
-  //       if (navigator.clipboard) {
-  //         navigator.clipboard.writeText(result.data?.shareUrl || '');
-  //       }
-  //       loadShareLinks();
-  //       return result.data;
-  //     } else {
-  //       throw new Error(result?.error || '创建分享链接失败');
-  //     }
-  //   } catch (error) {
-  //     console.error('创建分享链接失败:', error);
-  //     toast({
-  //       title: '创建分享链接失败',
-  //       description: error.message || '请稍后重试',
-  //       variant: 'destructive'
-  //     });
-  //     throw error;
-  //   }
-  // };
-
-  // // 删除分享链接
-  // const deleteShareLink = async linkId => {
-  //   try {
-  //     const result = await $w.cloud.callFunction({
-  //       name: 'media-service',
-  //       data: {
-  //         action: 'deleteShareLink',
-  //         linkId
-  //       }
-  //     });
-  //     if (result && result.success) {
-  //       toast({
-  //         title: '分享链接已删除',
-  //         description: '链接已失效',
-  //         variant: 'success'
-  //       });
-  //       loadShareLinks();
-  //     } else {
-  //       throw new Error(result?.error || '删除分享链接失败');
-  //     }
-  //   } catch (error) {
-  //     console.error('删除分享链接失败:', error);
-  //     toast({
-  //       title: '删除分享链接失败',
-  //       description: error.message || '请稍后重试',
-  //       variant: 'destructive'
-  //     });
-  //   }
-  // };
-
-  // 下载导出文件
-  const downloadExport = async taskId => {
-    try {
-      const result = await $w.cloud.callFunction({
-        name: 'media-service',
-        data: {
-          action: 'getDownloadUrl',
-          taskId
-        }
-      });
-      if (result && result.success && result.data?.downloadUrl) {
-        // 创建下载链接
-        const link = document.createElement('a');
-        link.href = result.data.downloadUrl;
-        link.download = result.data.filename || `video-${Date.now()}.mp4`;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        toast({
-          title: '下载开始',
-          description: '文件下载已开始',
-          variant: 'success'
-        });
-      } else {
-        throw new Error(result?.error || '获取下载链接失败');
-      }
-    } catch (error) {
-      console.error('下载失败:', error);
-      toast({
-        title: '下载失败',
-        description: error.message || '请稍后重试',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  // // 刷新所有数据
-  // const refreshAllData = async () => {
-  //   try {
-  //     // 重置错误提示状态
-  //     setHasShownExportError(false);
-  //     setHasShownShareError(false);
-  //     await Promise.all([loadProjects(), loadExportTasks(), loadShareLinks()]);
-  //     toast({
-  //       title: '数据已更新',
-  //       description: '所有信息已同步到最新状态'
-  //     });
-  //   } catch (error) {
-  //     toast({
-  //       title: '更新失败',
-  //       description: '部分数据更新失败，请稍后重试',
-  //       variant: 'destructive'
-  //     });
-  //   }
-  // };
-
-  // 初始化加载
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        await Promise.all([loadProjects()]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if ($w.auth.currentUser) {
-      loadData();
-    }
-  }, [$w.auth.currentUser]);
-  if (loading) {
-    return <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid gap-6">
-          <Skeleton className="h-12 w-full bg-slate-700" />
-          <Skeleton className="h-64 w-full bg-slate-700" />
-          <Skeleton className="h-48 w-full bg-slate-700" />
+          {/* 时间轴编辑区 */}
+          <ScrollArea className="flex-1 p-6">
+            <div className="max-w-4xl mx-auto space-y-4">
+              {nodes.length === 0 ? <Card className="bg-gray-900 border-gray-800">
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <Film className="w-12 h-12 text-gray-600 mb-4" />
+                    <p className="text-gray-400 mb-4">还没有添加任何节点</p>
+                    <Button onClick={() => addNode()} variant="outline">
+                      <Plus className="w-4 h-4 mr-2" />
+                      添加第一个节点
+                    </Button>
+                  </CardContent>
+                </Card> : nodes.map((node, index) => <TimelineNodeCard key={node.id} node={node} index={index} aiProviders={aiProviders} onUpdate={updateNode} onDelete={deleteNode} onDuplicate={duplicateNode} onAddNode={addNode} onSelectAssets={() => {
+              setSelectedNodeId(node.id);
+              setShowAssetLibrary(true);
+            }} />)}
+            </div>
+          </ScrollArea>
         </div>
+
+        {/* 素材库侧边栏 */}
+        <Collapsible open={showAssetLibrary} onOpenChange={setShowAssetLibrary}>
+          <div className={`bg-gray-900 border-l border-gray-800 transition-all duration-300 ${showAssetLibrary ? 'w-96' : 'w-0'}`}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="absolute -left-8 top-4 bg-gray-900 border border-gray-800">
+                {showAssetLibrary ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </Button>
+            </CollapsibleTrigger>
+            
+            <CollapsibleContent className="h-full">
+              <div className="h-full flex flex-col">
+                <div className="p-4 border-b border-gray-800">
+                  <h3 className="font-semibold">素材库</h3>
+                </div>
+                <EnhancedAssetLibrary onSelectAsset={asset => {
+                if (selectedNodeId) {
+                  updateNode(selectedNodeId, {
+                    assets: {
+                      ...nodes.find(n => n.id === selectedNodeId)?.assets,
+                      images: [asset]
+                    }
+                  });
+                }
+              }} />
+              </div>
+            </CollapsibleContent>
+          </div>
+        </Collapsible>
       </div>
     </div>;
-  }
-  return <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
-    <div className="container mx-auto px-4 py-8">
-      {/* 页面标题 */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-white">高级视频创作</h1>
-          <p className="text-slate-400 mt-2">专业级视频制作与批量管理</p>
-        </div>
-
-        {/* <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={refreshAllData} className="border-slate-600 text-slate-300 hover:bg-slate-700">
-              <RefreshCw className="w-4 h-4 mr-1" />
-              刷新
-            </Button>
-          </div> */}
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 bg-slate-800">
-          <TabsTrigger value="timeline" className="text-slate-300 data-[state=active]:bg-slate-700">
-            高级时间线
-          </TabsTrigger>
-          <TabsTrigger value="batch" className="text-slate-300 data-[state=active]:bg-slate-700">
-            批量导出
-          </TabsTrigger>
-          <TabsTrigger value="share" className="text-slate-300 data-[state=active]:bg-slate-700">
-            分享中心
-          </TabsTrigger>
-          <TabsTrigger value="history" className="text-slate-300 data-[state=active]:bg-slate-700">
-            导出历史
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="timeline" className="space-y-6">
-          <AdvancedTimeline projects={projects} selectedProject={selectedProject} onProjectSelect={setSelectedProject} onRefresh={loadProjects} />
-        </TabsContent>
-
-        {/* <TabsContent value="batch" className="space-y-6">
-            <BatchExportQueue projects={projects} exportTasks={exportTasks} isGenerating={isGenerating} generationProgress={generationProgress} onBatchGenerate={handleBatchGenerate} onDownload={downloadExport} onRefresh={loadExportTasks} />
-          </TabsContent> */}
-
-        {/* <TabsContent value="share" className="space-y-6">
-            <ShareCenter projects={projects} shareLinks={shareLinks} onCreateShare={createShareLink} onDeleteShare={deleteShareLink} onRefresh={loadShareLinks} />
-          </TabsContent> */}
-
-        {/* <TabsContent value="history" className="space-y-6">
-            <ExportSettings exportTasks={exportTasks} onDownload={downloadExport} onRefresh={loadExportTasks} />
-          </TabsContent> */}
-      </Tabs>
-    </div>
-  </div>;
 }
