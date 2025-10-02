@@ -341,4 +341,3 @@ exports.main = async (event, context) => {
   const service = new MaterialService();
   return await service.handleRequest(event, context);
 };
-  
