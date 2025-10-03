@@ -148,7 +148,7 @@ export default function AssetLibraryPage(props) {
             </TabsList>
 
             <TabsContent value="grid" className="p-6">
-              <AssetGrid assets={filteredAssets} loading={loading} onDelete={handleDeleteAsset} onRefresh={loadAssets} />
+              <AssetGrid assets={filteredAssets} loading={loading} onDelete={handleDeleteAsset} onRefresh={loadAssets} $w={$w} />
             </TabsContent>
           </Tabs>
         </div>

@@ -60,7 +60,7 @@ export default function EnhancedAssetLibrary({
               const downloadResponse = await $w.cloud.callFunction({
                 name: 'get-asset-download-url',
                 data: {
-                  filePath: asset.metadata?.cloudPath || `saas_temp/${asset.type}/${asset.name}`,
+                  fileId: asset.url || asset.cloudPath || `saas_temp/${asset.type}/${asset.name}`,
                   assetId: asset._id
                 }
               });
@@ -75,7 +75,7 @@ export default function EnhancedAssetLibrary({
               thumbnail: thumbnailUrl,
               downloadUrl: downloadUrl,
               formattedSize: formatFileSize(asset.size || 0),
-              cloudPath: asset.metadata?.cloudPath || `saas_temp/${asset.type}/${asset.name}`
+              cloudPath: asset.cloudPath || `saas_temp/${asset.type}/${asset.name}`
             };
           } catch (err) {
             console.error(`处理素材 ${asset.name} 失败:`, err);
@@ -84,7 +84,7 @@ export default function EnhancedAssetLibrary({
               thumbnail: null,
               downloadUrl: null,
               formattedSize: formatFileSize(asset.size || 0),
-              cloudPath: asset.metadata?.cloudPath || `saas_temp/${asset.type}/${asset.name}`,
+              cloudPath: asset.cloudPath || `saas_temp/${asset.type}/${asset.name}`,
               error: true
             };
           }
@@ -134,7 +134,7 @@ export default function EnhancedAssetLibrary({
       const response = await $w.cloud.callFunction({
         name: 'get-asset-download-url',
         data: {
-          filePath: asset.cloudPath,
+          fileId: asset.cloudPath,
           assetId: asset._id
         }
       });

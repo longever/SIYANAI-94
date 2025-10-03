@@ -32,12 +32,12 @@ export function AssetPreviewDialog({
     if (!asset) return;
     setLoading(true);
     try {
+      // 使用正确的参数调用云函数
       const response = await $w.cloud.callFunction({
         name: 'get-asset-download-url',
         data: {
-          filePath: asset.cloudPath || asset.path || `saas_temp/${asset.type}/${asset.name}`,
-          assetId: asset.id || asset._id,
-          preview: true // 获取预览链接
+          fileId: asset.url || asset.cloudPath || asset.path,
+          assetId: asset._id || asset.id
         }
       });
       if (response.success && response.data) {
@@ -106,8 +106,8 @@ export function AssetPreviewDialog({
       const response = await $w.cloud.callFunction({
         name: 'get-asset-download-url',
         data: {
-          filePath: asset.cloudPath || asset.path || `saas_temp/${asset.type}/${asset.name}`,
-          assetId: asset.id || asset._id
+          fileId: asset.url || asset.cloudPath || asset.path,
+          assetId: asset._id || asset.id
         }
       });
       if (response.success && response.data) {

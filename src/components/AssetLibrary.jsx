@@ -441,7 +441,7 @@ export function AssetLibrary(props) {
 
     <AssetUploadDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} onSuccess={handleUploadSuccess} $w={$w} />
 
-    <AssetPreviewDialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen} asset={selectedAsset} onDownload={handleDownload} onDelete={handleDelete} />
+    <AssetPreviewDialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen} asset={selectedAsset} onDownload={handleDownload} onDelete={handleDelete} $w={$w} />
 
     {editingAsset && <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
         <Card className="w-full max-w-md mx-4">
