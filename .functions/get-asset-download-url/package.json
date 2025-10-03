@@ -1,11 +1,11 @@
 
-{
-  "name": "get-asset-download-url",
-  "version": "1.0.0",
-  "description": "获取素材下载URL的云函数",
-  "main": "index.js",
-  "dependencies": {
-    "wx-server-sdk": "latest"
-  }
-}
+    {
+      "name": "get-asset-download-url",
+      "version": "1.0.0",
+      "description": "根据资产ID获取临时下载链接的云函数",
+      "main": "index.js",
+      "dependencies": {
+        "@cloudbase/node-sdk": "^3.3.7"
+      }
+    }
   
