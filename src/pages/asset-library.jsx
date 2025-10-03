@@ -1,9 +1,9 @@
 // @ts-ignore;
 import React, { useState, useEffect } from 'react';
 // @ts-ignore;
-import { Button, Input, Tabs, TabsContent, TabsList, TabsTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, useToast } from '@/components/ui';
+import { Button, Input, Tabs, TabsContent, TabsList, TabsTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, useToast, Alert, AlertDescription } from '@/components/ui';
 // @ts-ignore;
-import { Plus, Search, Filter } from 'lucide-react';
+import { Plus, Search, Filter, AlertCircle } from 'lucide-react';
 
 import { AssetGrid } from '@/components/AssetGrid';
 import { AssetUploadDialog } from '@/components/AssetUploadDialog';
@@ -18,6 +18,9 @@ export default function AssetLibraryPage(props) {
   const [selectedType, setSelectedType] = useState('all');
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const {
     toast
   } = useToast();
@@ -26,6 +29,8 @@ export default function AssetLibraryPage(props) {
   const loadAssets = async () => {
     try {
       setLoading(true);
+      setError(null);
+      setShowErrorAlert(false);
 
       // 使用正确的数据源调用方式
       const result = await $w.cloud.callDataSource({
@@ -49,9 +54,19 @@ export default function AssetLibraryPage(props) {
       }
     } catch (error) {
       console.error('加载素材失败:', error);
+      const errorMsg = error.message || "无法加载素材库";
+
+      // 检查是否为 RequestTooLarge 错误
+      if (error.code === 'RequestTooLarge' || error.message?.includes('RequestTooLarge') || error.message?.includes('文件过大')) {
+        setErrorMessage('文件过大，请选择小于 50MB 的文件');
+        setShowErrorAlert(true);
+      } else {
+        setErrorMessage(errorMsg);
+        setShowErrorAlert(true);
+      }
       toast({
         title: "加载失败",
-        description: error.message || "无法加载素材库",
+        description: errorMsg,
         variant: "destructive"
       });
     } finally {
@@ -75,6 +90,19 @@ export default function AssetLibraryPage(props) {
   }, [assets, searchTerm, selectedType]);
   const handleUploadSuccess = uploadedFiles => {
     loadAssets(); // 重新加载素材列表
+    setShowErrorAlert(false); // 上传成功后清除错误提示
+  };
+  const handleUploadError = error => {
+    console.error('上传错误:', error);
+
+    // 处理 RequestTooLarge 错误
+    if (error.code === 'RequestTooLarge' || error.message?.includes('RequestTooLarge') || error.message?.includes('文件过大')) {
+      setErrorMessage('文件过大，请选择小于 50MB 的文件');
+      setShowErrorAlert(true);
+    } else {
+      setErrorMessage(error.message || '上传失败，请重试');
+      setShowErrorAlert(true);
+    }
   };
   const handleDeleteAsset = async assetId => {
     try {
@@ -104,12 +132,33 @@ export default function AssetLibraryPage(props) {
       });
     }
   };
+  const handleRetry = () => {
+    setShowErrorAlert(false);
+    setErrorMessage('');
+    loadAssets();
+  };
   return <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">素材库</h1>
           <p className="text-gray-600">管理您的图片、视频和音频素材</p>
         </div>
+
+        {/* 全局错误提示 */}
+        {showErrorAlert && <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>{errorMessage}</span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setShowErrorAlert(false)} className="h-7 text-xs">
+                  关闭
+                </Button>
+                {errorMessage.includes('文件过大') && <Button variant="outline" size="sm" onClick={handleRetry} className="h-7 text-xs">
+                    重试
+                  </Button>}
+              </div>
+            </AlertDescription>
+          </Alert>}
 
         <div className="bg-white rounded-lg shadow-sm border">
           <div className="p-6 border-b">
@@ -154,6 +203,6 @@ export default function AssetLibraryPage(props) {
         </div>
       </div>
 
-      <AssetUploadDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} onUploadSuccess={handleUploadSuccess} $w={$w} />
+      <AssetUploadDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} onUploadSuccess={handleUploadSuccess} onUploadError={handleUploadError} $w={$w} />
     </div>;
 }
