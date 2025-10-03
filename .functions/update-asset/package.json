@@ -1,0 +1,11 @@
+
+    {
+      "name": "update-asset",
+      "version": "1.0.0",
+      "description": "素材库上传云函数，用于将上传的素材信息写入数据模型",
+      "main": "index.js",
+      "dependencies": {
+        "@cloudbase/node-sdk": "^3.3.7"
+      }
+    }
+  
