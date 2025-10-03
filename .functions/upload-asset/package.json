@@ -1,11 +1,10 @@
 
-    {
-      "name": "upload-asset",
-      "version": "1.0.0",
-      "description": "云函数用于上传资源到云开发文件存储",
-      "main": "index.js",
-      "dependencies": {
-        "@cloudbase/node-sdk": "^3.3.7"
-      }
-    }
-  
+{
+  "name": "upload-asset",
+  "version": "1.0.0",
+  "description": "云函数用于上传资源到云开发文件存储",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.3.7"
+  }
+}
