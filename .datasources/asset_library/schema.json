@@ -5,7 +5,7 @@
   "schemas": [
     {
       "name": "name",
-      "title": "素材名称",
+      "title": "文件名",
       "type": "String"
     },
     {
@@ -14,24 +14,37 @@
       "type": "String"
     },
     {
+      "name": "size",
+      "title": "文件大小",
+      "type": "Number"
+    },
+    {
+      "name": "url",
+      "title": "云存储路径",
+      "type": "String"
+    },
+    {
+      "name": "downloadUrl",
+      "title": "临时下载地址",
+      "type": "String"
+    },
+    {
+      "name": "tags",
+      "title": "标签数组",
+      "type": "Array",
+      "items": {
+        "type": "String"
+      }
+    },
+    {
       "name": "category",
       "title": "素材分类",
       "type": "String"
     },
     {
-      "name": "url",
-      "title": "云存储文件ID",
-      "type": "String"
-    },
-    {
       "name": "thumbnail",
-      "title": "缩略图云存储ID",
+      "title": "缩略图地址",
       "type": "String"
-    },
-    {
-      "name": "size",
-      "title": "文件大小(字节)",
-      "type": "Number"
     },
     {
       "name": "duration",
@@ -39,16 +52,13 @@
       "type": "Number"
     },
     {
-      "name": "tags",
-      "title": "标签",
-      "type": "Array",
-      "items": {
-        "type": "String"
-      }
+      "name": "mime_type",
+      "title": "MIME类型",
+      "type": "String"
     },
     {
-      "name": "metadata",
-      "title": "元数据",
+      "name": "dimensions",
+      "title": "尺寸信息",
       "type": "Object"
     },
     {
@@ -67,16 +77,6 @@
       "type": "Boolean"
     },
     {
-      "name": "mime_type",
-      "title": "MIME类型",
-      "type": "String"
-    },
-    {
-      "name": "dimensions",
-      "title": "尺寸信息",
-      "type": "Object"
-    },
-    {
       "name": "folder_path",
       "title": "云存储完整路径",
       "type": "String"
@@ -85,6 +85,12 @@
       "name": "file_hash",
       "title": "文件哈希值",
       "type": "String"
+    },
+    {
+      "name": "metadata",
+      "title": "元数据",
+      "type": "Object"
     }
   ]
 }
+  
