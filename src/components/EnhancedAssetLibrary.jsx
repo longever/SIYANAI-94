@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore;
 import { Dialog, DialogContent, DialogHeader, DialogTitle, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Button, useToast } from '@/components/ui';
 // @ts-ignore;
-import { Search, Upload, X, Image, Video, Music, FileText, Play, Sparkles, AlertCircle, RotateCcw } from 'lucide-react';
+import { Search, Upload, X, Image, Video, Music, FileText, Play, Sparkles, AlertCircle, RotateCcw, Download } from 'lucide-react';
 
 import { AssetUploadDialog } from './AssetUploadDialog';
 import { getAssetThumbnailUrl, formatFileSize } from '@/lib/assetUtils';
@@ -20,6 +20,7 @@ export default function EnhancedAssetLibrary({
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [downloading, setDownloading] = useState({});
   const {
     toast
   } = useToast();
@@ -48,29 +49,47 @@ export default function EnhancedAssetLibrary({
         }
       });
       if (response.records) {
-        // 为每个素材获取缩略图URL
-        const assetsWithThumbnails = await Promise.all(response.records.map(async asset => {
+        // 为每个素材获取缩略图URL和下载链接
+        const assetsWithUrls = await Promise.all(response.records.map(async asset => {
           try {
             const thumbnailUrl = await getAssetThumbnailUrl(asset, $w);
+
+            // 获取下载链接
+            let downloadUrl = null;
+            try {
+              const downloadResponse = await $w.cloud.callFunction({
+                name: 'get-asset-download-url',
+                data: {
+                  filePath: asset.metadata?.cloudPath || `saas_temp/${asset.type}/${asset.name}`,
+                  assetId: asset._id
+                }
+              });
+              if (downloadResponse.success && downloadResponse.data) {
+                downloadUrl = downloadResponse.data.downloadUrl;
+              }
+            } catch (err) {
+              console.error(`获取素材 ${asset.name} 的下载链接失败:`, err);
+            }
             return {
               ...asset,
               thumbnail: thumbnailUrl,
+              downloadUrl: downloadUrl,
               formattedSize: formatFileSize(asset.size || 0),
-              // 确保使用正确的云存储路径
               cloudPath: asset.metadata?.cloudPath || `saas_temp/${asset.type}/${asset.name}`
             };
           } catch (err) {
-            console.error(`获取素材 ${asset.name} 的缩略图失败:`, err);
+            console.error(`处理素材 ${asset.name} 失败:`, err);
             return {
               ...asset,
               thumbnail: null,
+              downloadUrl: null,
               formattedSize: formatFileSize(asset.size || 0),
               cloudPath: asset.metadata?.cloudPath || `saas_temp/${asset.type}/${asset.name}`,
               error: true
             };
           }
         }));
-        setAssets(assetsWithThumbnails);
+        setAssets(assetsWithUrls);
       }
     } catch (error) {
       console.error('加载素材库失败:', error);
@@ -107,6 +126,62 @@ export default function EnhancedAssetLibrary({
   const handleUploadSuccess = () => {
     loadAssets();
     setIsUploadOpen(false);
+  };
+
+  // 获取下载链接
+  const getDownloadUrl = async asset => {
+    try {
+      const response = await $w.cloud.callFunction({
+        name: 'get-asset-download-url',
+        data: {
+          filePath: asset.cloudPath,
+          assetId: asset._id
+        }
+      });
+      if (response.success && response.data) {
+        return response.data.downloadUrl;
+      } else {
+        throw new Error(response.message || '获取下载链接失败');
+      }
+    } catch (error) {
+      console.error('获取下载链接失败:', error);
+      throw error;
+    }
+  };
+
+  // 处理下载
+  const handleDownload = async asset => {
+    const assetId = asset._id;
+    if (downloading[assetId]) return;
+    setDownloading(prev => ({
+      ...prev,
+      [assetId]: true
+    }));
+    try {
+      const downloadUrl = await getDownloadUrl(asset);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = asset.name || 'download';
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast({
+        title: '下载开始',
+        description: `${asset.name} 下载已开始`
+      });
+    } catch (error) {
+      toast({
+        title: '下载失败',
+        description: error.message || '无法获取下载链接',
+        variant: 'destructive'
+      });
+    } finally {
+      setDownloading(prev => ({
+        ...prev,
+        [assetId]: false
+      }));
+    }
   };
 
   // 获取类型图标
@@ -188,64 +263,75 @@ export default function EnhancedAssetLibrary({
   // 素材卡片组件
   const AssetCard = ({
     asset
-  }) => <div key={asset._id} className="group cursor-pointer border rounded-lg overflow-hidden hover:shadow-lg transition-all hover:border-purple-300" onClick={() => onAssetSelect(asset)}>
-      <div className="aspect-video bg-gray-100 relative">
-        {asset.type === 'image' && asset.thumbnail && <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" onError={e => {
-        e.target.style.display = 'none';
-        e.target.parentElement.innerHTML = `
-                <div class="w-full h-full flex items-center justify-center bg-gray-200">
-                  <span class="text-gray-400 text-sm">图片加载失败</span>
-                </div>
-              `;
-      }} />}
-        
-        {asset.type === 'image' && !asset.thumbnail && <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-green-400 to-emerald-500">
-            <Image className="w-8 h-8 text-white" />
-          </div>}
+  }) => {
+    const isDownloading = downloading[asset._id];
+    return <div className="group relative">
+        <div key={asset._id} className="cursor-pointer border rounded-lg overflow-hidden hover:shadow-lg transition-all hover:border-purple-300" onClick={() => onAssetSelect(asset)}>
+          <div className="aspect-video bg-gray-100 relative">
+            {asset.type === 'image' && asset.thumbnail && <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" onError={e => {
+            e.target.style.display = 'none';
+            e.target.parentElement.innerHTML = `
+                    <div class="w-full h-full flex items-center justify-center bg-gray-200">
+                      <span class="text-gray-400 text-sm">图片加载失败</span>
+                    </div>
+                  `;
+          }} />}
+            
+            {asset.type === 'image' && !asset.thumbnail && <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-green-400 to-emerald-500">
+                <Image className="w-8 h-8 text-white" />
+              </div>}
 
-        {asset.type === 'video' && asset.thumbnail && <div className="relative w-full h-full">
-            <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" onError={e => {
-          e.target.style.display = 'none';
-          e.target.parentElement.innerHTML = `
-                  <div class="w-full h-full flex items-center justify-center bg-gray-200">
-                    <span class="text-gray-400 text-sm">缩略图加载失败</span>
+            {asset.type === 'video' && asset.thumbnail && <div className="relative w-full h-full">
+                <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" onError={e => {
+              e.target.style.display = 'none';
+              e.target.parentElement.innerHTML = `
+                      <div class="w-full h-full flex items-center justify-center bg-gray-200">
+                        <span class="text-gray-400 text-sm">缩略图加载失败</span>
+                      </div>
+                    `;
+            }} />
+                <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="bg-white/90 rounded-full p-2">
+                    <Play className="w-6 h-6 text-gray-800" />
                   </div>
-                `;
-        }} />
-            <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <div className="bg-white/90 rounded-full p-2">
-                <Play className="w-6 h-6 text-gray-800" />
-              </div>
+                </div>
+              </div>}
+
+            {asset.type === 'video' && !asset.thumbnail && <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500 to-pink-500">
+                <Video className="w-8 h-8 text-white" />
+              </div>}
+
+            {asset.type === 'audio' && <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-500">
+                <Music className="w-8 h-8 text-white" />
+              </div>}
+
+            {asset.type === 'document' && <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500">
+                <FileText className="w-8 h-8 text-white" />
+              </div>}
+          </div>
+
+          <div className="p-3">
+            <h3 className="font-medium text-sm truncate" title={asset.name}>{asset.name}</h3>
+            <div className="flex items-center gap-2 mt-1">
+              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(asset.type)}`}>
+                {getTypeIcon(asset.type)}
+                <span className="ml-1 capitalize">{asset.type}</span>
+              </span>
+              <span className="text-xs text-gray-500">{asset.formattedSize}</span>
             </div>
-          </div>}
-
-        {asset.type === 'video' && !asset.thumbnail && <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500 to-pink-500">
-            <Video className="w-8 h-8 text-white" />
-          </div>}
-
-        {asset.type === 'audio' && <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-500">
-            <Music className="w-8 h-8 text-white" />
-          </div>}
-
-        {asset.type === 'document' && <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500">
-            <FileText className="w-8 h-8 text-white" />
-          </div>}
-      </div>
-
-      <div className="p-3">
-        <h3 className="font-medium text-sm truncate" title={asset.name}>{asset.name}</h3>
-        <div className="flex items-center gap-2 mt-1">
-          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(asset.type)}`}>
-            {getTypeIcon(asset.type)}
-            <span className="ml-1 capitalize">{asset.type}</span>
-          </span>
-          <span className="text-xs text-gray-500">{asset.formattedSize}</span>
+            {asset.error && <div className="mt-1 text-xs text-red-500">加载失败</div>}
+          </div>
         </div>
-        {asset.error && <div className="mt-1 text-xs text-red-500">
-            加载失败
-          </div>}
-      </div>
-    </div>;
+
+        {/* 下载按钮 */}
+        <Button size="sm" variant="secondary" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => {
+        e.stopPropagation();
+        handleDownload(asset);
+      }} disabled={isDownloading || !asset.downloadUrl}>
+          {isDownloading ? <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div> : <Download className="w-3 h-3" />}
+        </Button>
+      </div>;
+  };
   return <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-6xl max-h-[80vh]">

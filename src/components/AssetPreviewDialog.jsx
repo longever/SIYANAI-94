@@ -10,14 +10,52 @@ export function AssetPreviewDialog({
   onOpenChange,
   asset,
   onDownload,
-  onDelete
+  onDelete,
+  $w
 }) {
   const {
     toast
   } = useToast();
   const [isPlaying, setIsPlaying] = useState(false);
   const [imageError, setImageError] = useState(false);
-  if (!asset) return null;
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    if (open && asset) {
+      loadPreviewUrl();
+    } else {
+      setPreviewUrl(null);
+      setImageError(false);
+    }
+  }, [open, asset]);
+  const loadPreviewUrl = async () => {
+    if (!asset) return;
+    setLoading(true);
+    try {
+      const response = await $w.cloud.callFunction({
+        name: 'get-asset-download-url',
+        data: {
+          filePath: asset.cloudPath || asset.path || `saas_temp/${asset.type}/${asset.name}`,
+          assetId: asset.id || asset._id,
+          preview: true // 获取预览链接
+        }
+      });
+      if (response.success && response.data) {
+        setPreviewUrl(response.data.downloadUrl);
+      } else {
+        throw new Error(response.message || '获取预览链接失败');
+      }
+    } catch (error) {
+      console.error('获取预览链接失败:', error);
+      toast({
+        title: '预览失败',
+        description: error.message || '无法获取预览链接',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
   const handleImageError = () => {
     setImageError(true);
     toast({
@@ -27,7 +65,12 @@ export function AssetPreviewDialog({
     });
   };
   const renderPreview = () => {
-    if (!asset.previewUrl) {
+    if (loading) {
+      return <div className="flex items-center justify-center h-full">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>;
+    }
+    if (!previewUrl) {
       return <div className="flex items-center justify-center h-full text-gray-500">
           <p>无法获取预览链接</p>
         </div>;
@@ -39,25 +82,62 @@ export function AssetPreviewDialog({
               <p>图片加载失败，请尝试下载查看</p>
             </div>;
         }
-        return <img src={asset.previewUrl} alt={asset.name} className="w-full h-full object-contain" onError={handleImageError} />;
+        return <img src={previewUrl} alt={asset.name} className="w-full h-full object-contain" onError={handleImageError} />;
       case 'video':
-        return <video src={asset.previewUrl} controls className="w-full h-full" onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} />;
+        return <video src={previewUrl} controls className="w-full h-full" onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} />;
       case 'audio':
         return <div className="flex items-center justify-center h-full">
-            <audio src={asset.previewUrl} controls className="w-full" />
+            <audio src={previewUrl} controls className="w-full" />
           </div>;
       default:
         return <div className="flex items-center justify-center h-full text-gray-500">
-            <p>不支持的预览类型</p>
+            <p>不支持的预览类型，请下载查看</p>
           </div>;
     }
   };
   const handleOpenInNewTab = () => {
-    if (asset.previewUrl) {
-      window.open(asset.previewUrl, '_blank');
+    if (previewUrl) {
+      window.open(previewUrl, '_blank');
+    }
+  };
+  const handleDownload = async () => {
+    if (!asset) return;
+    try {
+      const response = await $w.cloud.callFunction({
+        name: 'get-asset-download-url',
+        data: {
+          filePath: asset.cloudPath || asset.path || `saas_temp/${asset.type}/${asset.name}`,
+          assetId: asset.id || asset._id
+        }
+      });
+      if (response.success && response.data) {
+        const link = document.createElement('a');
+        link.href = response.data.downloadUrl;
+        link.download = asset.name || 'download';
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast({
+          title: '下载开始',
+          description: `${asset.name} 下载已开始`
+        });
+        if (onDownload) {
+          onDownload(asset);
+        }
+      } else {
+        throw new Error(response.message || '获取下载链接失败');
+      }
+    } catch (error) {
+      toast({
+        title: '下载失败',
+        description: error.message || '无法获取下载链接',
+        variant: 'destructive'
+      });
     }
   };
   const handleDelete = async () => {
+    if (!asset) return;
     if (confirm(`确定要删除素材 "${asset.name}" 吗？`)) {
       try {
         await onDelete(asset);
@@ -71,6 +151,7 @@ export function AssetPreviewDialog({
       }
     }
   };
+  if (!asset) return null;
   return <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
@@ -97,22 +178,22 @@ export function AssetPreviewDialog({
           </div>}
         
         <DialogFooter>
-          <Button variant="outline" onClick={handleOpenInNewTab} disabled={!asset.previewUrl}>
+          <Button variant="outline" onClick={handleOpenInNewTab} disabled={!previewUrl || loading}>
             <ExternalLink className="w-4 h-4 mr-2" />
             新窗口打开
           </Button>
           
-          <Button variant="outline" onClick={() => onDownload(asset)}>
+          <Button variant="outline" onClick={handleDownload} disabled={loading}>
             <Download className="w-4 h-4 mr-2" />
             下载
           </Button>
           
-          <Button variant="destructive" onClick={handleDelete}>
+          <Button variant="destructive" onClick={handleDelete} disabled={loading}>
             <Trash2 className="w-4 h-4 mr-2" />
             删除
           </Button>
           
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             关闭
           </Button>
         </DialogFooter>
