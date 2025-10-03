@@ -1,28 +1,31 @@
 
-    interface UploadAssetResult {
-      code: number;
-      message: string;
-      data?: {
-        _id: string;
-        fileUrl: string;
-        fileName: string;
-        fileSize: number;
-        mimeType: string;
-        uploadTime: string;
-        description?: string;
-        originalName?: string;
-        [key: string]: any;
-      };
-      error?: string;
+    interface UploadAssetInput {
+      fileBase64?: string;
+      fileBuffer?: Buffer | ArrayBuffer | Uint8Array;
+      fileName?: string;
+      contentType?: string;
+      cloudPathPrefix?: string;
     }
 
+    interface UploadAssetSuccess {
+      fileID: string;
+      fileURL: string;
+      size: number;
+      contentType: string;
+    }
+
+    interface UploadAssetError {
+      error: string;
+    }
+
+    type UploadAssetResult = UploadAssetSuccess | UploadAssetError;
+
     interface CloudFunctionEvent {
-      headers?: {
-        [key: string]: string;
-      };
-      body?: string;
-      isBase64Encoded?: boolean;
-      [key: string]: any;
+      fileBase64?: string;
+      fileBuffer?: Buffer | ArrayBuffer | Uint8Array;
+      fileName?: string;
+      contentType?: string;
+      cloudPathPrefix?: string;
     }
 
     export declare function main(event: CloudFunctionEvent, context: any): Promise<UploadAssetResult>;
