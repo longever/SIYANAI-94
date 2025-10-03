@@ -92,7 +92,7 @@ export function AssetLibrary(props) {
           },
           metadata: {
             ...metadata,
-            folder: `saas_tmp/${metadata.type}s`
+            folder: `saas_temp/${metadata.type}s`
           }
         }
       });
@@ -283,170 +283,170 @@ export function AssetLibrary(props) {
     }
   };
   return <div className="h-full flex flex-col">
-      <div className="border-b p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold">素材库</h1>
-          <Button onClick={() => setUploadDialogOpen(true)}>
-            <Upload className="w-4 h-4 mr-2" />
-            上传素材
-          </Button>
-        </div>
-        
-        <div className="flex gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input placeholder="搜索素材..." value={searchTerm} onChange={e => {
+    <div className="border-b p-4">
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-bold">素材库</h1>
+        <Button onClick={() => setUploadDialogOpen(true)}>
+          <Upload className="w-4 h-4 mr-2" />
+          上传素材
+        </Button>
+      </div>
+
+      <div className="flex gap-4">
+        <div className="flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input placeholder="搜索素材..." value={searchTerm} onChange={e => {
               setSearchTerm(e.target.value);
               setCurrentPage(1);
             }} className="pl-10" />
-            </div>
           </div>
-          
-          <Select value={selectedType} onValueChange={value => {
+        </div>
+
+        <Select value={selectedType} onValueChange={value => {
           setSelectedType(value);
           setCurrentPage(1);
         }}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全部</SelectItem>
-              <SelectItem value="image">图片</SelectItem>
-              <SelectItem value="video">视频</SelectItem>
-              <SelectItem value="audio">音频</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+          <SelectTrigger className="w-32">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">全部</SelectItem>
+            <SelectItem value="image">图片</SelectItem>
+            <SelectItem value="video">视频</SelectItem>
+            <SelectItem value="audio">音频</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
+    </div>
 
-      <div className="flex-1 overflow-auto p-4">
-        {loading ? <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div> : assets.length === 0 ? <div className="text-center py-12">
-            <FileImage className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-            <p className="text-gray-500">暂无素材</p>
-            <Button variant="outline" className="mt-4" onClick={() => setUploadDialogOpen(true)}>
-              开始上传
-            </Button>
-          </div> : <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-            {assets.map(asset => <Card key={asset._id} className="group relative overflow-hidden">
-                <CardContent className="p-0">
-                  <div className="aspect-square bg-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors" onClick={() => handlePreview(asset)}>
-                    {asset.thumbnail ? <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" /> : <div className="text-gray-400">
-                        {getAssetIcon(asset.type)}
-                      </div>}
-                  </div>
-                  
-                  <div className="p-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium truncate flex-1">
-                        {asset.name}
-                      </span>
-                      <Badge variant="secondary" className={cn("text-xs", getAssetTypeColor(asset.type))}>
-                        {asset.type}
-                      </Badge>
-                    </div>
-                    
-                    <div className="text-xs text-gray-500">
-                      {(asset.size / 1024 / 1024).toFixed(1)} MB
-                    </div>
-                    
-                    {asset.tags && asset.tags.length > 0 && <div className="mt-1 flex flex-wrap gap-1">
-                        {asset.tags.slice(0, 2).map((tag, idx) => <Badge key={idx} variant="outline" className="text-xs">
-                            {tag}
-                          </Badge>)}
-                      </div>}
-                  </div>
-                  
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="flex gap-1">
-                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0 bg-white/90 hover:bg-white" onClick={e => {
+    <div className="flex-1 overflow-auto p-4">
+      {loading ? <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div> : assets.length === 0 ? <div className="text-center py-12">
+        <FileImage className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+        <p className="text-gray-500">暂无素材</p>
+        <Button variant="outline" className="mt-4" onClick={() => setUploadDialogOpen(true)}>
+          开始上传
+        </Button>
+      </div> : <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+        {assets.map(asset => <Card key={asset._id} className="group relative overflow-hidden">
+          <CardContent className="p-0">
+            <div className="aspect-square bg-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors" onClick={() => handlePreview(asset)}>
+              {asset.thumbnail ? <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" /> : <div className="text-gray-400">
+                {getAssetIcon(asset.type)}
+              </div>}
+            </div>
+
+            <div className="p-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-medium truncate flex-1">
+                  {asset.name}
+                </span>
+                <Badge variant="secondary" className={cn("text-xs", getAssetTypeColor(asset.type))}>
+                  {asset.type}
+                </Badge>
+              </div>
+
+              <div className="text-xs text-gray-500">
+                {(asset.size / 1024 / 1024).toFixed(1)} MB
+              </div>
+
+              {asset.tags && asset.tags.length > 0 && <div className="mt-1 flex flex-wrap gap-1">
+                {asset.tags.slice(0, 2).map((tag, idx) => <Badge key={idx} variant="outline" className="text-xs">
+                  {tag}
+                </Badge>)}
+              </div>}
+            </div>
+
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex gap-1">
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 bg-white/90 hover:bg-white" onClick={e => {
                   e.stopPropagation();
                   setEditingAsset(asset);
                   setEditName(asset.name);
                   setEditTags(asset.tags?.join(', ') || '');
                 }}>
-                        <Edit className="w-3 h-3" />
-                      </Button>
-                      
-                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0 bg-white/90 hover:bg-white" onClick={e => {
+                  <Edit className="w-3 h-3" />
+                </Button>
+
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 bg-white/90 hover:bg-white" onClick={e => {
                   e.stopPropagation();
                   handleDelete(asset);
                 }}>
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>)}
-          </div>}
-      </div>
+                  <Trash2 className="w-3 h-3" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>)}
+      </div>}
+    </div>
 
-      {totalPages > 1 && <div className="border-t p-4">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1} />
-              </PaginationItem>
-              
-              {[...Array(totalPages)].map((_, i) => <PaginationItem key={i}>
-                  <PaginationLink onClick={() => setCurrentPage(i + 1)} isActive={currentPage === i + 1}>
-                    {i + 1}
-                  </PaginationLink>
-                </PaginationItem>)}
-              
-              <PaginationItem>
-                <PaginationNext onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>}
+    {totalPages > 1 && <div className="border-t p-4">
+      <Pagination>
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1} />
+          </PaginationItem>
 
-      <AssetUploadDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} onUpload={handleUpload} />
+          {[...Array(totalPages)].map((_, i) => <PaginationItem key={i}>
+            <PaginationLink onClick={() => setCurrentPage(i + 1)} isActive={currentPage === i + 1}>
+              {i + 1}
+            </PaginationLink>
+          </PaginationItem>)}
 
-      <AssetPreviewDialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen} asset={selectedAsset} onDownload={handleDownload} onDelete={handleDelete} />
+          <PaginationItem>
+            <PaginationNext onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    </div>}
 
-      {editingAsset && <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md mx-4">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">编辑素材</h3>
-                <Button variant="ghost" size="sm" onClick={() => {
+    <AssetUploadDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} onUpload={handleUpload} />
+
+    <AssetPreviewDialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen} asset={selectedAsset} onDownload={handleDownload} onDelete={handleDelete} />
+
+    {editingAsset && <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <Card className="w-full max-w-md mx-4">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">编辑素材</h3>
+            <Button variant="ghost" size="sm" onClick={() => {
               setEditingAsset(null);
               setEditName('');
               setEditTags('');
             }}>
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">名称</label>
-                  <Input value={editName} onChange={e => setEditName(e.target.value)} placeholder="输入素材名称" />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium">标签</label>
-                  <Input value={editTags} onChange={e => setEditTags(e.target.value)} placeholder="用逗号分隔多个标签" />
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button onClick={handleUpdate} className="flex-1">
-                    保存
-                  </Button>
-                  <Button variant="outline" onClick={() => {
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">名称</label>
+              <Input value={editName} onChange={e => setEditName(e.target.value)} placeholder="输入素材名称" />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">标签</label>
+              <Input value={editTags} onChange={e => setEditTags(e.target.value)} placeholder="用逗号分隔多个标签" />
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={handleUpdate} className="flex-1">
+                保存
+              </Button>
+              <Button variant="outline" onClick={() => {
                 setEditingAsset(null);
                 setEditName('');
                 setEditTags('');
               }}>
-                    取消
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>}
-    </div>;
+                取消
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>}
+  </div>;
 }

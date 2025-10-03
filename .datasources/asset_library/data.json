@@ -1,15 +1,19 @@
-
 [
   {
     "_id": "img_city_night_001",
     "name": "城市夜景.jpg",
     "type": "image",
     "size": 2516582,
-    "url": "saas_tmp/image/city-night-001.jpg",
+    "url": "saas_temp/image/city-night-001.jpg",
     "downloadUrl": "",
-    "tags": ["城市", "夜景", "现代", "建筑"],
+    "tags": [
+      "城市",
+      "夜景",
+      "现代",
+      "建筑"
+    ],
     "category": "personal",
-    "thumbnail": "saas_tmp/image/thumb/city-night-001-thumb.jpg",
+    "thumbnail": "saas_temp/image/thumb/city-night-001-thumb.jpg",
     "mime_type": "image/jpeg",
     "dimensions": {
       "width": 1920,
@@ -18,7 +22,7 @@
     "usage_count": 15,
     "download_count": 8,
     "is_platform": false,
-    "folder_path": "saas_tmp/image/city-night-001.jpg",
+    "folder_path": "saas_temp/image/city-night-001.jpg",
     "file_hash": "a1b2c3d4e5f6789012345678901234567890abcd",
     "metadata": {
       "format": "JPEG",
@@ -33,11 +37,16 @@
     "name": "产品展示图.jpg",
     "type": "image",
     "size": 3670016,
-    "url": "saas_tmp/image/product-showcase-002.jpg",
+    "url": "saas_temp/image/product-showcase-002.jpg",
     "downloadUrl": "",
-    "tags": ["产品", "展示", "商业", "摄影"],
+    "tags": [
+      "产品",
+      "展示",
+      "商业",
+      "摄影"
+    ],
     "category": "personal",
-    "thumbnail": "saas_tmp/image/thumb/product-showcase-002-thumb.jpg",
+    "thumbnail": "saas_temp/image/thumb/product-showcase-002-thumb.jpg",
     "mime_type": "image/jpeg",
     "dimensions": {
       "width": 2048,
@@ -46,7 +55,7 @@
     "usage_count": 23,
     "download_count": 12,
     "is_platform": false,
-    "folder_path": "saas_tmp/image/product-showcase-002.jpg",
+    "folder_path": "saas_temp/image/product-showcase-002.jpg",
     "file_hash": "b2c3d4e5f6789012345678901234567890abcde1",
     "metadata": {
       "format": "JPEG",
@@ -61,11 +70,16 @@
     "name": "自然风光.jpg",
     "type": "image",
     "size": 3145728,
-    "url": "saas_tmp/image/nature-landscape-003.jpg",
+    "url": "saas_temp/image/nature-landscape-003.jpg",
     "downloadUrl": "",
-    "tags": ["自然", "风景", "山脉", "森林"],
+    "tags": [
+      "自然",
+      "风景",
+      "山脉",
+      "森林"
+    ],
     "category": "platform",
-    "thumbnail": "saas_tmp/image/thumb/nature-landscape-003-thumb.jpg",
+    "thumbnail": "saas_temp/image/thumb/nature-landscape-003-thumb.jpg",
     "mime_type": "image/jpeg",
     "dimensions": {
       "width": 2400,
@@ -74,7 +88,7 @@
     "usage_count": 45,
     "download_count": 28,
     "is_platform": true,
-    "folder_path": "saas_tmp/image/nature-landscape-003.jpg",
+    "folder_path": "saas_temp/image/nature-landscape-003.jpg",
     "file_hash": "c3d4e5f6789012345678901234567890abcdef2",
     "metadata": {
       "format": "JPEG",
@@ -89,11 +103,16 @@
     "name": "产品演示视频.mp4",
     "type": "video",
     "size": 48058368,
-    "url": "saas_tmp/video/product-demo-004.mp4",
+    "url": "saas_temp/video/product-demo-004.mp4",
     "downloadUrl": "",
-    "tags": ["产品", "演示", "营销", "商业"],
+    "tags": [
+      "产品",
+      "演示",
+      "营销",
+      "商业"
+    ],
     "category": "personal",
-    "thumbnail": "saas_tmp/video/thumb/product-demo-004-thumb.jpg",
+    "thumbnail": "saas_temp/video/thumb/product-demo-004-thumb.jpg",
     "duration": 30.5,
     "mime_type": "video/mp4",
     "dimensions": {
@@ -103,7 +122,7 @@
     "usage_count": 8,
     "download_count": 3,
     "is_platform": false,
-    "folder_path": "saas_tmp/video/product-demo-004.mp4",
+    "folder_path": "saas_temp/video/product-demo-004.mp4",
     "file_hash": "d4e5f6789012345678901234567890abcdef3",
     "metadata": {
       "format": "MP4",
@@ -119,17 +138,22 @@
     "name": "轻快背景音乐.mp3",
     "type": "audio",
     "size": 5441956,
-    "url": "saas_tmp/audio/upbeat-bg-005.mp3",
+    "url": "saas_temp/audio/upbeat-bg-005.mp3",
     "downloadUrl": "",
-    "tags": ["轻快", "背景", "音乐", "正能量"],
+    "tags": [
+      "轻快",
+      "背景",
+      "音乐",
+      "正能量"
+    ],
     "category": "platform",
-    "thumbnail": "saas_tmp/audio/thumb/upbeat-bg-005-thumb.jpg",
+    "thumbnail": "saas_temp/audio/thumb/upbeat-bg-005-thumb.jpg",
     "duration": 150.2,
     "mime_type": "audio/mpeg",
     "usage_count": 67,
     "download_count": 34,
     "is_platform": true,
-    "folder_path": "saas_tmp/audio/upbeat-bg-005.mp3",
+    "folder_path": "saas_temp/audio/upbeat-bg-005.mp3",
     "file_hash": "e5f6789012345678901234567890abcdef4",
     "metadata": {
       "format": "MP3",
@@ -145,11 +169,16 @@
     "name": "科技背景图.jpg",
     "type": "image",
     "size": 2097152,
-    "url": "saas_tmp/image/tech-background-006.jpg",
+    "url": "saas_temp/image/tech-background-006.jpg",
     "downloadUrl": "",
-    "tags": ["科技", "背景", "未来", "数字"],
+    "tags": [
+      "科技",
+      "背景",
+      "未来",
+      "数字"
+    ],
     "category": "platform",
-    "thumbnail": "saas_tmp/image/thumb/tech-background-006-thumb.jpg",
+    "thumbnail": "saas_temp/image/thumb/tech-background-006-thumb.jpg",
     "mime_type": "image/jpeg",
     "dimensions": {
       "width": 1920,
@@ -158,7 +187,7 @@
     "usage_count": 89,
     "download_count": 56,
     "is_platform": true,
-    "folder_path": "saas_tmp/image/tech-background-006.jpg",
+    "folder_path": "saas_temp/image/tech-background-006.jpg",
     "file_hash": "89012345678901234567890abcdef8",
     "metadata": {
       "format": "JPEG",
@@ -173,11 +202,16 @@
     "name": "片头动画.mp4",
     "type": "video",
     "size": 8388608,
-    "url": "saas_tmp/video/intro-animation-007.mp4",
+    "url": "saas_temp/video/intro-animation-007.mp4",
     "downloadUrl": "",
-    "tags": ["动画", "片头", "科技", "开场"],
+    "tags": [
+      "动画",
+      "片头",
+      "科技",
+      "开场"
+    ],
     "category": "platform",
-    "thumbnail": "saas_tmp/video/thumb/intro-animation-007-thumb.jpg",
+    "thumbnail": "saas_temp/video/thumb/intro-animation-007-thumb.jpg",
     "duration": 5.2,
     "mime_type": "video/mp4",
     "dimensions": {
@@ -187,7 +221,7 @@
     "usage_count": 34,
     "download_count": 21,
     "is_platform": true,
-    "folder_path": "saas_tmp/video/intro-animation-007.mp4",
+    "folder_path": "saas_temp/video/intro-animation-007.mp4",
     "file_hash": "9012345678901234567890abcdef9",
     "metadata": {
       "format": "MP4",
@@ -203,11 +237,16 @@
     "name": "商务会议.jpg",
     "type": "image",
     "size": 1835008,
-    "url": "saas_tmp/image/business-meeting-008.jpg",
+    "url": "saas_temp/image/business-meeting-008.jpg",
     "downloadUrl": "",
-    "tags": ["商务", "会议", "办公", "团队"],
+    "tags": [
+      "商务",
+      "会议",
+      "办公",
+      "团队"
+    ],
     "category": "platform",
-    "thumbnail": "saas_tmp/image/thumb/business-meeting-008-thumb.jpg",
+    "thumbnail": "saas_temp/image/thumb/business-meeting-008-thumb.jpg",
     "mime_type": "image/jpeg",
     "dimensions": {
       "width": 1920,
@@ -216,7 +255,7 @@
     "usage_count": 52,
     "download_count": 31,
     "is_platform": true,
-    "folder_path": "saas_tmp/image/business-meeting-008.jpg",
+    "folder_path": "saas_temp/image/business-meeting-008.jpg",
     "file_hash": "012345678901234567890abcdef10",
     "metadata": {
       "format": "JPEG",
@@ -231,17 +270,22 @@
     "name": "企业宣传音乐.mp3",
     "type": "audio",
     "size": 7340032,
-    "url": "saas_tmp/audio/corporate-music-009.mp3",
+    "url": "saas_temp/audio/corporate-music-009.mp3",
     "downloadUrl": "",
-    "tags": ["企业", "宣传", "音乐", "正式"],
+    "tags": [
+      "企业",
+      "宣传",
+      "音乐",
+      "正式"
+    ],
     "category": "platform",
-    "thumbnail": "saas_tmp/audio/thumb/corporate-music-009-thumb.jpg",
+    "thumbnail": "saas_temp/audio/thumb/corporate-music-009-thumb.jpg",
     "duration": 120.8,
     "mime_type": "audio/mpeg",
     "usage_count": 78,
     "download_count": 45,
     "is_platform": true,
-    "folder_path": "saas_tmp/audio/corporate-music-009.mp3",
+    "folder_path": "saas_temp/audio/corporate-music-009.mp3",
     "file_hash": "12345678901234567890abcdef11",
     "metadata": {
       "format": "MP3",
@@ -257,11 +301,16 @@
     "name": "极简设计.jpg",
     "type": "image",
     "size": 1048576,
-    "url": "saas_tmp/image/minimal-design-010.jpg",
+    "url": "saas_temp/image/minimal-design-010.jpg",
     "downloadUrl": "",
-    "tags": ["极简", "设计", "现代", "简洁"],
+    "tags": [
+      "极简",
+      "设计",
+      "现代",
+      "简洁"
+    ],
     "category": "personal",
-    "thumbnail": "saas_tmp/image/thumb/minimal-design-010-thumb.jpg",
+    "thumbnail": "saas_temp/image/thumb/minimal-design-010-thumb.jpg",
     "mime_type": "image/jpeg",
     "dimensions": {
       "width": 1920,
@@ -270,7 +319,7 @@
     "usage_count": 41,
     "download_count": 23,
     "is_platform": false,
-    "folder_path": "saas_tmp/image/minimal-design-010.jpg",
+    "folder_path": "saas_temp/image/minimal-design-010.jpg",
     "file_hash": "2345678901234567890abcdef12",
     "metadata": {
       "format": "JPEG",
@@ -281,4 +330,3 @@
     "updatedAt": 1704617600000
   }
 ]
-  
