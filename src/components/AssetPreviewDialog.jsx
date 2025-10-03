@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Button, Badge, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, useToast } from '@/components/ui';
 // @ts-ignore;
-import { Download, Trash2, X, Play, Pause } from 'lucide-react';
+import { Download, Trash2, X, Play, Pause, ExternalLink } from 'lucide-react';
 
 export function AssetPreviewDialog({
   open,
@@ -16,11 +16,30 @@ export function AssetPreviewDialog({
     toast
   } = useToast();
   const [isPlaying, setIsPlaying] = useState(false);
+  const [imageError, setImageError] = useState(false);
   if (!asset) return null;
+  const handleImageError = () => {
+    setImageError(true);
+    toast({
+      title: '图片加载失败',
+      description: '无法加载图片预览，请尝试下载查看',
+      variant: 'destructive'
+    });
+  };
   const renderPreview = () => {
+    if (!asset.previewUrl) {
+      return <div className="flex items-center justify-center h-full text-gray-500">
+          <p>无法获取预览链接</p>
+        </div>;
+    }
     switch (asset.type) {
       case 'image':
-        return <img src={asset.previewUrl} alt={asset.name} className="w-full h-full object-contain" />;
+        if (imageError) {
+          return <div className="flex items-center justify-center h-full text-gray-500">
+              <p>图片加载失败，请尝试下载查看</p>
+            </div>;
+        }
+        return <img src={asset.previewUrl} alt={asset.name} className="w-full h-full object-contain" onError={handleImageError} />;
       case 'video':
         return <video src={asset.previewUrl} controls className="w-full h-full" onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} />;
       case 'audio':
@@ -31,6 +50,11 @@ export function AssetPreviewDialog({
         return <div className="flex items-center justify-center h-full text-gray-500">
             <p>不支持的预览类型</p>
           </div>;
+    }
+  };
+  const handleOpenInNewTab = () => {
+    if (asset.previewUrl) {
+      window.open(asset.previewUrl, '_blank');
     }
   };
   const handleDelete = async () => {
@@ -55,11 +79,14 @@ export function AssetPreviewDialog({
             <Badge variant="secondary">{asset.type}</Badge>
           </DialogTitle>
           <DialogDescription>
-            文件大小: {(asset.size / 1024 / 1024).toFixed(2)} MB
+            <div className="flex items-center gap-4">
+              <span>文件大小: {(asset.size / 1024 / 1024).toFixed(2)} MB</span>
+              {asset.download_count > 0 && <span>下载次数: {asset.download_count}</span>}
+            </div>
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex-1 min-h-[400px] bg-gray-100 rounded-lg overflow-hidden">
+        <div className="flex-1 min-h-[400px] bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
           {renderPreview()}
         </div>
         
@@ -70,6 +97,11 @@ export function AssetPreviewDialog({
           </div>}
         
         <DialogFooter>
+          <Button variant="outline" onClick={handleOpenInNewTab} disabled={!asset.previewUrl}>
+            <ExternalLink className="w-4 h-4 mr-2" />
+            新窗口打开
+          </Button>
+          
           <Button variant="outline" onClick={() => onDownload(asset)}>
             <Download className="w-4 h-4 mr-2" />
             下载

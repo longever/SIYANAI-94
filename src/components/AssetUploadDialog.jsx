@@ -134,6 +134,13 @@ export function AssetUploadDialog({
           data: assetData
         }
       });
+
+      // 获取完整的素材信息
+      const newAsset = {
+        ...assetData,
+        _id: saveResult.id,
+        createdAt: new Date().toISOString()
+      };
       setUploadProgress(100);
       toast({
         title: '上传成功',
@@ -145,9 +152,9 @@ export function AssetUploadDialog({
       resetForm();
       onOpenChange(false);
 
-      // 通知父组件刷新列表
+      // 通知父组件刷新列表，并传递新素材
       if (onSuccess) {
-        onSuccess();
+        onSuccess(newAsset);
       }
     } catch (error) {
       console.error('上传失败:', error);

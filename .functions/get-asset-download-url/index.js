@@ -8,29 +8,24 @@ exports.main = async (event, context) => {
   const { fileId } = event;
   
   try {
-    // 获取云存储实例
-    const db = cloud.database();
-    
-    // 从数据库获取文件信息
-    const assetResult = await db.collection('asset_library').where({
-      fileId: fileId
-    }).get();
-    
-    if (assetResult.data.length === 0) {
-      throw new Error('Asset not found');
+    // 直接使用fileId作为云存储文件ID
+    if (!fileId) {
+      throw new Error('fileId is required');
     }
-    
-    const asset = assetResult.data[0];
-    
+
     // 获取临时下载URL
     const downloadUrl = await cloud.getTempFileURL({
-      fileList: [asset.folder_path]
+      fileList: [{
+        fileID: fileId,
+        maxAge: 60 * 60 * 24 // 24小时有效期
+      }]
     });
     
-    if (downloadUrl.fileList && downloadUrl.fileList.length > 0) {
+    if (downloadUrl.fileList && downloadUrl.fileList.length > 0 && downloadUrl.fileList[0].tempFileURL) {
       return {
         success: true,
-        downloadUrl: downloadUrl.fileList[0].tempFileURL
+        url: downloadUrl.fileList[0].tempFileURL,
+        fileID: fileId
       };
     } else {
       throw new Error('Failed to generate download URL');

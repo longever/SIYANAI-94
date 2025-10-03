@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore;
 import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Card, CardContent, Badge, Tabs, TabsContent, TabsList, TabsTrigger, Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, Alert, AlertDescription, useToast } from '@/components/ui';
 // @ts-ignore;
-import { Search, Upload, Download, Trash2, Edit, Eye, X, FileImage, FileVideo, FileAudio, FileText } from 'lucide-react';
+import { Search, Upload, Download, Trash2, Edit, Eye, X, FileImage, FileVideo, FileAudio, FileText, RefreshCw } from 'lucide-react';
 // @ts-ignore;
 import { cn } from '@/lib/utils';
 
@@ -75,12 +75,18 @@ export function AssetLibrary(props) {
       setLoading(false);
     }
   }, [selectedType, searchTerm, currentPage, pageSize, $w.cloud, toast]);
-  useEffect(() => {
-    fetchAssets();
-  }, [fetchAssets]);
 
   // 处理上传成功后的回调
-  const handleUploadSuccess = () => {
+  const handleUploadSuccess = newAsset => {
+    // 立即将新素材添加到列表顶部
+    if (newAsset) {
+      setAssets(prevAssets => [newAsset, ...prevAssets]);
+      // 如果列表已满，移除最后一个
+      if (assets.length >= pageSize) {
+        setAssets(prevAssets => prevAssets.slice(0, pageSize));
+      }
+    }
+    // 同时刷新完整列表
     fetchAssets();
   };
 
@@ -114,7 +120,16 @@ export function AssetLibrary(props) {
         title: '删除成功',
         description: '素材已从库中移除'
       });
-      fetchAssets();
+
+      // 从本地状态中移除
+      setAssets(prevAssets => prevAssets.filter(a => a._id !== asset._id));
+
+      // 如果当前页为空且不是第一页，返回上一页
+      if (assets.length === 1 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      } else {
+        fetchAssets();
+      }
     } catch (error) {
       toast({
         title: '删除失败',
@@ -128,14 +143,15 @@ export function AssetLibrary(props) {
   const handleUpdate = async () => {
     if (!editingAsset) return;
     try {
+      const updatedData = {
+        name: editName,
+        tags: editTags.split(',').map(tag => tag.trim()).filter(Boolean)
+      };
       await $w.cloud.callDataSource({
         dataSourceName: 'asset_library',
         methodName: 'wedaUpdateV2',
         params: {
-          data: {
-            name: editName,
-            tags: editTags.split(',').map(tag => tag.trim()).filter(Boolean)
-          },
+          data: updatedData,
           filter: {
             where: {
               _id: {
@@ -149,10 +165,15 @@ export function AssetLibrary(props) {
         title: '更新成功',
         description: '素材信息已更新'
       });
+
+      // 更新本地状态
+      setAssets(prevAssets => prevAssets.map(asset => asset._id === editingAsset._id ? {
+        ...asset,
+        ...updatedData
+      } : asset));
       setEditingAsset(null);
       setEditName('');
       setEditTags('');
-      fetchAssets();
     } catch (error) {
       toast({
         title: '更新失败',
@@ -172,11 +193,15 @@ export function AssetLibrary(props) {
           fileId: asset.url
         }
       });
-      setSelectedAsset({
-        ...asset,
-        previewUrl: result.url
-      });
-      setPreviewDialogOpen(true);
+      if (result.success) {
+        setSelectedAsset({
+          ...asset,
+          previewUrl: result.url
+        });
+        setPreviewDialogOpen(true);
+      } else {
+        throw new Error(result.error || '获取预览URL失败');
+      }
     } catch (error) {
       toast({
         title: '获取预览失败',
@@ -196,30 +221,44 @@ export function AssetLibrary(props) {
           fileId: asset.url
         }
       });
+      if (result.success) {
+        // 创建下载链接
+        const link = document.createElement('a');
+        link.href = result.url;
+        link.download = asset.name;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
 
-      // 创建下载链接
-      const link = document.createElement('a');
-      link.href = result.url;
-      link.download = asset.name;
-      link.click();
-
-      // 更新下载次数
-      await $w.cloud.callDataSource({
-        dataSourceName: 'asset_library',
-        methodName: 'wedaUpdateV2',
-        params: {
-          data: {
-            download_count: (asset.download_count || 0) + 1
-          },
-          filter: {
-            where: {
-              _id: {
-                $eq: asset._id
+        // 更新下载次数
+        const newDownloadCount = (asset.download_count || 0) + 1;
+        await $w.cloud.callDataSource({
+          dataSourceName: 'asset_library',
+          methodName: 'wedaUpdateV2',
+          params: {
+            data: {
+              download_count: newDownloadCount
+            },
+            filter: {
+              where: {
+                _id: {
+                  $eq: asset._id
+                }
               }
             }
           }
-        }
-      });
+        });
+
+        // 更新本地状态
+        setAssets(prevAssets => prevAssets.map(a => a._id === asset._id ? {
+          ...a,
+          download_count: newDownloadCount
+        } : a));
+      } else {
+        throw new Error(result.error || '获取下载URL失败');
+      }
     } catch (error) {
       toast({
         title: '下载失败',
@@ -256,14 +295,29 @@ export function AssetLibrary(props) {
         return 'text-gray-600 bg-gray-100';
     }
   };
+
+  // 手动刷新
+  const handleRefresh = () => {
+    setCurrentPage(1);
+    fetchAssets();
+  };
+  useEffect(() => {
+    fetchAssets();
+  }, [fetchAssets]);
   return <div className="h-full flex flex-col">
     <div className="border-b p-4">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">素材库</h1>
-        <Button onClick={() => setUploadDialogOpen(true)}>
-          <Upload className="w-4 h-4 mr-2" />
-          上传素材
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
+            <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
+            刷新
+          </Button>
+          <Button onClick={() => setUploadDialogOpen(true)}>
+            <Upload className="w-4 h-4 mr-2" />
+            上传素材
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-4">
@@ -304,7 +358,7 @@ export function AssetLibrary(props) {
             开始上传
           </Button>
         </div> : <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-          {assets.map(asset => <Card key={asset._id} className="group relative overflow-hidden">
+          {assets.map(asset => <Card key={asset._id} className="group relative overflow-hidden hover:shadow-lg transition-shadow">
               <CardContent className="p-0">
                 <div className="aspect-square bg-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors" onClick={() => handlePreview(asset)}>
                   {asset.thumbnail ? <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" /> : <div className="text-gray-400">
@@ -314,7 +368,7 @@ export function AssetLibrary(props) {
 
                 <div className="p-3">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium truncate flex-1">
+                    <span className="text-sm font-medium truncate flex-1" title={asset.name}>
                       {asset.name}
                     </span>
                     <Badge variant="secondary" className={cn("text-xs", getAssetTypeColor(asset.type))}>
@@ -324,6 +378,7 @@ export function AssetLibrary(props) {
 
                   <div className="text-xs text-gray-500">
                     {(asset.size / 1024 / 1024).toFixed(1)} MB
+                    {asset.download_count > 0 && <span className="ml-2">下载 {asset.download_count}</span>}
                   </div>
 
                   {asset.tags && asset.tags.length > 0 && <div className="mt-1 flex flex-wrap gap-1">
@@ -335,7 +390,7 @@ export function AssetLibrary(props) {
 
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <div className="flex gap-1">
-                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 bg-white/90 hover:bg-white" onClick={e => {
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 bg-white/90 hover:bg-white shadow-sm" onClick={e => {
                   e.stopPropagation();
                   setEditingAsset(asset);
                   setEditName(asset.name);
@@ -344,7 +399,14 @@ export function AssetLibrary(props) {
                       <Edit className="w-3 h-3" />
                     </Button>
 
-                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 bg-white/90 hover:bg-white" onClick={e => {
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 bg-white/90 hover:bg-white shadow-sm" onClick={e => {
+                  e.stopPropagation();
+                  handleDownload(asset);
+                }}>
+                      <Download className="w-3 h-3" />
+                    </Button>
+
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 bg-white/90 hover:bg-white shadow-sm" onClick={e => {
                   e.stopPropagation();
                   handleDelete(asset);
                 }}>
