@@ -1,105 +1,83 @@
 
-    // 获取素材下载URL的工具函数
-    export async function getAssetDownloadUrl(assetId, $w) {
-      try {
-        // 首先获取素材信息
-        const assetResult = await $w.cloud.callDataSource({
-          dataSourceName: 'asset_library',
-          methodName: 'wedaGetItemV2',
-          params: {
-            filter: {
-              where: {
-                _id: { $eq: assetId }
-              }
-            },
-            select: { $master: true }
-          }
-        });
+// @ts-ignore;
+import { format } from 'date-fns';
 
-        if (!assetResult || !assetResult.url) {
-          throw new Error('素材不存在或URL为空');
-        }
+// 格式化文件大小
+export function formatFileSize(bytes) {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
 
-        // 获取云存储实例
-        const tcb = await $w.cloud.getCloudInstance();
-        
-        // 获取临时下载URL
-        const tempFileResult = await tcb.getTempFileURL({
-          fileList: [{
-            fileID: assetResult.url,
-            maxAge: 3600 // 1小时有效期
-          }]
-        });
-
-        if (!tempFileResult.fileList || tempFileResult.fileList.length === 0) {
-          throw new Error('无法获取临时URL');
-        }
-
-        const fileInfo = tempFileResult.fileList[0];
-        if (fileInfo.code !== 'SUCCESS') {
-          throw new Error(`获取URL失败: ${fileInfo.code}`);
-        }
-
-        return fileInfo.tempFileURL;
-      } catch (error) {
-        console.error('获取素材URL失败:', error);
-        throw error;
+// 获取素材缩略图URL
+export async function getAssetThumbnailUrl(asset, $w) {
+  if (asset.type === 'image' && (asset.url || asset.fileId || asset.cloudPath)) {
+    try {
+      const fileId = asset.url || asset.fileId || asset.cloudPath;
+      const tcb = await $w.cloud.getCloudInstance();
+      const result = await tcb.getTempFileURL({
+        fileList: [fileId]
+      });
+      if (result.fileList && result.fileList[0] && result.fileList[0].tempFileURL) {
+        return result.fileList[0].tempFileURL;
       }
+    } catch (error) {
+      console.error('获取缩略图失败:', error);
     }
+  }
+  return null;
+}
 
-    // 获取素材缩略图URL
-    export async function getAssetThumbnailUrl(asset, $w) {
-      try {
-        if (!asset || !asset.url) return null;
-        
-        // 如果是图片类型，直接返回原图URL作为缩略图
-        if (asset.type === 'image') {
-          return await getAssetDownloadUrl(asset._id, $w);
-        }
-        
-        // 如果是视频类型，检查是否有缩略图
-        if (asset.type === 'video' && asset.thumbnail_url) {
-          const tcb = await $w.cloud.getCloudInstance();
-          const result = await tcb.getTempFileURL({
-            fileList: [{
-              fileID: asset.thumbnail_url,
-              maxAge: 3600
-            }]
-          });
-          
-          if (result.fileList && result.fileList[0].code === 'SUCCESS') {
-            return result.fileList[0].tempFileURL;
-          }
-        }
-        
-        return null;
-      } catch (error) {
-        console.error('获取缩略图失败:', error);
-        return null;
-      }
+// 获取素材下载URL
+export async function getAssetDownloadUrl(asset, $w) {
+  try {
+    const fileId = asset.url || asset.fileId || asset.cloudPath;
+    if (!fileId) {
+      throw new Error('无法获取文件ID');
     }
+    
+    const tcb = await $w.cloud.getCloudInstance();
+    const result = await tcb.getTempFileURL({
+      fileList: [fileId]
+    });
+    
+    if (result.fileList && result.fileList[0] && result.fileList[0].tempFileURL) {
+      return result.fileList[0].tempFileURL;
+    } else {
+      throw new Error('获取下载链接失败');
+    }
+  } catch (error) {
+    console.error('获取下载链接失败:', error);
+    throw error;
+  }
+}
 
-    // 格式化文件大小
-    export function formatFileSize(bytes) {
-      if (!bytes) return '0 B';
-      
-      const k = 1024;
-      const sizes = ['B', 'KB', 'MB', 'GB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
+// 格式化日期
+export function formatDate(date) {
+  if (!date) return '';
+  return format(new Date(date), 'yyyy-MM-dd HH:mm');
+}
 
-    // 获取文件类型图标
-    export function getFileTypeIcon(type) {
-      const iconMap = {
-        'image': '🖼️',
-        'video': '🎬',
-        'audio': '🎵',
-        'document': '📄',
-        'model': '🎭'
-      };
-      
-      return iconMap[type] || '📁';
-    }
-  
+// 获取文件类型图标
+export function getFileIcon(type) {
+  const icons = {
+    image: '🖼️',
+    video: '🎥',
+    audio: '🎵',
+    document: '📄'
+  };
+  return icons[type] || '📁';
+}
+
+// 获取文件类型颜色
+export function getFileTypeColor(type) {
+  const colors = {
+    image: 'text-green-600 bg-green-100',
+    video: 'text-red-600 bg-red-100',
+    audio: 'text-blue-600 bg-blue-100',
+    document: 'text-yellow-600 bg-yellow-100'
+  };
+  return colors[type] || 'text-gray-600 bg-gray-100';
+}

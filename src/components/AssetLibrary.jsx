@@ -95,11 +95,9 @@ export function AssetLibrary(props) {
     if (!confirm(`确定要删除素材 "${asset.name}" 吗？`)) return;
     try {
       // 从云存储删除文件
-      await $w.cloud.callFunction({
-        name: 'deleteAsset',
-        data: {
-          fileId: asset.url
-        }
+      const tcb = await $w.cloud.getCloudInstance();
+      await tcb.deleteFile({
+        fileList: [asset.url]
       });
 
       // 从数据库删除记录
@@ -186,25 +184,22 @@ export function AssetLibrary(props) {
   // 处理预览素材
   const handlePreview = async asset => {
     try {
-      // 确保传递正确的 fileId 参数
       const fileId = asset.url || asset.fileId || asset.cloudPath;
       if (!fileId) {
         throw new Error('无法获取文件ID');
       }
-      const result = await $w.cloud.callFunction({
-        name: 'get-asset-download-url',
-        data: {
-          fileId: fileId
-        }
+      const tcb = await $w.cloud.getCloudInstance();
+      const result = await tcb.getTempFileURL({
+        fileList: [fileId]
       });
-      if (result.success) {
+      if (result.fileList && result.fileList[0] && result.fileList[0].tempFileURL) {
         setSelectedAsset({
           ...asset,
-          previewUrl: result.url
+          previewUrl: result.fileList[0].tempFileURL
         });
         setPreviewDialogOpen(true);
       } else {
-        throw new Error(result.error || '获取预览URL失败');
+        throw new Error('获取预览URL失败');
       }
     } catch (error) {
       toast({
@@ -218,21 +213,18 @@ export function AssetLibrary(props) {
   // 处理下载素材
   const handleDownload = async asset => {
     try {
-      // 确保传递正确的 fileId 参数
       const fileId = asset.url || asset.fileId || asset.cloudPath;
       if (!fileId) {
         throw new Error('无法获取文件ID');
       }
-      const result = await $w.cloud.callFunction({
-        name: 'get-asset-download-url',
-        data: {
-          fileId: fileId
-        }
+      const tcb = await $w.cloud.getCloudInstance();
+      const result = await tcb.getTempFileURL({
+        fileList: [fileId]
       });
-      if (result.success) {
+      if (result.fileList && result.fileList[0] && result.fileList[0].tempFileURL) {
         // 创建下载链接
         const link = document.createElement('a');
-        link.href = result.url;
+        link.href = result.fileList[0].tempFileURL;
         link.download = asset.name;
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
@@ -265,7 +257,7 @@ export function AssetLibrary(props) {
           download_count: newDownloadCount
         } : a));
       } else {
-        throw new Error(result.error || '获取下载URL失败');
+        throw new Error('获取下载URL失败');
       }
     } catch (error) {
       toast({
