@@ -10,7 +10,10 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB in bytes
 export function AssetUploadDialog({
   open,
   onOpenChange,
-  onUploadComplete
+  onUploadComplete,
+  onSuccess,
+  onUploadError,
+  $w
 }) {
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
@@ -59,36 +62,85 @@ export function AssetUploadDialog({
     setUploadProgress(0);
     setError(null);
     try {
-      const formData = new FormData();
-      files.forEach(file => {
-        formData.append('files', file);
-      });
-      const response = await fetch('/api/upload-assets', {
-        method: 'POST',
-        body: formData,
-        onUploadProgress: progressEvent => {
-          const percentCompleted = Math.round(progressEvent.loaded * 100 / progressEvent.total);
-          setUploadProgress(percentCompleted);
+      // 使用云函数上传文件
+      const uploadPromises = files.map(async file => {
+        // 先获取上传凭证
+        const uploadToken = await $w.cloud.callFunction({
+          name: 'upload-asset',
+          data: {
+            filename: file.name,
+            contentType: file.type,
+            size: file.size
+          }
+        });
+        if (!uploadToken || !uploadToken.uploadUrl) {
+          throw new Error('获取上传凭证失败');
         }
+
+        // 上传到云存储
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('key', uploadToken.key);
+        formData.append('token', uploadToken.token);
+        const uploadResponse = await fetch(uploadToken.uploadUrl, {
+          method: 'POST',
+          body: formData
+        });
+        if (!uploadResponse.ok) {
+          throw new Error(`上传失败: ${uploadResponse.statusText}`);
+        }
+        const uploadResult = await uploadResponse.json();
+
+        // 保存素材信息到数据库
+        const assetData = {
+          name: file.name,
+          fileName: file.name,
+          fileType: file.type,
+          size: file.size,
+          url: uploadResult.fileId || uploadToken.fileId,
+          cloudPath: uploadToken.key,
+          type: file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'other',
+          tags: [],
+          createdAt: new Date().toISOString()
+        };
+        const savedAsset = await $w.cloud.callDataSource({
+          dataSourceName: 'asset_library',
+          methodName: 'wedaCreateV2',
+          params: {
+            data: assetData
+          }
+        });
+        return {
+          ...assetData,
+          _id: savedAsset.id
+        };
       });
-      if (!response.ok) {
-        throw new Error('上传失败');
-      }
-      const result = await response.json();
+      const uploadedAssets = await Promise.all(uploadPromises);
       toast({
         title: "上传成功",
-        description: `成功上传 ${files.length} 个文件`
+        description: `成功上传 ${uploadedAssets.length} 个文件`
       });
-      onUploadComplete(result);
+
+      // 调用回调函数
+      if (onUploadComplete) {
+        onUploadComplete(uploadedAssets);
+      }
+      if (onSuccess) {
+        onSuccess(uploadedAssets);
+      }
       handleClose();
     } catch (error) {
       console.error('Upload error:', error);
-      setError(error.message || '上传失败，请重试');
+      const errorMessage = error.message || '上传失败，请重试';
+      setError(errorMessage);
       toast({
         title: "上传失败",
-        description: error.message || '上传过程中出现错误，请重试',
+        description: errorMessage,
         variant: "destructive"
       });
+      if (onUploadError) {
+        onUploadError(error);
+      }
     } finally {
       setUploading(false);
       setUploadProgress(0);
