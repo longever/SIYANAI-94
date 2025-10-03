@@ -24,14 +24,14 @@ export default function EnhancedAssetLibrary({
     toast
   } = useToast();
 
-  // 加载AI素材
+  // 加载素材
   const loadAssets = useCallback(async () => {
     if (!open) return;
     try {
       setLoading(true);
       setError(null);
 
-      // 使用正确的数据源调用方式
+      // 查询素材库数据
       const response = await $w.cloud.callDataSource({
         dataSourceName: 'asset_library',
         methodName: 'wedaGetRecordsV2',
@@ -55,14 +55,17 @@ export default function EnhancedAssetLibrary({
             return {
               ...asset,
               thumbnail: thumbnailUrl,
-              formattedSize: formatFileSize(asset.size || 0)
+              formattedSize: formatFileSize(asset.size || 0),
+              // 确保使用正确的云存储路径
+              cloudPath: asset.metadata?.cloudPath || `saas_temp/${asset.type}/${asset.name}`
             };
           } catch (err) {
-            console.error(`获取AI素材 ${asset.name} 的缩略图失败:`, err);
+            console.error(`获取素材 ${asset.name} 的缩略图失败:`, err);
             return {
               ...asset,
               thumbnail: null,
               formattedSize: formatFileSize(asset.size || 0),
+              cloudPath: asset.metadata?.cloudPath || `saas_temp/${asset.type}/${asset.name}`,
               error: true
             };
           }
@@ -70,11 +73,11 @@ export default function EnhancedAssetLibrary({
         setAssets(assetsWithThumbnails);
       }
     } catch (error) {
-      console.error('加载AI素材库失败:', error);
-      setError('无法加载AI素材库，请稍后重试');
+      console.error('加载素材库失败:', error);
+      setError('无法加载素材库，请稍后重试');
       toast({
         title: '加载失败',
-        description: '无法加载AI素材库，请稍后重试',
+        description: '无法加载素材库，请稍后重试',
         variant: 'destructive'
       });
     } finally {
@@ -99,10 +102,14 @@ export default function EnhancedAssetLibrary({
   useEffect(() => {
     filterAssets();
   }, [filterAssets]);
+
+  // 处理上传成功后的回调
   const handleUploadSuccess = () => {
     loadAssets();
     setIsUploadOpen(false);
   };
+
+  // 获取类型图标
   const getTypeIcon = type => {
     const icons = {
       image: <Image className="w-4 h-4" />,
@@ -112,6 +119,8 @@ export default function EnhancedAssetLibrary({
     };
     return icons[type] || <FileText className="w-4 h-4" />;
   };
+
+  // 获取类型颜色
   const getTypeColor = type => {
     const colors = {
       image: 'bg-green-100 text-green-800',
@@ -126,16 +135,16 @@ export default function EnhancedAssetLibrary({
     label: '全部素材'
   }, {
     value: 'image',
-    label: 'AI图片'
+    label: '图片'
   }, {
     value: 'video',
-    label: 'AI视频'
+    label: '视频'
   }, {
     value: 'audio',
-    label: 'AI音频'
+    label: '音频'
   }, {
     value: 'document',
-    label: 'AI文档'
+    label: '文档'
   }];
 
   // 错误状态组件
@@ -157,14 +166,14 @@ export default function EnhancedAssetLibrary({
         <Search className="w-12 h-12 mx-auto" />
       </div>
       <h3 className="text-lg font-medium text-gray-900 mb-2">
-        {searchTerm || selectedType !== 'all' ? '没有找到匹配的AI素材' : '还没有AI素材'}
+        {searchTerm || selectedType !== 'all' ? '没有找到匹配的素材' : '还没有素材'}
       </h3>
       <p className="text-gray-600 mb-4">
-        {searchTerm || selectedType !== 'all' ? '尝试调整搜索条件或筛选器' : '开始上传您的第一个AI素材吧'}
+        {searchTerm || selectedType !== 'all' ? '尝试调整搜索条件或筛选器' : '开始上传您的第一个素材吧'}
       </p>
       <Button onClick={() => setIsUploadOpen(true)}>
         <Upload className="w-4 h-4 mr-2" />
-        上传AI素材
+        上传素材
       </Button>
     </div>;
 
@@ -172,11 +181,11 @@ export default function EnhancedAssetLibrary({
   const LoadingState = () => <div className="flex items-center justify-center h-64">
       <div className="text-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">正在加载AI素材...</p>
+        <p className="text-gray-600">正在加载素材...</p>
       </div>
     </div>;
 
-  // AI素材卡片组件
+  // 素材卡片组件
   const AssetCard = ({
     asset
   }) => <div key={asset._id} className="group cursor-pointer border rounded-lg overflow-hidden hover:shadow-lg transition-all hover:border-purple-300" onClick={() => onAssetSelect(asset)}>
@@ -244,7 +253,7 @@ export default function EnhancedAssetLibrary({
             <DialogTitle className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Sparkles className="w-5 h-5 text-purple-600" />
-                <span>AI素材库</span>
+                <span>素材库</span>
               </div>
               <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="hover:bg-gray-100">
                 <X className="w-4 h-4" />
@@ -257,12 +266,12 @@ export default function EnhancedAssetLibrary({
             <div className="mb-4 flex gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input placeholder="搜索AI素材名称或标签..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
+                <Input placeholder="搜索素材名称或标签..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
               </div>
               
               <Select value={selectedType} onValueChange={setSelectedType}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="选择AI类型" />
+                  <SelectValue placeholder="选择类型" />
                 </SelectTrigger>
                 <SelectContent>
                   {assetTypes.map(type => <SelectItem key={type.value} value={type.value}>
@@ -273,7 +282,7 @@ export default function EnhancedAssetLibrary({
 
               <Button onClick={() => setIsUploadOpen(true)}>
                 <Upload className="w-4 h-4 mr-2" />
-                上传AI素材
+                上传素材
               </Button>
             </div>
 

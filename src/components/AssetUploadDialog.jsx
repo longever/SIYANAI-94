@@ -61,6 +61,12 @@ export function AssetUploadDialog({
       reader.onerror = error => reject(error);
     });
   };
+  const getFileTypeFolder = mimeType => {
+    if (mimeType.startsWith('image/')) return 'image';
+    if (mimeType.startsWith('video/')) return 'video';
+    if (mimeType.startsWith('audio/')) return 'audio';
+    return 'other';
+  };
   const handleUpload = async () => {
     if (!file) {
       toast({
@@ -84,13 +90,17 @@ export function AssetUploadDialog({
       // 步骤1：上传文件到云存储
       setUploadProgress(30);
       const base64Data = await fileToBase64(file);
+
+      // 根据文件类型确定子文件夹
+      const fileTypeFolder = getFileTypeFolder(file.type);
+      const cloudPathPrefix = `saas_temp/${fileTypeFolder}`;
       const uploadResult = await $w.cloud.callFunction({
         name: 'upload-asset',
         data: {
           fileBase64: base64Data,
           fileName: file.name,
           contentType: file.type,
-          cloudPathPrefix: 'assets'
+          cloudPathPrefix: cloudPathPrefix
         }
       });
       if (uploadResult.error) {
@@ -108,12 +118,13 @@ export function AssetUploadDialog({
         mime_type: file.type,
         tags: metadata.tags.split(',').map(tag => tag.trim()).filter(Boolean),
         description: metadata.description.trim(),
-        folder_path: '/',
+        folder_path: `/${fileTypeFolder}`,
         download_count: 0,
         metadata: {
           originalName: file.name,
           uploadTime: new Date().toISOString(),
-          fileID: uploadResult.fileID
+          fileID: uploadResult.fileID,
+          cloudPath: uploadResult.cloudPath
         }
       };
       const saveResult = await $w.cloud.callDataSource({

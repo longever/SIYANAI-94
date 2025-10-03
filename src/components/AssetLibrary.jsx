@@ -29,6 +29,8 @@ export function AssetLibrary(props) {
   const [editingAsset, setEditingAsset] = useState(null);
   const [editName, setEditName] = useState('');
   const [editTags, setEditTags] = useState('');
+
+  // 获取素材列表
   const fetchAssets = useCallback(async () => {
     setLoading(true);
     try {
@@ -76,69 +78,25 @@ export function AssetLibrary(props) {
   useEffect(() => {
     fetchAssets();
   }, [fetchAssets]);
-  const handleUpload = async (file, metadata) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('type', metadata.type);
-      formData.append('category', metadata.category || '');
-      const uploadResult = await $w.cloud.callFunction({
-        name: 'upload-asset',
-        data: {
-          file: {
-            name: file.name,
-            type: file.type,
-            size: file.size
-          },
-          metadata: {
-            ...metadata,
-            folder: `saas_temp/${metadata.type}s`
-          }
-        }
-      });
-      if (uploadResult.success) {
-        await $w.cloud.callDataSource({
-          dataSourceName: 'asset_library',
-          methodName: 'wedaCreateV2',
-          params: {
-            data: {
-              name: metadata.name || file.name,
-              type: metadata.type,
-              category: metadata.category || '',
-              url: uploadResult.fileId,
-              folder_path: uploadResult.filePath,
-              size: file.size,
-              mime_type: file.type,
-              tags: metadata.tags || [],
-              metadata: metadata.custom || {},
-              thumbnail: uploadResult.thumbnailId || null
-            }
-          }
-        });
-        toast({
-          title: '上传成功',
-          description: '素材已添加到库中'
-        });
-        setUploadDialogOpen(false);
-        fetchAssets();
-      }
-    } catch (error) {
-      toast({
-        title: '上传失败',
-        description: error.message,
-        variant: 'destructive'
-      });
-    }
+
+  // 处理上传成功后的回调
+  const handleUploadSuccess = () => {
+    fetchAssets();
   };
+
+  // 处理删除素材
   const handleDelete = async asset => {
     if (!confirm(`确定要删除素材 "${asset.name}" 吗？`)) return;
     try {
+      // 从云存储删除文件
       await $w.cloud.callFunction({
         name: 'deleteAsset',
         data: {
           fileId: asset.url
         }
       });
+
+      // 从数据库删除记录
       await $w.cloud.callDataSource({
         dataSourceName: 'asset_library',
         methodName: 'wedaDeleteV2',
@@ -165,6 +123,8 @@ export function AssetLibrary(props) {
       });
     }
   };
+
+  // 处理更新素材信息
   const handleUpdate = async () => {
     if (!editingAsset) return;
     try {
@@ -201,8 +161,11 @@ export function AssetLibrary(props) {
       });
     }
   };
+
+  // 处理预览素材
   const handlePreview = async asset => {
     try {
+      // 获取云存储访问URL
       const result = await $w.cloud.callFunction({
         name: 'get-asset-download-url',
         data: {
@@ -222,18 +185,25 @@ export function AssetLibrary(props) {
       });
     }
   };
+
+  // 处理下载素材
   const handleDownload = async asset => {
     try {
+      // 获取云存储访问URL
       const result = await $w.cloud.callFunction({
         name: 'get-asset-download-url',
         data: {
           fileId: asset.url
         }
       });
+
+      // 创建下载链接
       const link = document.createElement('a');
       link.href = result.url;
       link.download = asset.name;
       link.click();
+
+      // 更新下载次数
       await $w.cloud.callDataSource({
         dataSourceName: 'asset_library',
         methodName: 'wedaUpdateV2',
@@ -258,6 +228,8 @@ export function AssetLibrary(props) {
       });
     }
   };
+
+  // 获取素材图标
   const getAssetIcon = type => {
     switch (type) {
       case 'image':
@@ -270,6 +242,8 @@ export function AssetLibrary(props) {
         return <FileText className="w-8 h-8" />;
     }
   };
+
+  // 获取素材类型颜色
   const getAssetTypeColor = type => {
     switch (type) {
       case 'image':
@@ -322,131 +296,131 @@ export function AssetLibrary(props) {
 
     <div className="flex-1 overflow-auto p-4">
       {loading ? <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div> : assets.length === 0 ? <div className="text-center py-12">
-        <FileImage className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-        <p className="text-gray-500">暂无素材</p>
-        <Button variant="outline" className="mt-4" onClick={() => setUploadDialogOpen(true)}>
-          开始上传
-        </Button>
-      </div> : <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-        {assets.map(asset => <Card key={asset._id} className="group relative overflow-hidden">
-          <CardContent className="p-0">
-            <div className="aspect-square bg-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors" onClick={() => handlePreview(asset)}>
-              {asset.thumbnail ? <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" /> : <div className="text-gray-400">
-                {getAssetIcon(asset.type)}
-              </div>}
-            </div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div> : assets.length === 0 ? <div className="text-center py-12">
+          <FileImage className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-500">暂无素材</p>
+          <Button variant="outline" className="mt-4" onClick={() => setUploadDialogOpen(true)}>
+            开始上传
+          </Button>
+        </div> : <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+          {assets.map(asset => <Card key={asset._id} className="group relative overflow-hidden">
+              <CardContent className="p-0">
+                <div className="aspect-square bg-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors" onClick={() => handlePreview(asset)}>
+                  {asset.thumbnail ? <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" /> : <div className="text-gray-400">
+                      {getAssetIcon(asset.type)}
+                    </div>}
+                </div>
 
-            <div className="p-3">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium truncate flex-1">
-                  {asset.name}
-                </span>
-                <Badge variant="secondary" className={cn("text-xs", getAssetTypeColor(asset.type))}>
-                  {asset.type}
-                </Badge>
-              </div>
+                <div className="p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium truncate flex-1">
+                      {asset.name}
+                    </span>
+                    <Badge variant="secondary" className={cn("text-xs", getAssetTypeColor(asset.type))}>
+                      {asset.type}
+                    </Badge>
+                  </div>
 
-              <div className="text-xs text-gray-500">
-                {(asset.size / 1024 / 1024).toFixed(1)} MB
-              </div>
+                  <div className="text-xs text-gray-500">
+                    {(asset.size / 1024 / 1024).toFixed(1)} MB
+                  </div>
 
-              {asset.tags && asset.tags.length > 0 && <div className="mt-1 flex flex-wrap gap-1">
-                {asset.tags.slice(0, 2).map((tag, idx) => <Badge key={idx} variant="outline" className="text-xs">
-                  {tag}
-                </Badge>)}
-              </div>}
-            </div>
+                  {asset.tags && asset.tags.length > 0 && <div className="mt-1 flex flex-wrap gap-1">
+                      {asset.tags.slice(0, 2).map((tag, idx) => <Badge key={idx} variant="outline" className="text-xs">
+                          {tag}
+                        </Badge>)}
+                    </div>}
+                </div>
 
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <div className="flex gap-1">
-                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 bg-white/90 hover:bg-white" onClick={e => {
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 bg-white/90 hover:bg-white" onClick={e => {
                   e.stopPropagation();
                   setEditingAsset(asset);
                   setEditName(asset.name);
                   setEditTags(asset.tags?.join(', ') || '');
                 }}>
-                  <Edit className="w-3 h-3" />
-                </Button>
+                      <Edit className="w-3 h-3" />
+                    </Button>
 
-                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 bg-white/90 hover:bg-white" onClick={e => {
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 bg-white/90 hover:bg-white" onClick={e => {
                   e.stopPropagation();
                   handleDelete(asset);
                 }}>
-                  <Trash2 className="w-3 h-3" />
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>)}
-      </div>}
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>)}
+        </div>}
     </div>
 
     {totalPages > 1 && <div className="border-t p-4">
-      <Pagination>
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1} />
-          </PaginationItem>
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1} />
+            </PaginationItem>
 
-          {[...Array(totalPages)].map((_, i) => <PaginationItem key={i}>
-            <PaginationLink onClick={() => setCurrentPage(i + 1)} isActive={currentPage === i + 1}>
-              {i + 1}
-            </PaginationLink>
-          </PaginationItem>)}
+            {[...Array(totalPages)].map((_, i) => <PaginationItem key={i}>
+                <PaginationLink onClick={() => setCurrentPage(i + 1)} isActive={currentPage === i + 1}>
+                  {i + 1}
+                </PaginationLink>
+              </PaginationItem>)}
 
-          <PaginationItem>
-            <PaginationNext onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
-    </div>}
+            <PaginationItem>
+              <PaginationNext onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </div>}
 
-    <AssetUploadDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} onUpload={handleUpload} />
+    <AssetUploadDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} onSuccess={handleUploadSuccess} $w={$w} />
 
     <AssetPreviewDialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen} asset={selectedAsset} onDownload={handleDownload} onDelete={handleDelete} />
 
     {editingAsset && <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <Card className="w-full max-w-md mx-4">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">编辑素材</h3>
-            <Button variant="ghost" size="sm" onClick={() => {
+        <Card className="w-full max-w-md mx-4">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">编辑素材</h3>
+              <Button variant="ghost" size="sm" onClick={() => {
               setEditingAsset(null);
               setEditName('');
               setEditTags('');
             }}>
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">名称</label>
-              <Input value={editName} onChange={e => setEditName(e.target.value)} placeholder="输入素材名称" />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium">标签</label>
-              <Input value={editTags} onChange={e => setEditTags(e.target.value)} placeholder="用逗号分隔多个标签" />
-            </div>
-
-            <div className="flex gap-2">
-              <Button onClick={handleUpdate} className="flex-1">
-                保存
+                <X className="w-4 h-4" />
               </Button>
-              <Button variant="outline" onClick={() => {
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">名称</label>
+                <Input value={editName} onChange={e => setEditName(e.target.value)} placeholder="输入素材名称" />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">标签</label>
+                <Input value={editTags} onChange={e => setEditTags(e.target.value)} placeholder="用逗号分隔多个标签" />
+              </div>
+
+              <div className="flex gap-2">
+                <Button onClick={handleUpdate} className="flex-1">
+                  保存
+                </Button>
+                <Button variant="outline" onClick={() => {
                 setEditingAsset(null);
                 setEditName('');
                 setEditTags('');
               }}>
-                取消
-              </Button>
+                  取消
+                </Button>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>}
+          </CardContent>
+        </Card>
+      </div>}
   </div>;
 }
