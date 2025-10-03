@@ -62,34 +62,31 @@ export function AssetUploadDialog({
     setUploadProgress(0);
     setError(null);
     try {
-      // 使用云函数上传文件
-      const uploadPromises = files.map(async file => {
-        // 先获取上传凭证
-        const uploadToken = await $w.cloud.callFunction({
-          name: 'upload-asset',
-          data: {
-            filename: file.name,
-            contentType: file.type,
-            size: file.size
-          }
+      const uploadedAssets = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+
+        // 将文件转换为 base64
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
         });
-        if (!uploadToken || !uploadToken.uploadUrl) {
-          throw new Error('获取上传凭证失败');
-        }
 
         // 上传到云存储
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('key', uploadToken.key);
-        formData.append('token', uploadToken.token);
-        const uploadResponse = await fetch(uploadToken.uploadUrl, {
-          method: 'POST',
-          body: formData
+        const uploadResult = await $w.cloud.callFunction({
+          name: 'upload-asset',
+          data: {
+            fileBase64: base64,
+            fileName: file.name,
+            contentType: file.type,
+            cloudPathPrefix: 'assets'
+          }
         });
-        if (!uploadResponse.ok) {
-          throw new Error(`上传失败: ${uploadResponse.statusText}`);
+        if (uploadResult.error) {
+          throw new Error(uploadResult.error);
         }
-        const uploadResult = await uploadResponse.json();
 
         // 保存素材信息到数据库
         const assetData = {
@@ -97,8 +94,8 @@ export function AssetUploadDialog({
           fileName: file.name,
           fileType: file.type,
           size: file.size,
-          url: uploadResult.fileId || uploadToken.fileId,
-          cloudPath: uploadToken.key,
+          url: uploadResult.fileURL,
+          cloudPath: uploadResult.fileID,
           type: file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'other',
           tags: [],
           createdAt: new Date().toISOString()
@@ -110,12 +107,14 @@ export function AssetUploadDialog({
             data: assetData
           }
         });
-        return {
+        uploadedAssets.push({
           ...assetData,
           _id: savedAsset.id
-        };
-      });
-      const uploadedAssets = await Promise.all(uploadPromises);
+        });
+
+        // 更新进度
+        setUploadProgress((i + 1) / files.length * 100);
+      }
       toast({
         title: "上传成功",
         description: `成功上传 ${uploadedAssets.length} 个文件`
@@ -211,7 +210,7 @@ export function AssetUploadDialog({
           {uploading && <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>上传中...</span>
-                <span>{uploadProgress}%</span>
+                <span>{Math.round(uploadProgress)}%</span>
               </div>
               <Progress value={uploadProgress} />
             </div>}
