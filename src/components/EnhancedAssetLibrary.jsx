@@ -54,18 +54,21 @@ export default function EnhancedAssetLibrary({
           try {
             const thumbnailUrl = await getAssetThumbnailUrl(asset, $w);
 
-            // 获取下载链接
+            // 获取下载链接 - 严格使用 fileId 参数
             let downloadUrl = null;
             try {
+              const fileId = asset.url || asset.fileId || asset.cloudPath || `saas_temp/${asset.type}/${asset.name}`;
+              if (!fileId) {
+                throw new Error('无法获取文件ID');
+              }
               const downloadResponse = await $w.cloud.callFunction({
                 name: 'get-asset-download-url',
                 data: {
-                  fileId: asset.url || asset.cloudPath || `saas_temp/${asset.type}/${asset.name}`,
-                  assetId: asset._id
+                  fileId: fileId
                 }
               });
-              if (downloadResponse.success && downloadResponse.data) {
-                downloadUrl = downloadResponse.data.downloadUrl;
+              if (downloadResponse.success && downloadResponse.url) {
+                downloadUrl = downloadResponse.url;
               }
             } catch (err) {
               console.error(`获取素材 ${asset.name} 的下载链接失败:`, err);
@@ -75,7 +78,8 @@ export default function EnhancedAssetLibrary({
               thumbnail: thumbnailUrl,
               downloadUrl: downloadUrl,
               formattedSize: formatFileSize(asset.size || 0),
-              cloudPath: asset.cloudPath || `saas_temp/${asset.type}/${asset.name}`
+              cloudPath: asset.cloudPath || `saas_temp/${asset.type}/${asset.name}`,
+              fileId: asset.url || asset.fileId || asset.cloudPath || `saas_temp/${asset.type}/${asset.name}`
             };
           } catch (err) {
             console.error(`处理素材 ${asset.name} 失败:`, err);
@@ -85,6 +89,7 @@ export default function EnhancedAssetLibrary({
               downloadUrl: null,
               formattedSize: formatFileSize(asset.size || 0),
               cloudPath: asset.cloudPath || `saas_temp/${asset.type}/${asset.name}`,
+              fileId: asset.url || asset.fileId || asset.cloudPath || `saas_temp/${asset.type}/${asset.name}`,
               error: true
             };
           }
@@ -131,17 +136,21 @@ export default function EnhancedAssetLibrary({
   // 获取下载链接
   const getDownloadUrl = async asset => {
     try {
+      // 严格确保传递 fileId 参数
+      const fileId = asset.fileId || asset.url || asset.cloudPath;
+      if (!fileId) {
+        throw new Error('无法获取文件ID');
+      }
       const response = await $w.cloud.callFunction({
         name: 'get-asset-download-url',
         data: {
-          fileId: asset.cloudPath,
-          assetId: asset._id
+          fileId: fileId
         }
       });
-      if (response.success && response.data) {
-        return response.data.downloadUrl;
+      if (response.success && response.url) {
+        return response.url;
       } else {
-        throw new Error(response.message || '获取下载链接失败');
+        throw new Error(response.error || '获取下载链接失败');
       }
     } catch (error) {
       console.error('获取下载链接失败:', error);

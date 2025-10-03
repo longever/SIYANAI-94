@@ -186,11 +186,15 @@ export function AssetLibrary(props) {
   // 处理预览素材
   const handlePreview = async asset => {
     try {
-      // 获取云存储访问URL
+      // 确保传递正确的 fileId 参数
+      const fileId = asset.url || asset.fileId || asset.cloudPath;
+      if (!fileId) {
+        throw new Error('无法获取文件ID');
+      }
       const result = await $w.cloud.callFunction({
         name: 'get-asset-download-url',
         data: {
-          fileId: asset.url
+          fileId: fileId
         }
       });
       if (result.success) {
@@ -214,11 +218,15 @@ export function AssetLibrary(props) {
   // 处理下载素材
   const handleDownload = async asset => {
     try {
-      // 获取云存储访问URL
+      // 确保传递正确的 fileId 参数
+      const fileId = asset.url || asset.fileId || asset.cloudPath;
+      if (!fileId) {
+        throw new Error('无法获取文件ID');
+      }
       const result = await $w.cloud.callFunction({
         name: 'get-asset-download-url',
         data: {
-          fileId: asset.url
+          fileId: fileId
         }
       });
       if (result.success) {

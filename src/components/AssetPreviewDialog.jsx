@@ -32,18 +32,21 @@ export function AssetPreviewDialog({
     if (!asset) return;
     setLoading(true);
     try {
-      // 使用正确的参数调用云函数
+      // 严格确保传递 fileId 参数
+      const fileId = asset.url || asset.fileId || asset.cloudPath;
+      if (!fileId) {
+        throw new Error('无法获取文件ID');
+      }
       const response = await $w.cloud.callFunction({
         name: 'get-asset-download-url',
         data: {
-          fileId: asset.url || asset.cloudPath || asset.path,
-          assetId: asset._id || asset.id
+          fileId: fileId
         }
       });
-      if (response.success && response.data) {
-        setPreviewUrl(response.data.downloadUrl);
+      if (response.success && response.url) {
+        setPreviewUrl(response.url);
       } else {
-        throw new Error(response.message || '获取预览链接失败');
+        throw new Error(response.error || '获取预览链接失败');
       }
     } catch (error) {
       console.error('获取预览链接失败:', error);
@@ -103,16 +106,20 @@ export function AssetPreviewDialog({
   const handleDownload = async () => {
     if (!asset) return;
     try {
+      // 严格确保传递 fileId 参数
+      const fileId = asset.url || asset.fileId || asset.cloudPath;
+      if (!fileId) {
+        throw new Error('无法获取文件ID');
+      }
       const response = await $w.cloud.callFunction({
         name: 'get-asset-download-url',
         data: {
-          fileId: asset.url || asset.cloudPath || asset.path,
-          assetId: asset._id || asset.id
+          fileId: fileId
         }
       });
-      if (response.success && response.data) {
+      if (response.success && response.url) {
         const link = document.createElement('a');
-        link.href = response.data.downloadUrl;
+        link.href = response.url;
         link.download = asset.name || 'download';
         link.style.display = 'none';
         document.body.appendChild(link);
@@ -126,7 +133,7 @@ export function AssetPreviewDialog({
           onDownload(asset);
         }
       } else {
-        throw new Error(response.message || '获取下载链接失败');
+        throw new Error(response.error || '获取下载链接失败');
       }
     } catch (error) {
       toast({
