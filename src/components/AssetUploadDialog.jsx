@@ -8,7 +8,8 @@ import { Upload, X } from 'lucide-react';
 export function AssetUploadDialog({
   open,
   onOpenChange,
-  onUpload
+  onSuccess,
+  $w
 }) {
   const {
     toast
@@ -44,13 +45,53 @@ export function AssetUploadDialog({
     }
     setUploading(true);
     try {
-      await onUpload(file, {
-        ...metadata,
-        tags: metadata.tags.split(',').map(tag => tag.trim()).filter(Boolean)
+      // 使用正确的云函数名称：material-service
+      const response = await $w.cloud.callFunction({
+        name: 'material-service',
+        data: {
+          action: 'uploadAsset',
+          file: {
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            data: await fileToBase64(file)
+          },
+          metadata: {
+            ...metadata,
+            tags: metadata.tags.split(',').map(tag => tag.trim()).filter(Boolean),
+            size: file.size,
+            mimeType: file.type,
+            uploadTime: new Date().toISOString()
+          }
+        }
+      });
+      if (response.success) {
+        toast({
+          title: '上传成功',
+          description: '素材已成功上传到素材库'
+        });
+        onSuccess();
+      } else {
+        throw new Error(response.error || '上传失败');
+      }
+    } catch (error) {
+      console.error('上传失败:', error);
+      toast({
+        title: '上传失败',
+        description: error.message || '请稍后重试',
+        variant: 'destructive'
       });
     } finally {
       setUploading(false);
     }
+  };
+  const fileToBase64 = file => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
   };
   const resetForm = () => {
     setFile(null);
