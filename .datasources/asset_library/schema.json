@@ -10,45 +10,27 @@
     },
     {
       "name": "type",
-      "title": "素材类型",
+      "title": "文件类型",
       "type": "String"
+    },
+    {
+      "name": "category",
+      "title": "分类",
+      "type": "String"
+    },
+    {
+      "name": "url",
+      "title": "文件URL",
+      "type": "Url"
+    },
+    {
+      "name": "thumbnail",
+      "title": "缩略图URL",
+      "type": "Image"
     },
     {
       "name": "size",
       "title": "文件大小",
-      "type": "Number"
-    },
-    {
-      "name": "url",
-      "title": "云存储路径",
-      "type": "String"
-    },
-    {
-      "name": "downloadUrl",
-      "title": "临时下载地址",
-      "type": "String"
-    },
-    {
-      "name": "tags",
-      "title": "标签数组",
-      "type": "Array",
-      "items": {
-        "type": "String"
-      }
-    },
-    {
-      "name": "category",
-      "title": "素材分类",
-      "type": "String"
-    },
-    {
-      "name": "thumbnail",
-      "title": "缩略图地址",
-      "type": "String"
-    },
-    {
-      "name": "duration",
-      "title": "时长(秒)",
       "type": "Number"
     },
     {
@@ -57,34 +39,27 @@
       "type": "String"
     },
     {
-      "name": "dimensions",
-      "title": "尺寸信息",
-      "type": "Object"
+      "name": "tags",
+      "title": "标签",
+      "type": "Array",
+      "items": {
+        "type": "String"
+      }
     },
     {
-      "name": "usage_count",
-      "title": "使用次数",
-      "type": "Number"
+      "name": "description",
+      "title": "描述",
+      "type": "MultiLineString"
+    },
+    {
+      "name": "folder_path",
+      "title": "文件夹路径",
+      "type": "String"
     },
     {
       "name": "download_count",
       "title": "下载次数",
       "type": "Number"
-    },
-    {
-      "name": "is_platform",
-      "title": "是否平台素材",
-      "type": "Boolean"
-    },
-    {
-      "name": "folder_path",
-      "title": "云存储完整路径",
-      "type": "String"
-    },
-    {
-      "name": "file_hash",
-      "title": "文件哈希值",
-      "type": "String"
     },
     {
       "name": "metadata",
