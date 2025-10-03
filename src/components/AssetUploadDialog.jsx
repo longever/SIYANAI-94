@@ -45,22 +45,17 @@ export function AssetUploadDialog({
     }
     setUploading(true);
     try {
-      // 使用正确的云函数名称：material-service
+      // 使用正确的云函数调用方式
       const response = await $w.cloud.callFunction({
-        name: 'material-service',
+        name: 'upload-asset',
         data: {
-          action: 'uploadAsset',
-          file: {
-            name: file.name,
-            type: file.type,
-            size: file.size,
-            data: await fileToBase64(file)
-          },
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+          fileData: await fileToBase64(file),
           metadata: {
             ...metadata,
             tags: metadata.tags.split(',').map(tag => tag.trim()).filter(Boolean),
-            size: file.size,
-            mimeType: file.type,
             uploadTime: new Date().toISOString()
           }
         }

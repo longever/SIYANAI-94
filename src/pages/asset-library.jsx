@@ -27,7 +27,7 @@ export default function AssetLibraryPage(props) {
     try {
       setLoading(true);
 
-      // 使用数据源查询素材
+      // 使用正确的数据源调用方式
       const result = await $w.cloud.callDataSource({
         dataSourceName: 'asset_library',
         methodName: 'wedaGetRecordsV2',
@@ -37,7 +37,10 @@ export default function AssetLibraryPage(props) {
           }],
           getCount: true,
           pageSize: 100,
-          pageNumber: 1
+          pageNumber: 1,
+          select: {
+            $master: true
+          }
         }
       });
       if (result.records) {
@@ -102,55 +105,55 @@ export default function AssetLibraryPage(props) {
     }
   };
   return <div className="min-h-screen bg-gray-50">
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">素材库</h1>
-        <p className="text-gray-600">管理您的图片、视频和音频素材</p>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm border">
-        <div className="p-6 border-b">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input placeholder="搜索素材..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部</SelectItem>
-                  <SelectItem value="image">图片</SelectItem>
-                  <SelectItem value="video">视频</SelectItem>
-                  <SelectItem value="audio">音频</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Button onClick={() => setUploadDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                上传素材
-              </Button>
-            </div>
-          </div>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">素材库</h1>
+          <p className="text-gray-600">管理您的图片、视频和音频素材</p>
         </div>
 
-        <Tabs defaultValue="grid" className="w-full">
-          <TabsList className="w-full justify-start rounded-none border-b px-6">
-            <TabsTrigger value="grid">网格视图</TabsTrigger>
-          </TabsList>
+        <div className="bg-white rounded-lg shadow-sm border">
+          <div className="p-6 border-b">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input placeholder="搜索素材..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
+                </div>
+              </div>
 
-          <TabsContent value="grid" className="p-6">
-            <AssetGrid assets={filteredAssets} loading={loading} onDelete={handleDeleteAsset} onRefresh={loadAssets} />
-          </TabsContent>
-        </Tabs>
+              <div className="flex gap-2">
+                <Select value={selectedType} onValueChange={setSelectedType}>
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部</SelectItem>
+                    <SelectItem value="image">图片</SelectItem>
+                    <SelectItem value="video">视频</SelectItem>
+                    <SelectItem value="audio">音频</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Button onClick={() => setUploadDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  上传素材
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <Tabs defaultValue="grid" className="w-full">
+            <TabsList className="w-full justify-start rounded-none border-b px-6">
+              <TabsTrigger value="grid">网格视图</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="grid" className="p-6">
+              <AssetGrid assets={filteredAssets} loading={loading} onDelete={handleDeleteAsset} onRefresh={loadAssets} />
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
-    </div>
 
-    <AssetUploadDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} onUploadSuccess={handleUploadSuccess} />
-  </div>;
+      <AssetUploadDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} onUploadSuccess={handleUploadSuccess} $w={$w} />
+    </div>;
 }
