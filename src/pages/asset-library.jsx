@@ -32,8 +32,6 @@ export default function AssetLibraryPage(props) {
   const loadAssetLibraryData = async () => {
     try {
       setLoading(true);
-      setError(null);
-      setShowErrorAlert(false);
 
       // 从数据源获取用户信息
       const userData = await $w.cloud.callDataSource({
