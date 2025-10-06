@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, Button, Textarea, Input, Labe
 // @ts-ignore;
 import { Image, Music, Film } from 'lucide-react';
 
-import { AssetLibrary } from '@/components/AssetLibrary';
+import { EnhancedAssetLibrary } from '@/components/EnhancedAssetLibrary';
 export function Text2VideoPanel({
   onAddToTimeline,
   $w
@@ -134,7 +134,7 @@ export function Text2VideoPanel({
           <DialogHeader>
             <DialogTitle>选择素材</DialogTitle>
           </DialogHeader>
-          <AssetLibrary onAssetSelect={handleAssetSelect} onInsertToCreator={handleAssetSelect} $w={$w} />
+          <EnhancedAssetLibrary onAssetSelect={handleAssetSelect} onClose={() => setShowAssetLibrary(false)} mode="select" />
         </DialogContent>
       </Dialog>
     </div>;
