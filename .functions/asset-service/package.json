@@ -2,11 +2,10 @@
     {
       "name": "asset-service",
       "version": "1.0.0",
-      "description": "素材管理云函数，提供上传、下载、列表、删除、更新等RESTful接口",
+      "description": "素材管理云函数，提供文件上传、列表查询、删除、更新标签和下载功能",
       "main": "index.js",
       "dependencies": {
         "@cloudbase/node-sdk": "^3.3.7",
-        "uuid": "^9.0.0",
         "busboy": "^1.6.0"
       }
     }

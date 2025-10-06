@@ -8,22 +8,6 @@
     "url": "https://example.com/assets/city-night.jpg",
     "uploader": "admin",
     "size": 2048576,
-    "thumbnail": "https://example.com/assets/thumbs/city-night-thumb.jpg",
-    "metadata": {
-      "width": 1920,
-      "height": 1080,
-      "format": "JPEG",
-      "colorSpace": "sRGB"
-    },
-    "is_platform": true,
-    "download_count": 156,
-    "usage_count": 23,
-    "mime_type": "image/jpeg",
-    "category": "背景图",
-    "dimensions": {
-      "width": 1920,
-      "height": 1080
-    },
     "createdAt": 1728192000000,
     "updatedAt": 1728192000000
   },
@@ -35,24 +19,6 @@
     "url": "https://example.com/assets/corporate-intro.mp4",
     "uploader": "user_123",
     "size": 15728640,
-    "thumbnail": "https://example.com/assets/thumbs/corporate-intro-thumb.jpg",
-    "metadata": {
-      "width": 1920,
-      "height": 1080,
-      "duration": 15.5,
-      "fps": 30,
-      "codec": "H.264"
-    },
-    "is_platform": false,
-    "download_count": 89,
-    "duration": 15.5,
-    "usage_count": 12,
-    "mime_type": "video/mp4",
-    "category": "片头模板",
-    "dimensions": {
-      "width": 1920,
-      "height": 1080
-    },
     "createdAt": 1728105600000,
     "updatedAt": 1728278400000
   },
@@ -64,20 +30,6 @@
     "url": "https://example.com/assets/upbeat-bg.mp3",
     "uploader": "admin",
     "size": 3145728,
-    "thumbnail": "https://example.com/assets/thumbs/audio-default-thumb.jpg",
-    "metadata": {
-      "duration": 120,
-      "bitrate": 320,
-      "sampleRate": 44100,
-      "channels": 2
-    },
-    "is_platform": true,
-    "download_count": 234,
-    "duration": 120,
-    "usage_count": 45,
-    "mime_type": "audio/mpeg",
-    "category": "背景音乐",
-    "dimensions": {},
     "createdAt": 1728019200000,
     "updatedAt": 1728019200000
   },
@@ -89,22 +41,6 @@
     "url": "https://example.com/assets/nature-landscape.jpg",
     "uploader": "user_456",
     "size": 3145728,
-    "thumbnail": "https://example.com/assets/thumbs/nature-landscape-thumb.jpg",
-    "metadata": {
-      "width": 2560,
-      "height": 1440,
-      "format": "JPEG",
-      "colorSpace": "sRGB"
-    },
-    "is_platform": false,
-    "download_count": 78,
-    "usage_count": 15,
-    "mime_type": "image/jpeg",
-    "category": "背景图",
-    "dimensions": {
-      "width": 2560,
-      "height": 1440
-    },
     "createdAt": 1727932800000,
     "updatedAt": 1727932800000
   },
@@ -116,23 +52,7 @@
     "url": "https://example.com/assets/brand-logo.svg",
     "uploader": "design_team",
     "size": 524288,
-    "thumbnail": "https://example.com/assets/thumbs/brand-logo-thumb.png",
-    "metadata": {
-      "format": "SVG",
-      "vector": true,
-      "colors": 3
-    },
-    "is_platform": true,
-    "download_count": 167,
-    "usage_count": 34,
-    "mime_type": "image/svg+xml",
-    "category": "Logo",
-    "dimensions": {
-      "width": 500,
-      "height": 500
-    },
     "createdAt": 1727846400000,
     "updatedAt": 1727846400000
   }
 ]
-  

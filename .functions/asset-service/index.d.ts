@@ -1,25 +1,19 @@
 
     interface Asset {
-      _id?: string;
-      name: string;
-      type: 'image' | 'video' | 'audio' | 'document';
+      _id: string;
+      fileName: string;
+      fileID: string;
+      fileUrl: string;
       tags: string[];
-      url: string;
-      size: number;
-      owner: string;
-      createdAt: Date;
-      updatedAt: Date;
+      createdAt: string;
     }
 
     interface UploadResponse {
       id: string;
-      name: string;
-      type: string;
+      fileName: string;
+      fileUrl: string;
       tags: string[];
-      url: string;
-      size: number;
-      owner: string;
-      createdAt: Date;
+      createdAt: string;
     }
 
     interface ListResponse {
@@ -27,39 +21,33 @@
       total: number;
     }
 
-    interface DownloadResponse {
-      url: string;
-      expiresIn: number;
-    }
-
     interface DeleteResponse {
-      id: string;
+      success: boolean;
     }
 
-    interface UpdateResponse {
+    interface UpdateTagsResponse {
       id: string;
-      name?: string;
-      tags?: string[];
-      updatedAt: Date;
+      tags: string[];
     }
 
-    interface ApiResponse<T = any> {
-      code: number;
-      data: T;
-      message?: string;
+    interface DownloadResponse {
+      downloadUrl: string;
+      expires: number;
     }
 
     interface CloudFunctionEvent {
-      httpMethod: string;
       path: string;
+      httpMethod: string;
       headers: Record<string, string>;
       body: string;
       isBase64Encoded: boolean;
       queryString?: Record<string, string>;
-      userInfo?: {
-        openId: string;
-      };
+      pathParameters?: Record<string, string>;
     }
 
-    export declare function main(event: CloudFunctionEvent, context: any): Promise<ApiResponse>;
+    export declare function main(event: CloudFunctionEvent, context: any): Promise<{
+      statusCode: number;
+      headers: Record<string, string>;
+      body: string;
+    }>;
   

@@ -2,360 +2,280 @@
     'use strict';
 
     const cloudbase = require('@cloudbase/node-sdk');
-    const { v4: uuidv4 } = require('uuid');
     const Busboy = require('busboy');
 
+    // 初始化 CloudBase
     const app = cloudbase.init();
     const models = app.models;
-    const storage = app.storage;
 
-    // 统一响应格式
-    function createResponse(code, data, message) {
-      return {
-        code,
-        data,
-        message
-      };
+    // 工具函数：生成唯一ID
+    function generateId() {
+      return 'asset_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     }
 
-    // 解析 multipart/form-data
+    // 工具函数：解析 multipart/form-data
     function parseMultipart(event) {
       return new Promise((resolve, reject) => {
-        const busboy = Busboy({
-          headers: {
-            'content-type': event.headers['content-type'] || event.headers['Content-Type']
-          }
-        });
-        
-        const result = {
-          file: null,
-          fields: {}
-        };
+        const busboy = Busboy({ headers: event.headers });
+        const files = [];
+        const fields = {};
 
         busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
           const chunks = [];
           file.on('data', (chunk) => chunks.push(chunk));
           file.on('end', () => {
-            result.file = {
-              buffer: Buffer.concat(chunks),
+            files.push({
+              fieldname,
               filename,
-              mimetype
-            };
+              encoding,
+              mimetype,
+              buffer: Buffer.concat(chunks)
+            });
           });
         });
 
         busboy.on('field', (fieldname, value) => {
-          result.fields[fieldname] = value;
+          try {
+            fields[fieldname] = JSON.parse(value);
+          } catch {
+            fields[fieldname] = value;
+          }
         });
 
-        busboy.on('finish', () => resolve(result));
+        busboy.on('finish', () => resolve({ files, fields }));
         busboy.on('error', reject);
 
         // 处理 base64 编码的 body
-        const body = event.isBase64Encoded ? Buffer.from(event.body, 'base64') : event.body;
-        busboy.write(body);
+        const bodyBuffer = Buffer.from(event.body, event.isBase64Encoded ? 'base64' : 'utf8');
+        busboy.write(bodyBuffer);
         busboy.end();
       });
     }
 
-    // 上传文件
-    async function uploadAsset(event, context) {
+    // 统一错误处理
+    function handleError(error, statusCode = 500) {
+      console.error('Error:', error);
+      return {
+        statusCode,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: error.message || 'Internal server error' })
+      };
+    }
+
+    // 成功响应
+    function successResponse(data, statusCode = 200) {
+      return {
+        statusCode,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      };
+    }
+
+    // 路由处理
+    async function handleUpload(event) {
       try {
-        const parsed = await parseMultipart(event);
-        const { file, fields } = parsed;
+        const { files, fields } = await parseMultipart(event);
         
-        if (!file) {
-          return createResponse(400, null, '缺少文件');
+        if (!files || files.length === 0) {
+          throw new Error('No file uploaded');
         }
 
-        const { type, tags, name } = fields;
-        if (!type) {
-          return createResponse(400, null, '缺少素材类型');
-        }
-
-        const validTypes = ['image', 'video', 'audio', 'document'];
-        if (!validTypes.includes(type)) {
-          return createResponse(400, null, '无效的素材类型');
-        }
-
-        const fileId = uuidv4();
-        const fileName = name || file.filename;
-        const filePath = `saas_temp/${type}/${fileId}`;
+        const file = files[0];
+        const tags = fields.tags || [];
 
         // 上传到云存储
-        const uploadResult = await storage.upload({
-          cloudPath: filePath,
+        const fileName = file.filename;
+        const cloudPath = `saas_temp/${generateId()}_${fileName}`;
+        
+        const uploadResult = await app.uploadFile({
+          cloudPath,
           fileContent: file.buffer
         });
 
-        // 获取用户信息
-        const userInfo = event.userInfo || {};
-        const openId = userInfo.openId || 'anonymous';
-
         // 保存到数据模型
         const assetData = {
-          name: fileName,
-          type,
-          tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
-          url: uploadResult.fileID,
-          size: file.buffer.length,
-          owner: openId,
-          createdAt: new Date(),
-          updatedAt: new Date()
+          _id: generateId(),
+          fileName,
+          fileID: uploadResult.fileID,
+          fileUrl: uploadResult.fileID, // CloudBase 中 fileID 就是访问地址
+          tags: Array.isArray(tags) ? tags : [tags],
+          createdAt: new Date().toISOString()
         };
 
         const result = await models.asset.create({
           data: assetData
         });
 
-        return createResponse(0, {
+        return successResponse({
           id: result.data._id,
-          name: assetData.name,
-          type: assetData.type,
-          tags: assetData.tags,
-          url: assetData.url,
-          size: assetData.size,
-          owner: assetData.owner,
-          createdAt: assetData.createdAt
+          fileName: result.data.fileName,
+          fileUrl: result.data.fileUrl,
+          tags: result.data.tags,
+          createdAt: result.data.createdAt
         });
       } catch (error) {
-        console.error('Upload error:', error);
-        return createResponse(500, null, error.message);
+        return handleError(error, 400);
       }
     }
 
-    // 获取素材列表
-    async function listAssets(event, context) {
+    async function handleList(event) {
       try {
         const query = event.queryString || {};
         const page = parseInt(query.page) || 1;
-        const size = Math.min(parseInt(query.size) || 20, 100);
-        const { type, tags, keyword } = query;
-
-        const where = {};
-        
-        if (type) {
-          where.type = { $eq: type };
-        }
-
-        if (tags) {
-          const tagList = tags.split(',').map(tag => tag.trim());
-          where.tags = { $in: tagList };
-        }
-
-        if (keyword) {
-          where.$or = [
-            { name: { $search: keyword } },
-            { tags: { $search: keyword } }
-          ];
-        }
+        const pageSize = parseInt(query.pageSize) || 20;
+        const skip = (page - 1) * pageSize;
 
         const result = await models.asset.list({
           filter: {
-            where
-          },
-          pageSize: size,
-          pageNumber: page,
-          getCount: true,
-          select: {
-            $master: true
-          },
-          orderBy: [{
-            field: 'createdAt',
-            direction: 'desc'
+            orderBy: [{ field: 'createdAt', direction: 'desc' }],
+            limit: pageSize,
+            offset: skip
+          }
+        });
+
+        return successResponse({
+          list: result.data.records || [],
+          total: result.data.total || 0
+        });
+      } catch (error) {
+        return handleError(error);
+      }
+    }
+
+    async function handleDelete(event) {
+      try {
+        const id = event.pathParameters.id;
+        if (!id) {
+          throw new Error('Asset ID is required');
+        }
+
+        // 查询资产信息
+        const asset = await models.asset.get({
+          filter: { where: { _id: { $eq: id } } }
+        });
+
+        if (!asset.data || !asset.data.records || asset.data.records.length === 0) {
+          throw new Error('Asset not found');
+        }
+
+        const assetData = asset.data.records[0];
+
+        // 删除云存储文件
+        try {
+          await app.deleteFile({ fileList: [assetData.fileID] });
+        } catch (error) {
+          console.error('Failed to delete file from storage:', error);
+          // 继续删除数据库记录，即使文件删除失败
+        }
+
+        // 删除数据库记录
+        await models.asset.delete({
+          filter: { where: { _id: { $eq: id } } }
+        });
+
+        return successResponse({ success: true });
+      } catch (error) {
+        return handleError(error, 404);
+      }
+    }
+
+    async function handleUpdateTags(event) {
+      try {
+        const id = event.pathParameters.id;
+        if (!id) {
+          throw new Error('Asset ID is required');
+        }
+
+        const body = JSON.parse(event.body || '{}');
+        const { tags } = body;
+
+        if (!Array.isArray(tags)) {
+          throw new Error('Tags must be an array');
+        }
+
+        const result = await models.asset.update({
+          data: { tags },
+          filter: { where: { _id: { $eq: id } } }
+        });
+
+        if (!result.data || result.data.total === 0) {
+          throw new Error('Asset not found');
+        }
+
+        return successResponse({
+          id,
+          tags
+        });
+      } catch (error) {
+        return handleError(error, 400);
+      }
+    }
+
+    async function handleDownload(event) {
+      try {
+        const id = event.pathParameters.id;
+        if (!id) {
+          throw new Error('Asset ID is required');
+        }
+
+        const asset = await models.asset.get({
+          filter: { where: { _id: { $eq: id } } }
+        });
+
+        if (!asset.data || !asset.data.records || asset.data.records.length === 0) {
+          throw new Error('Asset not found');
+        }
+
+        const assetData = asset.data.records[0];
+        
+        // 生成临时下载链接（有效期1小时）
+        const downloadUrl = await app.getTempFileURL({
+          fileList: [{
+            fileID: assetData.fileID,
+            maxAge: 3600 // 1小时
           }]
         });
 
-        return createResponse(0, {
-          list: result.data.records,
-          total: result.data.total
+        return successResponse({
+          downloadUrl: downloadUrl.fileList[0].tempFileURL,
+          expires: Date.now() + 3600 * 1000
         });
       } catch (error) {
-        console.error('List error:', error);
-        return createResponse(500, null, error.message);
+        return handleError(error, 404);
       }
     }
 
-    // 获取下载链接
-    async function downloadAsset(event, context) {
-      try {
-        const { id } = event.queryString || {};
-        
-        if (!id) {
-          return createResponse(400, null, '缺少素材ID');
-        }
-
-        const result = await models.asset.get({
-          filter: {
-            where: { _id: { $eq: id } }
-          },
-          select: {
-            url: true
-          }
-        });
-
-        if (!result.data.records || result.data.records.length === 0) {
-          return createResponse(404, null, '素材不存在');
-        }
-
-        const asset = result.data.records[0];
-        const downloadUrl = await storage.getTempFileURL({
-          fileList: [asset.url]
-        });
-
-        return createResponse(0, {
-          url: downloadUrl.fileList[0].tempFileURL,
-          expiresIn: 900 // 15分钟
-        });
-      } catch (error) {
-        console.error('Download error:', error);
-        return createResponse(500, null, error.message);
-      }
-    }
-
-    // 删除素材
-    async function deleteAsset(event, context) {
-      try {
-        const { id } = event.queryString || {};
-        
-        if (!id) {
-          return createResponse(400, null, '缺少素材ID');
-        }
-
-        // 获取用户信息
-        const userInfo = event.userInfo || {};
-        const openId = userInfo.openId || 'anonymous';
-
-        // 查询素材
-        const result = await models.asset.get({
-          filter: {
-            where: { _id: { $eq: id } }
-          },
-          select: {
-            url: true,
-            owner: true
-          }
-        });
-
-        if (!result.data.records || result.data.records.length === 0) {
-          return createResponse(404, null, '素材不存在');
-        }
-
-        const asset = result.data.records[0];
-
-        // 权限校验
-        if (asset.owner !== openId) {
-          return createResponse(403, null, '无权限删除该素材');
-        }
-
-        // 删除云存储文件
-        await storage.deleteFile({
-          fileList: [asset.url]
-        });
-
-        // 删除数据记录
-        await models.asset.delete({
-          filter: {
-            where: { _id: { $eq: id } }
-          }
-        });
-
-        return createResponse(0, { id });
-      } catch (error) {
-        console.error('Delete error:', error);
-        return createResponse(500, null, error.message);
-      }
-    }
-
-    // 更新素材
-    async function updateAsset(event, context) {
-      try {
-        const body = JSON.parse(event.body || '{}');
-        const { id, name, tags } = body;
-
-        if (!id) {
-          return createResponse(400, null, '缺少素材ID');
-        }
-
-        if (!name && !tags) {
-          return createResponse(400, null, '缺少更新内容');
-        }
-
-        // 获取用户信息
-        const userInfo = event.userInfo || {};
-        const openId = userInfo.openId || 'anonymous';
-
-        // 查询素材
-        const result = await models.asset.get({
-          filter: {
-            where: { _id: { $eq: id } }
-          },
-          select: {
-            owner: true
-          }
-        });
-
-        if (!result.data.records || result.data.records.length === 0) {
-          return createResponse(404, null, '素材不存在');
-        }
-
-        const asset = result.data.records[0];
-
-        // 权限校验
-        if (asset.owner !== openId) {
-          return createResponse(403, null, '无权限更新该素材');
-        }
-
-        // 构建更新数据
-        const updateData = {
-          updatedAt: new Date()
-        };
-        
-        if (name) updateData.name = name;
-        if (tags) updateData.tags = Array.isArray(tags) ? tags : tags.split(',').map(tag => tag.trim());
-
-        // 更新记录
-        await models.asset.update({
-          data: updateData,
-          filter: {
-            where: { _id: { $eq: id } }
-          }
-        });
-
-        return createResponse(0, {
-          id,
-          name: updateData.name,
-          tags: updateData.tags,
-          updatedAt: updateData.updatedAt
-        });
-      } catch (error) {
-        console.error('Update error:', error);
-        return createResponse(500, null, error.message);
-      }
-    }
-
-    // 路由分发
+    // 主函数
     exports.main = async (event, context) => {
-      const { httpMethod, path } = event;
-
       try {
-        switch (`${httpMethod} ${path}`) {
-          case 'POST /upload':
-            return await uploadAsset(event, context);
-          case 'GET /list':
-            return await listAssets(event, context);
-          case 'GET /download':
-            return await downloadAsset(event, context);
-          case 'DELETE /delete':
-            return await deleteAsset(event, context);
-          case 'PUT /update':
-            return await updateAsset(event, context);
-          default:
-            return createResponse(404, null, '接口不存在');
+        const { path, httpMethod } = event;
+
+        // 路由分发
+        if (httpMethod === 'POST' && path === '/upload') {
+          return await handleUpload(event);
+        } else if (httpMethod === 'GET' && path === '/list') {
+          return await handleList(event);
+        } else if (httpMethod === 'DELETE' && path.startsWith('/')) {
+          const id = path.split('/')[1];
+          event.pathParameters = { id };
+          return await handleDelete(event);
+        } else if (httpMethod === 'PUT' && path.startsWith('/')) {
+          const id = path.split('/')[1];
+          event.pathParameters = { id };
+          return await handleUpdateTags(event);
+        } else if (httpMethod === 'GET' && path.startsWith('/download/')) {
+          const id = path.split('/download/')[1];
+          event.pathParameters = { id };
+          return await handleDownload(event);
+        } else {
+          return {
+            statusCode: 404,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ error: 'Not found' })
+          };
         }
       } catch (error) {
-        console.error('Router error:', error);
-        return createResponse(500, null, '服务器内部错误');
+        return handleError(error);
       }
     };
   
