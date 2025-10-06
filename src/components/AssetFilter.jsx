@@ -1,98 +1,71 @@
 // @ts-ignore;
 import React from 'react';
 // @ts-ignore;
-import { Button, Badge, Input } from '@/components/ui';
+import { Button, Badge, ScrollArea } from '@/components/ui';
 // @ts-ignore;
-import { Search, Filter } from 'lucide-react';
+import { FileImage, FileAudio, FileVideo, FileText, Tag, X } from 'lucide-react';
+// @ts-ignore;
+import { cn } from '@/lib/utils';
 
+const assetTypes = [{
+  value: 'all',
+  label: '全部',
+  icon: null
+}, {
+  value: 'image',
+  label: '图片',
+  icon: FileImage
+}, {
+  value: 'video',
+  label: '视频',
+  icon: FileVideo
+}, {
+  value: 'audio',
+  label: '音频',
+  icon: FileAudio
+}, {
+  value: 'other',
+  label: '其他',
+  icon: FileText
+}];
 export function AssetFilter({
-  onFilterChange,
-  activeFilters
+  selectedType,
+  onTypeChange,
+  selectedTags,
+  onTagToggle,
+  allTags
 }) {
-  const [searchTerm, setSearchTerm] = React.useState('');
-  const [selectedTypes, setSelectedTypes] = React.useState([]);
-  const [selectedTags, setSelectedTags] = React.useState([]);
-  const assetTypes = [{
-    value: 'image',
-    label: '图片',
-    color: 'bg-blue-100 text-blue-800'
-  }, {
-    value: 'audio',
-    label: '音频',
-    color: 'bg-green-100 text-green-800'
-  }, {
-    value: 'video',
-    label: '视频',
-    color: 'bg-purple-100 text-purple-800'
-  }, {
-    value: 'other',
-    label: '其他',
-    color: 'bg-gray-100 text-gray-800'
-  }];
-  const popularTags = ['高清', '风景', '人物', '产品', '背景', '图标', '音乐', '音效'];
-  const handleSearch = value => {
-    setSearchTerm(value);
-    onFilterChange({
-      search: value,
-      types: selectedTypes,
-      tags: selectedTags
-    });
-  };
-  const toggleType = type => {
-    const newTypes = selectedTypes.includes(type) ? selectedTypes.filter(t => t !== type) : [...selectedTypes, type];
-    setSelectedTypes(newTypes);
-    onFilterChange({
-      search: searchTerm,
-      types: newTypes,
-      tags: selectedTags
-    });
-  };
-  const toggleTag = tag => {
-    const newTags = selectedTags.includes(tag) ? selectedTags.filter(t => t !== tag) : [...selectedTags, tag];
-    setSelectedTags(newTags);
-    onFilterChange({
-      search: searchTerm,
-      types: selectedTypes,
-      tags: newTags
-    });
-  };
-  const clearAll = () => {
-    setSearchTerm('');
-    setSelectedTypes([]);
-    setSelectedTags([]);
-    onFilterChange({
-      search: '',
-      types: [],
-      tags: []
-    });
-  };
-  return <div className="space-y-4">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-        <Input placeholder="搜索素材名称或标签..." value={searchTerm} onChange={e => handleSearch(e.target.value)} className="pl-10" />
-      </div>
-
+  return <div className="space-y-6">
+      {/* 类型筛选 */}
       <div>
-        <h4 className="text-sm font-medium mb-2">文件类型</h4>
-        <div className="flex flex-wrap gap-2">
-          {assetTypes.map(type => <Badge key={type.value} variant={selectedTypes.includes(type.value) ? "default" : "outline"} className={`cursor-pointer ${selectedTypes.includes(type.value) ? type.color : ''}`} onClick={() => toggleType(type.value)}>
-              {type.label}
-            </Badge>)}
+        <h3 className="font-medium mb-3">素材类型</h3>
+        <div className="space-y-1">
+          {assetTypes.map(type => {
+          const Icon = type.icon;
+          return <Button key={type.value} variant={selectedType === type.value ? "secondary" : "ghost"} className={cn("w-full justify-start", selectedType === type.value && "bg-blue-100 text-blue-700")} onClick={() => onTypeChange(type.value)}>
+                {Icon && <Icon className="w-4 h-4 mr-2" />}
+                {type.label}
+              </Button>;
+        })}
         </div>
       </div>
 
-      <div>
-        <h4 className="text-sm font-medium mb-2">热门标签</h4>
-        <div className="flex flex-wrap gap-2">
-          {popularTags.map(tag => <Badge key={tag} variant={selectedTags.includes(tag) ? "default" : "outline"} className="cursor-pointer" onClick={() => toggleTag(tag)}>
-              {tag}
-            </Badge>)}
-        </div>
-      </div>
-
-      {(searchTerm || selectedTypes.length > 0 || selectedTags.length > 0) && <Button variant="ghost" size="sm" onClick={clearAll} className="w-full">
-          <Filter className="w-4 h-4 mr-2" />
-          清除所有筛选
-        </Button>}
+      {/* 标签筛选 */}
+      {allTags.length > 0 && <div>
+          <h3 className="font-medium mb-3 flex items-center">
+            <Tag className="w-4 h-4 mr-2" />
+            标签筛选
+          </h3>
+          <ScrollArea className="h-64">
+            <div className="space-y-2">
+              {allTags.map(tag => <div key={tag} className={cn("flex items-center justify-between p-2 rounded cursor-pointer hover:bg-gray-100", selectedTags.includes(tag) && "bg-blue-50")} onClick={() => onTagToggle(tag)}>
+                  <Badge variant={selectedTags.includes(tag) ? "default" : "outline"} className="cursor-pointer">
+                    {tag}
+                  </Badge>
+                  {selectedTags.includes(tag) && <X className="w-3 h-3 text-blue-600" />}
+                </div>)}
+            </div>
+          </ScrollArea>
+        </div>}
     </div>;
 }

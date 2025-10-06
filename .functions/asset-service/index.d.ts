@@ -1,53 +1,75 @@
 
-    interface Asset {
-      _id: string;
-      fileName: string;
+    interface AssetRecord {
+      _id?: string;
       fileID: string;
-      fileUrl: string;
+      originalName: string;
+      size: number;
+      mimetype: string;
       tags: string[];
-      createdAt: string;
+      description: string;
+      createdAt: Date;
+      updatedAt: Date;
     }
 
     interface UploadResponse {
-      id: string;
-      fileName: string;
-      fileUrl: string;
-      tags: string[];
-      createdAt: string;
+      code: number;
+      data: {
+        id: string;
+        fileId: string;
+        url: string;
+        tags: string[];
+        description: string;
+        createdAt: Date;
+      };
     }
 
     interface ListResponse {
-      list: Asset[];
-      total: number;
+      code: number;
+      data: {
+        list: AssetRecord[];
+        total: number;
+        page: number;
+        pageSize: number;
+      };
     }
 
     interface DeleteResponse {
-      success: boolean;
+      code: number;
+      message: string;
     }
 
-    interface UpdateTagsResponse {
-      id: string;
-      tags: string[];
+    interface UpdateResponse {
+      code: number;
+      data: {
+        id: string;
+        tags: string[];
+        description: string;
+        updatedAt: Date;
+      };
     }
 
     interface DownloadResponse {
-      downloadUrl: string;
-      expires: number;
+      code: number;
+      data: {
+        url: string;
+        expires: Date;
+      };
+    }
+
+    interface ErrorResponse {
+      code: number;
+      message: string;
     }
 
     interface CloudFunctionEvent {
-      path: string;
-      httpMethod: string;
-      headers: Record<string, string>;
-      body: string;
-      isBase64Encoded: boolean;
-      queryString?: Record<string, string>;
-      pathParameters?: Record<string, string>;
+      action?: 'upload' | 'list' | 'delete' | 'update' | 'download';
+      id?: string;
+      data?: any;
+      path?: string;
+      httpMethod?: string;
+      queryStringParameters?: any;
+      body?: string;
     }
 
-    export declare function main(event: CloudFunctionEvent, context: any): Promise<{
-      statusCode: number;
-      headers: Record<string, string>;
-      body: string;
-    }>;
+    export declare function main(event: CloudFunctionEvent, context: any): Promise<UploadResponse | ListResponse | DeleteResponse | UpdateResponse | DownloadResponse | ErrorResponse>;
   

@@ -2,11 +2,11 @@
     {
       "name": "asset-service",
       "version": "1.0.0",
-      "description": "素材管理云函数，提供文件上传、列表查询、删除、更新标签和下载功能",
+      "description": "素材管理云函数，提供文件上传、列表查询、删除、更新和下载功能",
       "main": "index.js",
       "dependencies": {
-        "@cloudbase/node-sdk": "^3.3.7",
-        "busboy": "^1.6.0"
+        "@cloudbase/node-sdk": "^3.10.0",
+        "formidable": "^3.5.1"
       }
     }
   

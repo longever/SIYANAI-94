@@ -32,21 +32,66 @@
       "type": "String"
     },
     {
+      "name": "uploadTime",
+      "title": "上传时间",
+      "type": "DateTime",
+      "format": "timestamp-ms"
+    },
+    {
       "name": "size",
       "title": "文件大小",
       "type": "Number"
     },
     {
-      "name": "createdAt",
-      "title": "创建时间",
-      "type": "DateTime",
-      "format": "timestamp-ms"
+      "name": "mimeType",
+      "title": "MIME类型",
+      "type": "String"
     },
     {
-      "name": "updatedAt",
-      "title": "更新时间",
-      "type": "DateTime",
-      "format": "timestamp-ms"
+      "name": "description",
+      "title": "描述",
+      "type": "MultiLineString"
+    },
+    {
+      "name": "thumbnail",
+      "title": "缩略图URL",
+      "type": "Image"
+    },
+    {
+      "name": "category",
+      "title": "素材分类",
+      "type": "String"
+    },
+    {
+      "name": "duration",
+      "title": "时长",
+      "type": "Number"
+    },
+    {
+      "name": "dimensions",
+      "title": "尺寸",
+      "type": "Object"
+    },
+    {
+      "name": "metadata",
+      "title": "元数据",
+      "type": "Object"
+    },
+    {
+      "name": "downloadCount",
+      "title": "下载次数",
+      "type": "Number"
+    },
+    {
+      "name": "usageCount",
+      "title": "使用次数",
+      "type": "Number"
+    },
+    {
+      "name": "isPlatform",
+      "title": "是否平台素材",
+      "type": "Boolean"
     }
   ]
 }
+  

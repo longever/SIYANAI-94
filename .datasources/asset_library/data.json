@@ -7,7 +7,19 @@
     "tags": ["城市", "夜景", "灯光", "建筑"],
     "url": "https://example.com/assets/city-night.jpg",
     "uploader": "admin",
+    "uploadTime": 1728192000000,
     "size": 2048576,
+    "mimeType": "image/jpeg",
+    "description": "现代城市夜景，高楼大厦灯火通明，适合作为背景素材",
+    "thumbnail": "https://example.com/assets/city-night-thumb.jpg",
+    "category": "背景",
+    "dimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "downloadCount": 156,
+    "usageCount": 89,
+    "isPlatform": true,
     "createdAt": 1728192000000,
     "updatedAt": 1728192000000
   },
@@ -18,7 +30,20 @@
     "tags": ["企业", "宣传", "片头", "商务"],
     "url": "https://example.com/assets/corporate-intro.mp4",
     "uploader": "user_123",
+    "uploadTime": 1728105600000,
     "size": 15728640,
+    "mimeType": "video/mp4",
+    "description": "15秒企业宣传片头，包含动态文字和转场效果",
+    "thumbnail": "https://example.com/assets/corporate-intro-thumb.jpg",
+    "category": "片头",
+    "duration": 15,
+    "dimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "downloadCount": 234,
+    "usageCount": 167,
+    "isPlatform": true,
     "createdAt": 1728105600000,
     "updatedAt": 1728278400000
   },
@@ -29,7 +54,15 @@
     "tags": ["轻快", "背景", "商业", "正能量"],
     "url": "https://example.com/assets/upbeat-bg.mp3",
     "uploader": "admin",
+    "uploadTime": 1728019200000,
     "size": 3145728,
+    "mimeType": "audio/mpeg",
+    "description": "时长2分钟的轻快背景音乐，适合商业宣传视频使用",
+    "category": "背景音乐",
+    "duration": 120,
+    "downloadCount": 312,
+    "usageCount": 245,
+    "isPlatform": true,
     "createdAt": 1728019200000,
     "updatedAt": 1728019200000
   },
@@ -40,7 +73,19 @@
     "tags": ["自然", "风景", "山水", "绿色"],
     "url": "https://example.com/assets/nature-landscape.jpg",
     "uploader": "user_456",
+    "uploadTime": 1727932800000,
     "size": 3145728,
+    "mimeType": "image/jpeg",
+    "description": "青山绿水自然风光，高清画质，适合旅游宣传",
+    "thumbnail": "https://example.com/assets/nature-landscape-thumb.jpg",
+    "category": "风景",
+    "dimensions": {
+      "width": 2560,
+      "height": 1440
+    },
+    "downloadCount": 89,
+    "usageCount": 56,
+    "isPlatform": false,
     "createdAt": 1727932800000,
     "updatedAt": 1727932800000
   },
@@ -51,8 +96,45 @@
     "tags": ["品牌", "Logo", "矢量", "设计"],
     "url": "https://example.com/assets/brand-logo.svg",
     "uploader": "design_team",
+    "uploadTime": 1727846400000,
     "size": 524288,
+    "mimeType": "image/svg+xml",
+    "description": "可缩放矢量Logo，支持无损放大，适用于各种场景",
+    "thumbnail": "https://example.com/assets/brand-logo-thumb.png",
+    "category": "Logo",
+    "dimensions": {
+      "width": 800,
+      "height": 600
+    },
+    "downloadCount": 445,
+    "usageCount": 323,
+    "isPlatform": true,
     "createdAt": 1727846400000,
     "updatedAt": 1727846400000
+  },
+  {
+    "_id": "video_002",
+    "name": "产品展示动画",
+    "type": "video",
+    "tags": ["产品", "展示", "动画", "3D"],
+    "url": "https://example.com/assets/product-showcase.mp4",
+    "uploader": "user_789",
+    "uploadTime": 1727760000000,
+    "size": 26214400,
+    "mimeType": "video/mp4",
+    "description": "30秒3D产品展示动画，包含旋转展示和特效",
+    "thumbnail": "https://example.com/assets/product-showcase-thumb.jpg",
+    "category": "产品展示",
+    "duration": 30,
+    "dimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "downloadCount": 178,
+    "usageCount": 134,
+    "isPlatform": false,
+    "createdAt": 1727760000000,
+    "updatedAt": 1727760000000
   }
 ]
+  
