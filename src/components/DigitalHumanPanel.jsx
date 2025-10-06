@@ -1,11 +1,11 @@
 // @ts-ignore;
 import React, { useState } from 'react';
 // @ts-ignore;
-import { Card, CardContent, CardHeader, CardTitle, Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea, Slider, Dialog, DialogContent, DialogHeader, DialogTitle, useToast } from '@/components/ui';
+import { Card, CardContent, CardHeader, CardTitle, Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea, Dialog, DialogContent, DialogHeader, DialogTitle, useToast } from '@/components/ui';
 // @ts-ignore;
 import { User, Mic, Image, Film } from 'lucide-react';
 
-import { AssetLibrary } from '@/components/AssetLibrary';
+import { EnhancedAssetLibrary } from '@/components/EnhancedAssetLibrary';
 export function DigitalHumanPanel({
   onAddToTimeline,
   $w
@@ -169,7 +169,7 @@ export function DigitalHumanPanel({
           <DialogHeader>
             <DialogTitle>选择素材</DialogTitle>
           </DialogHeader>
-          <AssetLibrary onAssetSelect={handleAssetSelect} onInsertToCreator={handleAssetSelect} $w={$w} />
+          <EnhancedAssetLibrary onAssetSelect={handleAssetSelect} onClose={() => setShowAssetLibrary(false)} mode="select" />
         </DialogContent>
       </Dialog>
     </div>;
