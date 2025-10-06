@@ -42,3 +42,8 @@ export * from './ErrorState.jsx';
 export * from './AssetUploader.jsx';
 export * from './AssetFilter.jsx';
 export * from './AssetSelector.jsx';
+export * from './AssetGrid.jsx';
+export * from './AssetLibrary.jsx';
+export * from './AssetPreviewDialog.jsx';
+export * from './AssetSearchBar.jsx';
+export * from './AssetUploadDialog.jsx';
