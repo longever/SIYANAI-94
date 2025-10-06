@@ -1,6 +1,7 @@
 
 [
   {
+    "_id": "1",
     "name": "山脉风景背景",
     "type": "image",
     "url": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&h=1080&fit=crop",
@@ -26,6 +27,7 @@
     "updatedAt": 1704067200000
   },
   {
+    "_id": "2",
     "name": "产品展示视频",
     "type": "video",
     "url": "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4",
@@ -51,6 +53,7 @@
     "updatedAt": 1704153600000
   },
   {
+    "_id": "3",
     "name": "轻快背景音乐",
     "type": "audio",
     "url": "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav",
@@ -77,6 +80,7 @@
     "updatedAt": 1704240000000
   },
   {
+    "_id": "4",
     "name": "商务人物肖像",
     "type": "image",
     "url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=800&fit=crop",
@@ -102,6 +106,7 @@
     "updatedAt": 1704326400000
   },
   {
+    "_id": "5",
     "name": "品牌Logo动画",
     "type": "video",
     "url": "https://sample-videos.com/zip/10/mp4/SampleVideo_640x360_1mb.mp4",
@@ -128,6 +133,7 @@
     "updatedAt": 1704412800000
   },
   {
+    "_id": "6",
     "name": "自然风景视频",
     "type": "video",
     "url": "https://sample-videos.com/zip/10/mp4/SampleVideo_1920x1080_1mb.mp4",
@@ -153,6 +159,7 @@
     "updatedAt": 1704499200000
   },
   {
+    "_id": "7",
     "name": "科技感背景",
     "type": "image",
     "url": "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=1920&h=1080&fit=crop",
@@ -178,6 +185,7 @@
     "updatedAt": 1704585600000
   },
   {
+    "_id": "8",
     "name": "企业宣传音频",
     "type": "audio",
     "url": "https://www.soundjay.com/misc/sounds/bell-ringing-01.wav",

@@ -1,221 +1,323 @@
 // @ts-ignore;
-import React, { useState, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 // @ts-ignore;
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Button, Alert, AlertDescription, Progress, useToast } from '@/components/ui';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Button, Input, Label, Textarea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Badge, Progress, Alert, AlertDescription, useToast } from '@/components/ui';
 // @ts-ignore;
-import { Upload, X, File, AlertCircle } from 'lucide-react';
+import { Upload, X, Tag, Image as ImageIcon, Video, Music, FileText, Loader2 } from 'lucide-react';
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB in bytes
-
+const ASSET_CATEGORIES = [{
+  value: 'background',
+  label: '背景',
+  icon: ImageIcon
+}, {
+  value: 'character',
+  label: '角色',
+  icon: ImageIcon
+}, {
+  value: 'prop',
+  label: '道具',
+  icon: ImageIcon
+}, {
+  value: 'effect',
+  label: '特效',
+  icon: Video
+}, {
+  value: 'audio',
+  label: '音频',
+  icon: Music
+}, {
+  value: 'template',
+  label: '模板',
+  icon: FileText
+}];
+const ASSET_TYPES = {
+  image: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'],
+  video: ['mp4', 'mov', 'avi', 'mkv', 'webm'],
+  audio: ['mp3', 'wav', 'ogg', 'flac', 'aac']
+};
 export function AssetUploadDialog({
   open,
   onOpenChange,
-  onUploadComplete,
-  onSuccess,
-  onUploadError,
-  $w
+  onUploadSuccess
 }) {
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [error, setError] = useState(null);
-  const fileInputRef = useRef(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    category: '',
+    tags: [],
+    is_platform: false
+  });
+  const [tagInput, setTagInput] = useState('');
   const {
     toast
   } = useToast();
-  const handleFileSelect = event => {
-    const selectedFiles = Array.from(event.target.files);
-    setError(null);
-
-    // 检查文件大小
-    const oversizedFiles = selectedFiles.filter(file => file.size > MAX_FILE_SIZE);
-    if (oversizedFiles.length > 0) {
-      const oversizedFileNames = oversizedFiles.map(file => file.name).join(', ');
-      toast({
-        title: "文件过大",
-        description: `以下文件超过50MB限制：${oversizedFileNames}`,
-        variant: "destructive"
-      });
-
-      // 过滤掉过大的文件
-      const validFiles = selectedFiles.filter(file => file.size <= MAX_FILE_SIZE);
-      if (validFiles.length > 0) {
-        setFiles(prevFiles => [...prevFiles, ...validFiles]);
-      }
-    } else {
-      setFiles(prevFiles => [...prevFiles, ...selectedFiles]);
+  const handleFileDrop = useCallback(e => {
+    e.preventDefault();
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    setFiles(prev => [...prev, ...droppedFiles]);
+  }, []);
+  const handleFileSelect = useCallback(e => {
+    const selectedFiles = Array.from(e.target.files);
+    setFiles(prev => [...prev, ...selectedFiles]);
+  }, []);
+  const removeFile = useCallback(index => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  }, []);
+  const addTag = useCallback(() => {
+    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        tags: [...prev.tags, tagInput.trim()]
+      }));
+      setTagInput('');
+    }
+  }, [tagInput, formData.tags]);
+  const removeTag = useCallback(tagToRemove => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }));
+  }, []);
+  const handleKeyPress = useCallback(e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addTag();
+    }
+  }, [addTag]);
+  const getFileType = file => {
+    const extension = file.name.split('.').pop().toLowerCase();
+    if (ASSET_TYPES.image.includes(extension)) return 'image';
+    if (ASSET_TYPES.video.includes(extension)) return 'video';
+    if (ASSET_TYPES.audio.includes(extension)) return 'audio';
+    return 'other';
+  };
+  const getFileIcon = type => {
+    switch (type) {
+      case 'image':
+        return ImageIcon;
+      case 'video':
+        return Video;
+      case 'audio':
+        return Music;
+      default:
+        return FileText;
     }
   };
-  const removeFile = index => {
-    setFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
+  const uploadFile = async file => {
+    const formDataToUpload = new FormData();
+    formDataToUpload.append('file', file);
+    try {
+      // 上传到云存储
+      const tcb = await window.$w.cloud.getCloudInstance();
+      const uploadResult = await tcb.uploadFile({
+        cloudPath: `assets/${Date.now()}_${file.name}`,
+        filePath: file
+      });
+      return uploadResult.fileID;
+    } catch (error) {
+      console.error('上传失败:', error);
+      throw error;
+    }
   };
-  const getFileTypeFolder = mimeType => {
-    if (mimeType.startsWith('image/')) return 'images';
-    if (mimeType.startsWith('video/')) return 'videos';
-    if (mimeType.startsWith('audio/')) return 'audios';
-    if (mimeType.includes('text/') || mimeType.includes('application/')) return 'documents';
-    return 'others';
+  const createAssetRecord = async (file, fileUrl) => {
+    const fileType = getFileType(file);
+    const assetData = {
+      name: formData.name || file.name,
+      type: fileType,
+      url: fileUrl,
+      thumbnail_url: fileType === 'image' ? fileUrl : '',
+      preview_url: fileType === 'image' ? fileUrl : '',
+      waveform_url: '',
+      size: file.size,
+      duration: 0,
+      dimensions: '',
+      format: file.name.split('.').pop().toLowerCase(),
+      mime_type: file.type,
+      tags: formData.tags,
+      description: formData.description,
+      category: formData.category,
+      is_platform: formData.is_platform,
+      download_count: 0,
+      usage_count: 0,
+      metadata: {},
+      createdAt: Date.now(),
+      // 修改为使用 Date.now() 返回的毫秒时间戳（Number 类型）
+      updatedAt: Date.now() // 同时添加 updatedAt 字段
+    };
+    try {
+      const result = await window.$w.cloud.callDataSource({
+        dataSourceName: 'asset_library',
+        methodName: 'wedaCreateV2',
+        params: {
+          data: assetData
+        }
+      });
+      return result;
+    } catch (error) {
+      console.error('创建素材记录失败:', error);
+      throw error;
+    }
   };
   const handleUpload = async () => {
     if (files.length === 0) {
       toast({
-        title: "请选择文件",
-        description: "请先选择要上传的文件",
-        variant: "destructive"
-      });
-      return;
-    }
-    if (!$w || !$w.cloud) {
-      toast({
-        title: "系统错误",
-        description: "无法连接到云服务，请刷新页面重试",
-        variant: "destructive"
+        title: '请选择文件',
+        description: '请先选择要上传的文件',
+        variant: 'destructive'
       });
       return;
     }
     setUploading(true);
     setUploadProgress(0);
-    setError(null);
     try {
-      const tcb = await $w.cloud.getCloudInstance();
       const uploadedAssets = [];
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const fileType = getFileTypeFolder(file.type);
-        const cloudPath = `saas_temp/${fileType}/${Date.now()}_${file.name}`;
+        setUploadProgress(i / files.length * 100);
 
-        // 直接上传到云存储
-        const uploadResult = await tcb.uploadFile({
-          cloudPath,
-          filePath: file,
-          onProgressUpdate: progress => {
-            const totalProgress = (i + progress / 100) / files.length * 100;
-            setUploadProgress(totalProgress);
-          }
-        });
+        // 上传文件到云存储
+        const fileUrl = await uploadFile(file);
 
-        // 获取文件临时访问URL
-        const fileURL = await tcb.getTempFileURL({
-          fileList: [uploadResult.fileID]
-        });
-
-        // 保存素材信息到数据库
-        const assetData = {
-          name: file.name,
-          fileName: file.name,
-          fileType: file.type,
-          size: file.size,
-          url: fileURL.fileList[0].tempFileURL,
-          cloudPath: uploadResult.fileID,
-          type: file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'other',
-          tags: [],
-          createdAt: new Date().toISOString(),
-          folder: fileType
-        };
-        const savedAsset = await $w.cloud.callDataSource({
-          dataSourceName: 'asset_library',
-          methodName: 'wedaCreateV2',
-          params: {
-            data: assetData
-          }
-        });
-        uploadedAssets.push({
-          ...assetData,
-          _id: savedAsset.id
-        });
+        // 创建素材记录
+        const assetRecord = await createAssetRecord(file, fileUrl);
+        uploadedAssets.push(assetRecord);
       }
+      setUploadProgress(100);
       toast({
-        title: "上传成功",
-        description: `成功上传 ${uploadedAssets.length} 个文件到 saas_temp/${getFileTypeFolder(files[0]?.type)} 目录`
+        title: '上传成功',
+        description: `成功上传 ${uploadedAssets.length} 个素材`
       });
 
-      // 调用回调函数
-      if (onUploadComplete) {
-        onUploadComplete(uploadedAssets);
-      }
-      if (onSuccess) {
-        onSuccess(uploadedAssets);
-      }
-      handleClose();
+      // 重置表单
+      setFiles([]);
+      setFormData({
+        name: '',
+        description: '',
+        category: '',
+        tags: [],
+        is_platform: false
+      });
+      onUploadSuccess?.(uploadedAssets);
+      onOpenChange(false);
     } catch (error) {
-      console.error('Upload error:', error);
-      const errorMessage = error.message || '上传失败，请重试';
-      setError(errorMessage);
+      console.error('上传失败:', error);
       toast({
-        title: "上传失败",
-        description: errorMessage,
-        variant: "destructive"
+        title: '上传失败',
+        description: error.message || '请稍后重试',
+        variant: 'destructive'
       });
-      if (onUploadError) {
-        onUploadError(error);
-      }
     } finally {
       setUploading(false);
       setUploadProgress(0);
     }
   };
-  const handleClose = () => {
-    setFiles([]);
-    setError(null);
-    setUploading(false);
-    setUploadProgress(0);
-    onOpenChange(false);
-  };
-  const formatFileSize = bytes => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-  return <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px]">
+  return <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>上传素材</DialogTitle>
-          <DialogDescription>
-            选择要上传的素材文件，支持图片、视频、音频等格式。文件将按类型自动分类存储到 saas_temp 文件夹下的对应子目录中。
-          </DialogDescription>
         </DialogHeader>
-
-        <div className="space-y-4">
-          {error && <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>}
-
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-            <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileSelect} accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt" />
+        
+        <div className="space-y-6">
+          {/* 文件上传区域 */}
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors" onDrop={handleFileDrop} onDragOver={e => e.preventDefault()}>
             <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <div className="text-sm text-gray-600">
-              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                选择文件
-              </Button>
-              <p className="mt-2 text-xs text-gray-500">
-                支持拖拽上传，单个文件最大50MB，将按类型自动分类存储
-              </p>
-            </div>
+            <p className="text-sm text-gray-600 mb-2">
+              拖拽文件到此处，或
+              <label className="text-blue-600 hover:text-blue-700 cursor-pointer ml-1">
+                点击选择文件
+                <input type="file" multiple className="hidden" onChange={handleFileSelect} accept="image/*,video/*,audio/*" />
+              </label>
+            </p>
+            <p className="text-xs text-gray-500">
+              支持图片、视频、音频文件
+            </p>
           </div>
 
+          {/* 文件列表 */}
           {files.length > 0 && <div className="space-y-2">
-              <h4 className="text-sm font-medium">已选择文件：</h4>
-              <div className="max-h-64 overflow-y-auto space-y-2">
-                {files.map((file, index) => <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <File className="h-5 w-5 text-gray-400" />
-                      <div>
-                        <p className="text-sm font-medium">{file.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {formatFileSize(file.size)} • 将保存到 saas_temp/{getFileTypeFolder(file.type)}
-                        </p>
+              <h3 className="text-sm font-medium">已选择文件</h3>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {files.map((file, index) => {
+              const Icon = getFileIcon(getFileType(file));
+              return <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <Icon className="h-5 w-5 text-gray-500" />
+                        <div>
+                          <p className="text-sm font-medium">{file.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {(file.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                    <Button type="button" variant="ghost" size="sm" onClick={() => removeFile(index)} disabled={uploading}>
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>)}
+                      <Button variant="ghost" size="sm" onClick={() => removeFile(index)} className="h-8 w-8 p-0">
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>;
+            })}
               </div>
             </div>}
 
+          {/* 表单字段 */}
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="name">素材名称</Label>
+              <Input id="name" value={formData.name} onChange={e => setFormData(prev => ({
+              ...prev,
+              name: e.target.value
+            }))} placeholder="输入素材名称" />
+            </div>
+
+            <div>
+              <Label htmlFor="category">素材分类</Label>
+              <Select value={formData.category} onValueChange={value => setFormData(prev => ({
+              ...prev,
+              category: value
+            }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="选择分类" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ASSET_CATEGORIES.map(category => <SelectItem key={category.value} value={category.value}>
+                      <div className="flex items-center">
+                        <category.icon className="h-4 w-4 mr-2" />
+                        {category.label}
+                      </div>
+                    </SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="description">描述</Label>
+              <Textarea id="description" value={formData.description} onChange={e => setFormData(prev => ({
+              ...prev,
+              description: e.target.value
+            }))} placeholder="输入素材描述" rows={3} />
+            </div>
+
+            <div>
+              <Label htmlFor="tags">标签</Label>
+              <div className="flex gap-2">
+                <Input id="tags" value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyPress={handleKeyPress} placeholder="输入标签后按回车" className="flex-1" />
+                <Button type="button" onClick={addTag} size="sm">
+                  添加
+                </Button>
+              </div>
+              {formData.tags.length > 0 && <div className="flex flex-wrap gap-2 mt-2">
+                  {formData.tags.map((tag, index) => <Badge key={index} variant="secondary" className="text-sm">
+                      {tag}
+                      <button onClick={() => removeTag(tag)} className="ml-1 hover:text-destructive">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>)}
+                </div>}
+            </div>
+          </div>
+
+          {/* 上传进度 */}
           {uploading && <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>上传中...</span>
@@ -223,16 +325,26 @@ export function AssetUploadDialog({
               </div>
               <Progress value={uploadProgress} />
             </div>}
+
+          {/* 错误提示 */}
+          {uploading && uploadProgress < 100 && <Alert>
+              <AlertDescription>
+                正在上传文件，请稍候...
+              </AlertDescription>
+            </Alert>}
         </div>
 
-        <div className="flex justify-end space-x-2">
-          <Button type="button" variant="outline" onClick={handleClose} disabled={uploading}>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={uploading}>
             取消
           </Button>
-          <Button type="button" onClick={handleUpload} disabled={files.length === 0 || uploading}>
-            {uploading ? '上传中...' : '开始上传'}
+          <Button onClick={handleUpload} disabled={uploading || files.length === 0}>
+            {uploading ? <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                上传中...
+              </> : '开始上传'}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>;
 }
