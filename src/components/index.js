@@ -50,3 +50,4 @@ export * from './AssetUploadDialog.jsx';
 export * from './GlobalLoadingOverlay.jsx';
 export * from './ProAssetLibrary.jsx';
 export * from './ProjectHeader.jsx';
+export * from './UserMenu.jsx';
