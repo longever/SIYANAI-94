@@ -279,7 +279,7 @@ export default function AssetLibraryPage(props) {
       </div>
     </main>
 
-    <AssetUploadDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} onUpload={handleUploadAsset} />
+    <AssetUploadDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} onUpload={handleUploadAsset} $w={$w} />
 
     <AssetPreviewDialog asset={selectedAsset} open={!!selectedAsset} onOpenChange={open => !open && setSelectedAsset(null)} />
   </div>;
