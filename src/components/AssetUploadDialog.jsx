@@ -70,31 +70,26 @@ export function AssetUploadDialog({
     setUploadProgress(0);
     setError(null);
     try {
+      const tcb = await $w.cloud.getCloudInstance();
       const uploadedAssets = [];
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
+        const cloudPath = `assets/${Date.now()}_${file.name}`;
 
-        // 将文件转换为 base64
-        const base64 = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result.split(',')[1]);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-
-        // 上传到云存储
-        const uploadResult = await $w.cloud.callFunction({
-          name: 'upload-asset',
-          data: {
-            fileBase64: base64,
-            fileName: file.name,
-            contentType: file.type,
-            cloudPathPrefix: 'assets'
+        // 直接上传到云存储
+        const uploadResult = await tcb.uploadFile({
+          cloudPath,
+          filePath: file,
+          onProgressUpdate: progress => {
+            const totalProgress = (i + progress / 100) / files.length * 100;
+            setUploadProgress(totalProgress);
           }
         });
-        if (uploadResult.error) {
-          throw new Error(uploadResult.error);
-        }
+
+        // 获取文件临时访问URL
+        const fileURL = await tcb.getTempFileURL({
+          fileList: [uploadResult.fileID]
+        });
 
         // 保存素材信息到数据库
         const assetData = {
@@ -102,7 +97,7 @@ export function AssetUploadDialog({
           fileName: file.name,
           fileType: file.type,
           size: file.size,
-          url: uploadResult.fileURL,
+          url: fileURL.fileList[0].tempFileURL,
           cloudPath: uploadResult.fileID,
           type: file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'other',
           tags: [],
@@ -119,9 +114,6 @@ export function AssetUploadDialog({
           ...assetData,
           _id: savedAsset.id
         });
-
-        // 更新进度
-        setUploadProgress((i + 1) / files.length * 100);
       }
       toast({
         title: "上传成功",
