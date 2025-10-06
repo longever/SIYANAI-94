@@ -39,3 +39,5 @@ export * from './VoiceSelector.jsx';
 export * from './EmptyState.jsx';
 export * from './LoadingState.jsx';
 export * from './ErrorState.jsx';
+export * from './AssetUploader.jsx';
+export * from './AssetFilter.jsx';
