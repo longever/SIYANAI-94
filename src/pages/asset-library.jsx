@@ -1,111 +1,168 @@
 // @ts-ignore;
 import React, { useState, useEffect } from 'react';
 // @ts-ignore;
-import { Button, Input, Tabs, TabsContent, TabsList, TabsTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, useToast, Alert, AlertDescription } from '@/components/ui';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Tabs, TabsContent, TabsList, TabsTrigger, useToast } from '@/components/ui';
 // @ts-ignore;
-import { Plus, Search, Filter, AlertCircle } from 'lucide-react';
+import { Upload, Search, Image, Video, Music, FileText, Filter } from 'lucide-react';
 
+import { GlobalLoadingOverlay } from '@/components/GlobalLoadingOverlay';
+import { ProjectHeader } from '@/components/ProjectHeader';
 import { AssetGrid } from '@/components/AssetGrid';
 import { AssetUploadDialog } from '@/components/AssetUploadDialog';
+import { AssetPreviewDialog } from '@/components/AssetPreviewDialog';
 export default function AssetLibraryPage(props) {
   const {
     $w,
     style
   } = props;
-  const [assets, setAssets] = useState([]);
-  const [filteredAssets, setFilteredAssets] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedType, setSelectedType] = useState('all');
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [showErrorAlert, setShowErrorAlert] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
   const {
     toast
   } = useToast();
-
-  // 加载素材库数据
-  const loadAssets = async () => {
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
+  const [userSubscription, setUserSubscription] = useState(null);
+  const [assets, setAssets] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedType, setSelectedType] = useState('all');
+  const [selectedAsset, setSelectedAsset] = useState(null);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  useEffect(() => {
+    loadAssetLibraryData();
+  }, []);
+  const loadAssetLibraryData = async () => {
     try {
       setLoading(true);
       setError(null);
       setShowErrorAlert(false);
 
-      // 使用正确的数据源调用方式
-      const result = await $w.cloud.callDataSource({
-        dataSourceName: 'asset_library',
+      // 从数据源获取用户信息
+      const userData = await $w.cloud.callDataSource({
+        dataSourceName: 'users',
         methodName: 'wedaGetRecordsV2',
         params: {
-          orderBy: [{
-            createdAt: 'desc'
-          }],
-          getCount: true,
-          pageSize: 100,
-          pageNumber: 1,
+          filter: {
+            where: {
+              userId: {
+                $eq: $w.auth.currentUser?.userId || 'anonymous'
+              }
+            }
+          },
           select: {
             $master: true
-          }
+          },
+          pageSize: 1,
+          pageNumber: 1
         }
       });
-      if (result.records) {
-        setAssets(result.records);
-        setFilteredAssets(result.records);
+      if (userData.records && userData.records.length > 0) {
+        setUser(userData.records[0]);
+
+        // 获取用户订阅信息
+        const subscriptionData = await $w.cloud.callDataSource({
+          dataSourceName: 'user_subscriptions',
+          methodName: 'wedaGetRecordsV2',
+          params: {
+            filter: {
+              where: {
+                userId: {
+                  $eq: userData.records[0]._id
+                },
+                status: {
+                  $eq: 'active'
+                }
+              }
+            },
+            select: {
+              $master: true
+            },
+            orderBy: [{
+              createdAt: 'desc'
+            }],
+            pageSize: 1,
+            pageNumber: 1
+          }
+        });
+        if (subscriptionData.records && subscriptionData.records.length > 0) {
+          setUserSubscription(subscriptionData.records[0]);
+        }
+
+        // 获取用户素材
+        const assetsData = await $w.cloud.callDataSource({
+          dataSourceName: 'asset_library',
+          methodName: 'wedaGetRecordsV2',
+          params: {
+            filter: {
+              where: {
+                userId: {
+                  $eq: userData.records[0]._id
+                }
+              }
+            },
+            select: {
+              $master: true
+            },
+            orderBy: [{
+              createdAt: 'desc'
+            }],
+            pageSize: 100,
+            pageNumber: 1
+          }
+        });
+        setAssets(assetsData.records || []);
       }
     } catch (error) {
-      console.error('加载素材失败:', error);
-      const errorMsg = error.message || "无法加载素材库";
-
-      // 检查是否为 RequestTooLarge 错误
-      if (error.code === 'RequestTooLarge' || error.message?.includes('RequestTooLarge') || error.message?.includes('文件过大')) {
-        setErrorMessage('文件过大，请选择小于 50MB 的文件');
-        setShowErrorAlert(true);
-      } else {
-        setErrorMessage(errorMsg);
-        setShowErrorAlert(true);
-      }
+      console.error('Failed to load asset library data:', error);
       toast({
-        title: "加载失败",
-        description: errorMsg,
+        title: "Error",
+        description: "Failed to load asset library",
         variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
   };
-  useEffect(() => {
-    loadAssets();
-  }, []);
-
-  // 搜索和筛选
-  useEffect(() => {
-    let filtered = assets;
-    if (searchTerm) {
-      filtered = filtered.filter(asset => asset.fileName?.toLowerCase().includes(searchTerm.toLowerCase()));
-    }
-    if (selectedType !== 'all') {
-      filtered = filtered.filter(asset => asset.fileType?.startsWith(selectedType));
-    }
-    setFilteredAssets(filtered);
-  }, [assets, searchTerm, selectedType]);
-  const handleUploadSuccess = uploadedFiles => {
-    loadAssets(); // 重新加载素材列表
-    setShowErrorAlert(false); // 上传成功后清除错误提示
-  };
-  const handleUploadError = error => {
-    console.error('上传错误:', error);
-
-    // 处理 RequestTooLarge 错误
-    if (error.code === 'RequestTooLarge' || error.message?.includes('RequestTooLarge') || error.message?.includes('文件过大')) {
-      setErrorMessage('文件过大，请选择小于 50MB 的文件');
-      setShowErrorAlert(true);
-    } else {
-      setErrorMessage(error.message || '上传失败，请重试');
-      setShowErrorAlert(true);
+  const handleUploadAsset = async (file, metadata) => {
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('userId', user._id);
+      formData.append('metadata', JSON.stringify(metadata));
+      const result = await $w.cloud.callFunction({
+        name: 'upload-asset',
+        data: {
+          file: formData,
+          metadata: {
+            ...metadata,
+            userId: user._id,
+            originalName: file.name,
+            size: file.size,
+            type: file.type
+          }
+        }
+      });
+      if (result.success) {
+        toast({
+          title: "Success",
+          description: "Asset uploaded successfully"
+        });
+        await loadAssetLibraryData();
+        setUploadDialogOpen(false);
+      }
+    } catch (error) {
+      console.error('Failed to upload asset:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload asset",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
   };
   const handleDeleteAsset = async assetId => {
     try {
+      setLoading(true);
       await $w.cloud.callDataSource({
         dataSourceName: 'asset_library',
         methodName: 'wedaDeleteV2',
@@ -120,89 +177,112 @@ export default function AssetLibraryPage(props) {
         }
       });
       toast({
-        title: "删除成功",
-        description: "素材已删除"
+        title: "Success",
+        description: "Asset deleted successfully"
       });
-      loadAssets();
+      await loadAssetLibraryData();
     } catch (error) {
+      console.error('Failed to delete asset:', error);
       toast({
-        title: "删除失败",
-        description: error.message || "无法删除素材",
+        title: "Error",
+        description: "Failed to delete asset",
         variant: "destructive"
       });
+    } finally {
+      setLoading(false);
     }
   };
-  const handleRetry = () => {
-    setShowErrorAlert(false);
-    setErrorMessage('');
-    loadAssets();
+  const filteredAssets = assets.filter(asset => {
+    const matchesSearch = asset.name.toLowerCase().includes(searchTerm.toLowerCase()) || asset.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesType = selectedType === 'all' || asset.type === selectedType;
+    return matchesSearch && matchesType;
+  });
+  const assetStats = {
+    all: assets.length,
+    image: assets.filter(a => a.type === 'image').length,
+    video: assets.filter(a => a.type === 'video').length,
+    audio: assets.filter(a => a.type === 'audio').length,
+    document: assets.filter(a => a.type === 'document').length
   };
-  return <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+  if (loading) {
+    return <GlobalLoadingOverlay />;
+  }
+  return <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <ProjectHeader user={user} subscription={userSubscription} />
+
+    <main className="container mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">素材库</h1>
-          <p className="text-gray-600">管理您的图片、视频和音频素材</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
+            素材库
+          </h1>
+          <p className="text-slate-600 dark:text-slate-300">
+            管理您的所有视频素材、图片、音频等资源
+          </p>
         </div>
 
-        {/* 全局错误提示 */}
-        {showErrorAlert && <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between">
-              <span>{errorMessage}</span>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setShowErrorAlert(false)} className="h-7 text-xs">
-                  关闭
-                </Button>
-                {errorMessage.includes('文件过大') && <Button variant="outline" size="sm" onClick={handleRetry} className="h-7 text-xs">
-                    重试
-                  </Button>}
-              </div>
-            </AlertDescription>
-          </Alert>}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* 左侧筛选栏 */}
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader>
+                <CardTitle>筛选</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Input placeholder="搜索素材..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full" />
 
-        <div className="bg-white rounded-lg shadow-sm border">
-          <div className="p-6 border-b">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input placeholder="搜索素材..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
-                </div>
-              </div>
+                <Tabs value={selectedType} onValueChange={setSelectedType} className="w-full">
+                  <TabsList className="grid w-full">
+                    <TabsTrigger value="all" className="text-sm">
+                      全部 ({assetStats.all})
+                    </TabsTrigger>
+                    <TabsTrigger value="image" className="text-sm">
+                      <Image className="w-4 h-4 mr-1" />
+                      图片 ({assetStats.image})
+                    </TabsTrigger>
+                    <TabsTrigger value="video" className="text-sm">
+                      <Video className="w-4 h-4 mr-1" />
+                      视频 ({assetStats.video})
+                    </TabsTrigger>
+                    <TabsTrigger value="audio" className="text-sm">
+                      <Music className="w-4 h-4 mr-1" />
+                      音频 ({assetStats.audio})
+                    </TabsTrigger>
+                    <TabsTrigger value="document" className="text-sm">
+                      <FileText className="w-4 h-4 mr-1" />
+                      文档 ({assetStats.document})
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
 
-              <div className="flex gap-2">
-                <Select value={selectedType} onValueChange={setSelectedType}>
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">全部</SelectItem>
-                    <SelectItem value="image">图片</SelectItem>
-                    <SelectItem value="video">视频</SelectItem>
-                    <SelectItem value="audio">音频</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Button onClick={() => setUploadDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
+                <Button className="w-full" onClick={() => setUploadDialogOpen(true)}>
+                  <Upload className="w-4 h-4 mr-2" />
                   上传素材
                 </Button>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
 
-          <Tabs defaultValue="grid" className="w-full">
-            <TabsList className="w-full justify-start rounded-none border-b px-6">
-              <TabsTrigger value="grid">网格视图</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="grid" className="p-6">
-              <AssetGrid assets={filteredAssets} loading={loading} onDelete={handleDeleteAsset} onRefresh={loadAssets} $w={$w} />
-            </TabsContent>
-          </Tabs>
+          {/* 右侧素材网格 */}
+          <div className="lg:col-span-3">
+            <Card>
+              <CardHeader>
+                <CardTitle>素材列表</CardTitle>
+                <CardDescription>
+                  共找到 {filteredAssets.length} 个素材
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AssetGrid assets={filteredAssets} onAssetSelect={setSelectedAsset} onAssetDelete={handleDeleteAsset} />
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
+    </main>
 
-      <AssetUploadDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} onUploadSuccess={handleUploadSuccess} onUploadError={handleUploadError} $w={$w} />
-    </div>;
+    <AssetUploadDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} onUpload={handleUploadAsset} />
+
+    <AssetPreviewDialog asset={selectedAsset} open={!!selectedAsset} onOpenChange={open => !open && setSelectedAsset(null)} />
+  </div>;
 }
