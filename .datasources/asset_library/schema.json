@@ -1,96 +1,120 @@
 
 {
   "name": "asset_library",
-  "title": "素材库",
-  "schemas": [
+  "displayName": "素材库",
+  "description": "存储和管理视频创作所需的图片、视频、音频等素材，包含完整的缩略图和预览信息",
+  "fields": [
     {
       "name": "name",
-      "title": "素材名称",
-      "type": "String"
+      "displayName": "素材名称",
+      "type": "String",
+      "required": true
     },
     {
       "name": "type",
-      "title": "素材类型",
-      "type": "String"
-    },
-    {
-      "name": "tags",
-      "title": "标签",
-      "type": "Array",
-      "items": {
-        "type": "String"
-      }
+      "displayName": "素材类型",
+      "type": "String",
+      "required": true,
+      "enum": ["image", "video", "audio"]
     },
     {
       "name": "url",
-      "title": "文件URL",
-      "type": "Url"
+      "displayName": "文件URL",
+      "type": "Url",
+      "required": true
     },
     {
-      "name": "uploader",
-      "title": "上传者",
-      "type": "String"
+      "name": "thumbnail_url",
+      "displayName": "缩略图URL",
+      "type": "Image",
+      "description": "用于列表展示的缩略图，建议尺寸300x200"
     },
     {
-      "name": "uploadTime",
-      "title": "上传时间",
-      "type": "DateTime",
-      "format": "timestamp-ms"
+      "name": "preview_url",
+      "displayName": "预览图URL",
+      "type": "Image",
+      "description": "用于预览窗口的高清图，建议尺寸800x600"
+    },
+    {
+      "name": "waveform_url",
+      "displayName": "音频波形图URL",
+      "type": "Image",
+      "description": "音频素材的波形可视化图"
     },
     {
       "name": "size",
-      "title": "文件大小",
-      "type": "Number"
-    },
-    {
-      "name": "mimeType",
-      "title": "MIME类型",
-      "type": "String"
-    },
-    {
-      "name": "description",
-      "title": "描述",
-      "type": "MultiLineString"
-    },
-    {
-      "name": "thumbnail",
-      "title": "缩略图URL",
-      "type": "Image"
-    },
-    {
-      "name": "category",
-      "title": "素材分类",
-      "type": "String"
+      "displayName": "文件大小",
+      "type": "Number",
+      "description": "文件大小，单位字节"
     },
     {
       "name": "duration",
-      "title": "时长",
-      "type": "Number"
+      "displayName": "时长(秒)",
+      "type": "Number",
+      "description": "视频或音频素材的时长，单位秒"
     },
     {
       "name": "dimensions",
-      "title": "尺寸",
-      "type": "Object"
+      "displayName": "尺寸",
+      "type": "String",
+      "description": "图片或视频素材的宽高，格式如1920x1080"
+    },
+    {
+      "name": "format",
+      "displayName": "文件格式",
+      "type": "String",
+      "description": "文件扩展名，如jpg、mp4、mp3等"
+    },
+    {
+      "name": "mime_type",
+      "displayName": "MIME类型",
+      "type": "String",
+      "description": "文件的MIME类型，如image/jpeg、video/mp4等"
+    },
+    {
+      "name": "tags",
+      "displayName": "标签",
+      "type": "Array",
+      "items": {
+        "type": "String"
+      },
+      "description": "素材标签，用于搜索和分类"
+    },
+    {
+      "name": "description",
+      "displayName": "描述",
+      "type": "MultiLineString",
+      "description": "素材的详细描述信息"
+    },
+    {
+      "name": "category",
+      "displayName": "素材分类",
+      "type": "String",
+      "description": "素材的分类，如背景、人物、产品等"
+    },
+    {
+      "name": "is_platform",
+      "displayName": "是否平台素材",
+      "type": "Boolean",
+      "description": "是否为系统平台提供的默认素材"
+    },
+    {
+      "name": "download_count",
+      "displayName": "下载次数",
+      "type": "Number",
+      "description": "素材被下载的次数"
+    },
+    {
+      "name": "usage_count",
+      "displayName": "使用次数",
+      "type": "Number",
+      "description": "素材被使用的次数"
     },
     {
       "name": "metadata",
-      "title": "元数据",
-      "type": "Object"
-    },
-    {
-      "name": "downloadCount",
-      "title": "下载次数",
-      "type": "Number"
-    },
-    {
-      "name": "usageCount",
-      "title": "使用次数",
-      "type": "Number"
-    },
-    {
-      "name": "isPlatform",
-      "title": "是否平台素材",
-      "type": "Boolean"
+      "displayName": "元数据",
+      "type": "Object",
+      "description": "额外的技术元数据信息"
     }
   ]
 }

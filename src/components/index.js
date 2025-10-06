@@ -41,3 +41,4 @@ export * from './LoadingState.jsx';
 export * from './ErrorState.jsx';
 export * from './AssetUploader.jsx';
 export * from './AssetFilter.jsx';
+export * from './AssetSelector.jsx';
