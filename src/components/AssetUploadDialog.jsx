@@ -49,6 +49,13 @@ export function AssetUploadDialog({
   const removeFile = index => {
     setFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
   };
+  const getFileTypeFolder = mimeType => {
+    if (mimeType.startsWith('image/')) return 'images';
+    if (mimeType.startsWith('video/')) return 'videos';
+    if (mimeType.startsWith('audio/')) return 'audios';
+    if (mimeType.includes('text/') || mimeType.includes('application/')) return 'documents';
+    return 'others';
+  };
   const handleUpload = async () => {
     if (files.length === 0) {
       toast({
@@ -74,7 +81,8 @@ export function AssetUploadDialog({
       const uploadedAssets = [];
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const cloudPath = `assets/${Date.now()}_${file.name}`;
+        const fileType = getFileTypeFolder(file.type);
+        const cloudPath = `saas_temp/${fileType}/${Date.now()}_${file.name}`;
 
         // 直接上传到云存储
         const uploadResult = await tcb.uploadFile({
@@ -101,7 +109,8 @@ export function AssetUploadDialog({
           cloudPath: uploadResult.fileID,
           type: file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'other',
           tags: [],
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          folder: fileType
         };
         const savedAsset = await $w.cloud.callDataSource({
           dataSourceName: 'asset_library',
@@ -117,7 +126,7 @@ export function AssetUploadDialog({
       }
       toast({
         title: "上传成功",
-        description: `成功上传 ${uploadedAssets.length} 个文件`
+        description: `成功上传 ${uploadedAssets.length} 个文件到 saas_temp/${getFileTypeFolder(files[0]?.type)} 目录`
       });
 
       // 调用回调函数
@@ -164,7 +173,7 @@ export function AssetUploadDialog({
         <DialogHeader>
           <DialogTitle>上传素材</DialogTitle>
           <DialogDescription>
-            选择要上传的素材文件，支持图片、视频、音频等格式。单个文件大小限制为50MB。
+            选择要上传的素材文件，支持图片、视频、音频等格式。文件将按类型自动分类存储到 saas_temp 文件夹下的对应子目录中。
           </DialogDescription>
         </DialogHeader>
 
@@ -175,14 +184,14 @@ export function AssetUploadDialog({
             </Alert>}
 
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-            <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileSelect} accept="image/*,video/*,audio/*" />
+            <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileSelect} accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt" />
             <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <div className="text-sm text-gray-600">
               <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
                 选择文件
               </Button>
               <p className="mt-2 text-xs text-gray-500">
-                支持拖拽上传，单个文件最大50MB
+                支持拖拽上传，单个文件最大50MB，将按类型自动分类存储
               </p>
             </div>
           </div>
@@ -196,7 +205,7 @@ export function AssetUploadDialog({
                       <div>
                         <p className="text-sm font-medium">{file.name}</p>
                         <p className="text-xs text-gray-500">
-                          {formatFileSize(file.size)}
+                          {formatFileSize(file.size)} • 将保存到 saas_temp/{getFileTypeFolder(file.type)}
                         </p>
                       </div>
                     </div>
