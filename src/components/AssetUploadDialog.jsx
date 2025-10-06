@@ -58,6 +58,14 @@ export function AssetUploadDialog({
       });
       return;
     }
+    if (!$w || !$w.cloud) {
+      toast({
+        title: "系统错误",
+        description: "无法连接到云服务，请刷新页面重试",
+        variant: "destructive"
+      });
+      return;
+    }
     setUploading(true);
     setUploadProgress(0);
     setError(null);
