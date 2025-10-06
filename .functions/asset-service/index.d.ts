@@ -1,75 +1,75 @@
 
-    interface AssetRecord {
+    interface Asset {
       _id?: string;
-      fileID: string;
-      originalName: string;
-      size: number;
-      mimetype: string;
-      tags: string[];
-      description: string;
-      createdAt: Date;
-      updatedAt: Date;
+      name: string;
+      type: string;
+      value: number;
+      description?: string;
+      status?: 'active' | 'inactive' | 'maintenance';
+      location?: string;
+      owner?: string;
+      createdAt?: string;
+      updatedAt?: string;
+      isDeleted?: boolean;
+      deletedAt?: string;
+      [key: string]: any;
     }
 
-    interface UploadResponse {
-      code: number;
-      data: {
-        id: string;
-        fileId: string;
-        url: string;
-        tags: string[];
-        description: string;
-        createdAt: Date;
-      };
+    interface PaginationParams {
+      page?: number;
+      limit?: number;
+      type?: string;
+      status?: string;
+      keyword?: string;
     }
 
-    interface ListResponse {
-      code: number;
-      data: {
-        list: AssetRecord[];
-        total: number;
-        page: number;
-        pageSize: number;
-      };
+    interface AssetListResponse {
+      list: Asset[];
+      total: number;
+      page: number;
+      limit: number;
     }
 
-    interface DeleteResponse {
-      code: number;
-      message: string;
+    type AssetAction = 
+      | 'createAsset'
+      | 'listAssets'
+      | 'getAsset'
+      | 'updateAsset'
+      | 'deleteAsset';
+
+    interface CreateAssetData {
+      name: string;
+      type: string;
+      value: number;
+      description?: string;
+      status?: string;
+      location?: string;
+      owner?: string;
     }
 
-    interface UpdateResponse {
-      code: number;
-      data: {
-        id: string;
-        tags: string[];
-        description: string;
-        updatedAt: Date;
-      };
-    }
-
-    interface DownloadResponse {
-      code: number;
-      data: {
-        url: string;
-        expires: Date;
-      };
-    }
-
-    interface ErrorResponse {
-      code: number;
-      message: string;
+    interface UpdateAssetData {
+      name?: string;
+      type?: string;
+      value?: number;
+      description?: string;
+      status?: string;
+      location?: string;
+      owner?: string;
     }
 
     interface CloudFunctionEvent {
-      action?: 'upload' | 'list' | 'delete' | 'update' | 'download';
-      id?: string;
-      data?: any;
-      path?: string;
-      httpMethod?: string;
-      queryStringParameters?: any;
-      body?: string;
+      action: AssetAction;
+      data: 
+        | CreateAssetData
+        | PaginationParams
+        | { assetId: string }
+        | { assetId: string; updateData: UpdateAssetData };
     }
 
-    export declare function main(event: CloudFunctionEvent, context: any): Promise<UploadResponse | ListResponse | DeleteResponse | UpdateResponse | DownloadResponse | ErrorResponse>;
+    export declare function main(event: CloudFunctionEvent, context: any): Promise<{
+      code: number;
+      data?: any;
+      message?: string;
+      error?: string;
+    }>;
   

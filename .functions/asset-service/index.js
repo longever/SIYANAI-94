@@ -2,322 +2,192 @@
     'use strict';
 
     const cloudbase = require('@cloudbase/node-sdk');
-    const formidable = require('formidable');
-    const fs = require('fs');
-    const path = require('path');
 
     // 初始化 CloudBase SDK
     const app = cloudbase.init({
       env: cloudbase.SYMBOL_CURRENT_ENV
     });
-    const db = app.database();
-    const storage = app.storage();
+    const models = app.models;
 
-    // 数据模型名称
-    const ASSET_COLLECTION = 'assets';
-
-    /**
-     * 解析 multipart/form-data
-     */
-    async function parseMultipart(event) {
-      return new Promise((resolve, reject) => {
-        const form = formidable({
-          multiples: false,
-          keepExtensions: true,
-          maxFileSize: 10 * 1024 * 1024 // 10MB
-        });
-
-        form.parse(event, (err, fields, files) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve({ fields, files });
-          }
-        });
-      });
+    // 统一响应格式
+    function successResponse(data, message = 'success') {
+      return {
+        code: 0,
+        data,
+        message
+      };
     }
 
-    /**
-     * 上传文件到云存储
-     */
-    async function uploadToStorage(file, filename) {
-      const fileName = `saas_temp/${Date.now()}_${filename}`;
-      const fileContent = fs.readFileSync(file.filepath);
+    function errorResponse(error, message = '操作失败') {
+      console.error('Asset Service Error:', error);
+      return {
+        code: -1,
+        error: error.message || error,
+        message
+      };
+    }
+
+    // 参数验证函数
+    function validateParams(params, requiredFields) {
+      const missing = requiredFields.filter(field => !params[field]);
+      if (missing.length > 0) {
+        throw new Error(`缺少必填参数: ${missing.join(', ')}`);
+      }
+    }
+
+    // 创建资产
+    async function createAsset(assetData) {
+      validateParams(assetData, ['name', 'type', 'value']);
       
-      const result = await storage.uploadFile({
-        cloudPath: fileName,
-        fileContent
-      });
-
-      return {
-        fileID: result.fileID,
-        url: result.fileID
+      const asset = {
+        ...assetData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isDeleted: false
       };
-    }
-
-    /**
-     * 创建素材记录
-     */
-    async function createAssetRecord(fileInfo, metadata) {
-      const record = {
-        fileID: fileInfo.fileID,
-        originalName: metadata.originalName,
-        size: metadata.size,
-        mimetype: metadata.mimetype,
-        tags: metadata.tags || [],
-        description: metadata.description || '',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-
-      const result = await db.collection(ASSET_COLLECTION).add(record);
-      return {
-        id: result.id,
-        ...record
-      };
-    }
-
-    /**
-     * 获取素材列表（分页）
-     */
-    async function getAssetList(page = 1, pageSize = 20) {
-      const skip = (page - 1) * pageSize;
       
-      const [listResult, countResult] = await Promise.all([
-        db.collection(ASSET_COLLECTION)
-          .orderBy('createdAt', 'desc')
-          .skip(skip)
-          .limit(pageSize)
-          .get(),
-        db.collection(ASSET_COLLECTION).count()
-      ]);
+      const result = await models.asset.create({ data: asset });
+      return result.data;
+    }
 
+    // 查询资产列表
+    async function listAssets(params = {}) {
+      const { page = 1, limit = 10, type, status, keyword } = params;
+      
+      const filter = {
+        where: {
+          isDeleted: { $eq: false }
+        }
+      };
+      
+      if (type) {
+        filter.where.type = { $eq: type };
+      }
+      
+      if (status) {
+        filter.where.status = { $eq: status };
+      }
+      
+      if (keyword) {
+        filter.where.name = { $regex: keyword, $options: 'i' };
+      }
+      
+      const result = await models.asset.list({
+        filter,
+        sort: { updatedAt: 'desc' },
+        pageSize: limit,
+        pageNumber: page
+      });
+      
       return {
-        list: listResult.data,
-        total: countResult.total,
+        list: result.data.records,
+        total: result.data.total,
         page,
-        pageSize
+        limit
       };
     }
 
-    /**
-     * 删除素材
-     */
-    async function deleteAsset(id) {
-      // 先获取素材信息
-      const asset = await db.collection(ASSET_COLLECTION).doc(id).get();
-      if (!asset.data) {
-        throw new Error('素材不存在');
-      }
-
-      // 删除云存储文件
-      await storage.deleteFile({
-        fileList: [asset.data.fileID]
-      });
-
-      // 删除数据库记录
-      await db.collection(ASSET_COLLECTION).doc(id).remove();
-
-      return true;
-    }
-
-    /**
-     * 更新素材信息
-     */
-    async function updateAsset(id, updateData) {
-      const allowedFields = ['tags', 'description'];
-      const filteredData = {};
+    // 获取资产详情
+    async function getAsset(assetId) {
+      validateParams({ assetId }, ['assetId']);
       
-      Object.keys(updateData).forEach(key => {
-        if (allowedFields.includes(key)) {
-          filteredData[key] = updateData[key];
-        }
-      });
-
-      if (Object.keys(filteredData).length === 0) {
-        throw new Error('没有可更新的字段');
-      }
-
-      filteredData.updatedAt = new Date();
-
-      const result = await db.collection(ASSET_COLLECTION).doc(id).update(filteredData);
-      
-      if (result.updated === 0) {
-        throw new Error('素材不存在');
-      }
-
-      const updatedAsset = await db.collection(ASSET_COLLECTION).doc(id).get();
-      return updatedAsset.data;
-    }
-
-    /**
-     * 获取带签名的下载链接
-     */
-    async function getDownloadUrl(id) {
-      const asset = await db.collection(ASSET_COLLECTION).doc(id).get();
-      if (!asset.data) {
-        throw new Error('素材不存在');
-      }
-
-      const result = await storage.getTemporaryUrl({
-        fileList: [{
-          fileID: asset.data.fileID,
-          maxAge: 3600 // 1小时有效期
-        }]
-      });
-
-      return {
-        url: result.fileList[0].tempFileURL,
-        expires: new Date(Date.now() + 3600 * 1000)
-      };
-    }
-
-    /**
-     * 路由处理
-     */
-    async function handleRequest(event) {
-      const { path, httpMethod, queryStringParameters, body } = event;
-      
-      try {
-        // POST /upload
-        if (httpMethod === 'POST' && path === '/upload') {
-          const { fields, files } = await parseMultipart(event);
-          const file = files.file;
-          
-          if (!file) {
-            throw new Error('缺少文件字段');
+      const result = await models.asset.get({
+        filter: {
+          where: {
+            _id: { $eq: assetId },
+            isDeleted: { $eq: false }
           }
-
-          const uploadResult = await uploadToStorage(file, file.originalFilename);
-          const assetRecord = await createAssetRecord(uploadResult, {
-            originalName: file.originalFilename,
-            size: file.size,
-            mimetype: file.mimetype,
-            tags: fields.tags ? JSON.parse(fields.tags) : [],
-            description: fields.description || ''
-          });
-
-          return {
-            code: 0,
-            data: {
-              id: assetRecord.id,
-              fileId: assetRecord.fileID,
-              url: assetRecord.url,
-              tags: assetRecord.tags,
-              description: assetRecord.description,
-              createdAt: assetRecord.createdAt
-            }
-          };
         }
-
-        // GET /list
-        if (httpMethod === 'GET' && path === '/list') {
-          const page = parseInt(queryStringParameters?.page) || 1;
-          const pageSize = parseInt(queryStringParameters?.pageSize) || 20;
-          
-          const result = await getAssetList(page, pageSize);
-          
-          return {
-            code: 0,
-            data: result
-          };
-        }
-
-        // DELETE /:id
-        if (httpMethod === 'DELETE' && path.startsWith('/')) {
-          const id = path.substring(1);
-          await deleteAsset(id);
-          
-          return {
-            code: 0,
-            message: '删除成功'
-          };
-        }
-
-        // PUT /:id
-        if (httpMethod === 'PUT' && path.startsWith('/')) {
-          const id = path.substring(1);
-          const updateData = JSON.parse(body || '{}');
-          
-          const updatedAsset = await updateAsset(id, updateData);
-          
-          return {
-            code: 0,
-            data: {
-              id: updatedAsset._id,
-              tags: updatedAsset.tags,
-              description: updatedAsset.description,
-              updatedAt: updatedAsset.updatedAt
-            }
-          };
-        }
-
-        // GET /download/:id
-        if (httpMethod === 'GET' && path.startsWith('/download/')) {
-          const id = path.substring('/download/'.length);
-          const downloadInfo = await getDownloadUrl(id);
-          
-          return {
-            code: 0,
-            data: {
-              url: downloadInfo.url,
-              expires: downloadInfo.expires
-            }
-          };
-        }
-
-        throw new Error('不支持的接口');
-      } catch (error) {
-        console.error('Error:', error);
-        return {
-          code: 1,
-          message: error.message || '服务器内部错误'
-        };
+      });
+      
+      if (!result.data) {
+        throw new Error('Asset not found');
       }
+      
+      return result.data;
     }
 
-    exports.main = async (event, context) => {
-      // 兼容云函数调用方式
-      if (event.action) {
-        switch (event.action) {
-          case 'upload':
-            return await handleRequest({
-              ...event,
-              httpMethod: 'POST',
-              path: '/upload'
-            });
-          case 'list':
-            return await handleRequest({
-              ...event,
-              httpMethod: 'GET',
-              path: '/list',
-              queryStringParameters: event.data
-            });
-          case 'delete':
-            return await handleRequest({
-              ...event,
-              httpMethod: 'DELETE',
-              path: `/${event.id}`
-            });
-          case 'update':
-            return await handleRequest({
-              ...event,
-              httpMethod: 'PUT',
-              path: `/${event.id}`,
-              body: JSON.stringify(event.data)
-            });
-          case 'download':
-            return await handleRequest({
-              ...event,
-              httpMethod: 'GET',
-              path: `/download/${event.id}`
-            });
-          default:
-            return { code: 1, message: '不支持的action' };
-        }
+    // 更新资产
+    async function updateAsset(assetId, updateData) {
+      validateParams({ assetId }, ['assetId']);
+      
+      const updateInfo = {
+        ...updateData,
+        updatedAt: new Date().toISOString()
+      };
+      
+      const result = await models.asset.update({
+        filter: {
+          where: {
+            _id: { $eq: assetId },
+            isDeleted: { $eq: false }
+          }
+        },
+        data: updateInfo
+      });
+      
+      if (result.data.matchedCount === 0) {
+        throw new Error('Asset not found');
       }
+      
+      return { matchedCount: result.data.matchedCount };
+    }
 
-      // HTTP API 调用方式
-      return await handleRequest(event);
+    // 删除资产（软删除）
+    async function deleteAsset(assetId) {
+      validateParams({ assetId }, ['assetId']);
+      
+      const result = await models.asset.update({
+        filter: {
+          where: {
+            _id: { $eq: assetId },
+            isDeleted: { $eq: false }
+          }
+        },
+        data: {
+          isDeleted: true,
+          deletedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      });
+      
+      if (result.data.matchedCount === 0) {
+        throw new Error('Asset not found');
+      }
+      
+      return { matchedCount: result.data.matchedCount };
+    }
+
+    // 主函数入口
+    exports.main = async (event, context) => {
+      try {
+        const { action, data } = event;
+        
+        if (!action) {
+          return errorResponse(new Error('缺少 action 参数'));
+        }
+        
+        switch (action) {
+          case 'createAsset':
+            return successResponse(await createAsset(data));
+            
+          case 'listAssets':
+            return successResponse(await listAssets(data));
+            
+          case 'getAsset':
+            return successResponse(await getAsset(data.assetId));
+            
+          case 'updateAsset':
+            return successResponse(await updateAsset(data.assetId, data.updateData));
+            
+          case 'deleteAsset':
+            return successResponse(await deleteAsset(data.assetId));
+            
+          default:
+            return errorResponse(new Error(`不支持的操作: ${action}`));
+        }
+      } catch (error) {
+        return errorResponse(error);
+      }
     };
   

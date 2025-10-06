@@ -2,11 +2,16 @@
     {
       "name": "asset-service",
       "version": "1.0.0",
-      "description": "素材管理云函数，提供文件上传、列表查询、删除、更新和下载功能",
+      "description": "资产管理云函数，提供资产的增删改查功能",
       "main": "index.js",
       "dependencies": {
-        "@cloudbase/node-sdk": "^3.10.0",
-        "formidable": "^3.5.1"
-      }
+        "@cloudbase/node-sdk": "^3.3.7"
+      },
+      "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+      },
+      "keywords": ["asset", "management", "cloud-function"],
+      "author": "",
+      "license": "ISC"
     }
   
