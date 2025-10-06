@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, Button, Input, Label, Select,
 // @ts-ignore;
 import { Image, Film, Sparkles } from 'lucide-react';
 
-import { AssetLibrary } from '@/components/AssetLibrary';
+import { EnhancedAssetLibrary } from '@/components/EnhancedAssetLibrary';
 export function Image2VideoPanel({
   onAddToTimeline,
   $w
@@ -129,7 +129,7 @@ export function Image2VideoPanel({
           <DialogHeader>
             <DialogTitle>选择图片素材</DialogTitle>
           </DialogHeader>
-          <AssetLibrary onAssetSelect={handleAssetSelect} onInsertToCreator={handleAssetSelect} $w={$w} />
+          <EnhancedAssetLibrary onAssetSelect={handleAssetSelect} onInsertToCreator={handleAssetSelect} $w={$w} onClose={() => setShowAssetLibrary(false)} />
         </DialogContent>
       </Dialog>
     </div>;
