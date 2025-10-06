@@ -1,9 +1,5 @@
 export * from './ActionExpressionPanel.jsx';
 export * from './AdvancedTimeline.jsx';
-export * from './AssetGrid.jsx';
-export * from './AssetLibrary.jsx';
-export * from './AssetPreviewDialog.jsx';
-export * from './AssetUploadDialog.jsx';
 export * from './AvatarSelector.jsx';
 export * from './BackgroundSelector.jsx';
 export * from './BatchExportQueue.jsx';
@@ -40,7 +36,6 @@ export * from './UsageStatistics.jsx';
 export * from './VideoPreview.jsx';
 export * from './VideoPreviewWindow.jsx';
 export * from './VoiceSelector.jsx';
-export * from './AssetSearchBar.jsx';
 export * from './EmptyState.jsx';
 export * from './LoadingState.jsx';
 export * from './ErrorState.jsx';
