@@ -133,7 +133,7 @@ export function AssetUploadDialog({
       waveform_url: '',
       size: file.size,
       duration: 0,
-      dimensions: '',
+      dimensions: null,
       format: file.name.split('.').pop().toLowerCase(),
       mime_type: file.type,
       tags: formData.tags,
@@ -144,8 +144,7 @@ export function AssetUploadDialog({
       usage_count: 0,
       metadata: {},
       createdAt: Date.now(),
-      // 修改为使用 Date.now() 返回的毫秒时间戳（Number 类型）
-      updatedAt: Date.now() // 同时添加 updatedAt 字段
+      updatedAt: Date.now()
     };
     try {
       const result = await window.$w.cloud.callDataSource({
