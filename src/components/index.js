@@ -47,3 +47,6 @@ export * from './AssetLibrary.jsx';
 export * from './AssetPreviewDialog.jsx';
 export * from './AssetSearchBar.jsx';
 export * from './AssetUploadDialog.jsx';
+export * from './GlobalLoadingOverlay.jsx';
+export * from './ProAssetLibrary.jsx';
+export * from './ProjectHeader.jsx';
