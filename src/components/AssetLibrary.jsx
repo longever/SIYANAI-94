@@ -84,10 +84,7 @@ export function AssetLibrary(props) {
 
   // 处理上传成功后的回调
   const handleUploadSuccess = useCallback(newAsset => {
-    // 立即刷新列表
     fetchAssets();
-
-    // 如果上传成功，显示成功消息
     if (newAsset) {
       toast({
         title: '上传成功',
@@ -118,8 +115,6 @@ export function AssetLibrary(props) {
         title: '删除成功',
         description: '素材已从库中移除'
       });
-
-      // 重新获取列表
       fetchAssets();
     } catch (error) {
       toast({
@@ -156,8 +151,6 @@ export function AssetLibrary(props) {
         title: '更新成功',
         description: '素材信息已更新'
       });
-
-      // 重新获取列表
       fetchAssets();
       setEditingAsset(null);
       setEditName('');
@@ -227,8 +220,6 @@ export function AssetLibrary(props) {
             }
           }
         });
-
-        // 重新获取列表以更新下载次数
         fetchAssets();
       } else {
         throw new Error('无法获取下载URL');
@@ -334,6 +325,7 @@ export function AssetLibrary(props) {
           </div> : <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
             {assets.map(asset => <Card key={asset._id} className="group relative overflow-hidden hover:shadow-lg transition-shadow">
                 <CardContent className="p-0">
+                  {/* 预览区域 - 点击直接预览 */}
                   <div className="aspect-square bg-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors" onClick={() => handlePreview(asset)}>
                     {asset.thumbnail_url ? <img src={asset.thumbnail_url} alt={asset.name} className="w-full h-full object-cover" onError={e => {
                 e.target.style.display = 'none';
@@ -369,28 +361,38 @@ export function AssetLibrary(props) {
                       </div>}
                   </div>
 
+                  {/* 操作按钮 */}
                   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="flex gap-1">
                       <Button size="sm" variant="ghost" className="h-8 w-8 p-0 bg-white/90 hover:bg-white shadow-sm" onClick={e => {
                   e.stopPropagation();
-                  setEditingAsset(asset);
-                  setEditName(asset.name);
-                  setEditTags(asset.tags?.join(', ') || '');
-                }}>
-                        <Edit className="w-3 h-3" />
+                  handlePreview(asset);
+                }} title="预览">
+                        <Eye className="w-3 h-3" />
                       </Button>
 
                       <Button size="sm" variant="ghost" className="h-8 w-8 p-0 bg-white/90 hover:bg-white shadow-sm" onClick={e => {
                   e.stopPropagation();
                   handleDownload(asset);
-                }}>
+                }} title="下载">
                         <Download className="w-3 h-3" />
                       </Button>
 
                       <Button size="sm" variant="ghost" className="h-8 w-8 p-0 bg-white/90 hover:bg-white shadow-sm" onClick={e => {
                   e.stopPropagation();
-                  handleDelete(asset);
-                }}>
+                  setEditingAsset(asset);
+                  setEditName(asset.name);
+                  setEditTags(asset.tags?.join(', ') || '');
+                }} title="编辑">
+                        <Edit className="w-3 h-3" />
+                      </Button>
+
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0 bg-white/90 hover:bg-white shadow-sm" onClick={e => {
+                  e.stopPropagation();
+                  if (window.confirm(`确定要删除素材 "${asset.name}" 吗？`)) {
+                    handleDelete(asset);
+                  }
+                }} title="删除">
                         <Trash2 className="w-3 h-3" />
                       </Button>
                     </div>
