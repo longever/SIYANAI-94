@@ -8,7 +8,6 @@ import { Plus, Trash2, Settings, Play, Pause, Download, Upload, ChevronDown, Che
 import { ScriptGenerator } from '@/components/ScriptGenerator';
 import { AssetLibrary } from '@/components/AssetLibrary';
 import { NodeConfigurationModal } from '@/components/NodeConfigurationModal';
-import { ScriptGeneratorModal } from '@/components/ScriptGeneratorModal';
 export default function CreatePage(props) {
   const {
     $w

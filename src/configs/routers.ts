@@ -1,5 +1,4 @@
 import AI_VIDEO-CREATOR from '../pages/ai-video-creator.jsx';
-import CREATE from '../pages/create.jsx';
 import DIGITAL_HUMAN from '../pages/digital-human.jsx';
 import EXPORT_SHARE from '../pages/export-share.jsx';
 import INDEX from '../pages/index.jsx';
@@ -9,9 +8,6 @@ import ASSET_LIBRARY from '../pages/asset-library.jsx';
 export const routers = [{
   id: "ai-video-creator",
   component: AI_VIDEO-CREATOR
-}, {
-  id: "create",
-  component: CREATE
 }, {
   id: "digital-human",
   component: DIGITAL_HUMAN

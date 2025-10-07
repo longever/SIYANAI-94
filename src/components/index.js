@@ -26,7 +26,6 @@ export * from './PreviewWindow.jsx';
 export * from './PropertyPanel.jsx';
 export * from './PurchaseHistory.jsx';
 export * from './ScriptGenerator.jsx';
-export * from './ScriptGeneratorModal.jsx';
 export * from './ShareCenter.jsx';
 export * from './SubscriptionManager.jsx';
 export * from './Text2VideoPanel.jsx';
