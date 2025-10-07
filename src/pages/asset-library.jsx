@@ -40,7 +40,7 @@ export default function AssetLibraryPage(props) {
         params: {
           filter: {
             where: {
-              userId: {
+              _id: {
                 $eq: $w.auth.currentUser?.userId || 'anonymous'
               }
             }
@@ -91,15 +91,9 @@ export default function AssetLibraryPage(props) {
           params: {
             filter: {
               where: {
-                $or: [{
-                  owner: {
-                    $eq: userData.records[0]._id
-                  }
-                }, {
-                  owner_user_id: {
-                    $eq: userData.records[0].userId || $w.auth.currentUser?.userId
-                  }
-                }]
+                owner: {
+                  $eq: userData.records[0]._id
+                }
               }
             },
             select: {
