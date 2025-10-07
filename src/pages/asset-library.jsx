@@ -91,7 +91,7 @@ export default function AssetLibraryPage(props) {
           params: {
             filter: {
               where: {
-                userId: {
+                owner: {
                   $eq: userData.records[0]._id
                 }
               }
@@ -124,7 +124,7 @@ export default function AssetLibraryPage(props) {
       setLoading(true);
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('userId', user._id);
+      formData.append('owner', user._id);
       formData.append('metadata', JSON.stringify(metadata));
       const result = await $w.cloud.callFunction({
         name: 'upload-asset',
@@ -132,7 +132,7 @@ export default function AssetLibraryPage(props) {
           file: formData,
           metadata: {
             ...metadata,
-            userId: user._id,
+            owner: user._id,
             originalName: file.name,
             size: file.size,
             type: file.type
