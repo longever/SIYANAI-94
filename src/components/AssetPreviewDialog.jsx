@@ -99,7 +99,7 @@ export function AssetPreviewDialog({
       return <div className="flex items-center justify-center h-full">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
-          <p className="text-sm text-gray-500">正在获取预览...</p>
+          <p className="text-sm text-gray-500">正在获取预览</p>
         </div>
       </div>;
     }
