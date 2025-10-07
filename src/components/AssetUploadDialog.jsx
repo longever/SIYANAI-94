@@ -146,7 +146,7 @@ export function AssetUploadDialog({
         params: {
           filter: {
             where: {
-              userId: {
+              _id: {
                 $eq: $w.auth.currentUser?.userId || 'anonymous'
               }
             }
@@ -210,7 +210,6 @@ export function AssetUploadDialog({
       usage_count: 0,
       metadata: {},
       owner: userInfo._id,
-      owner_user_id: userInfo.userId || $w.auth.currentUser?.userId || 'anonymous',
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
