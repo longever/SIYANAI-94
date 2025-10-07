@@ -1,7 +1,7 @@
 // @ts-ignore;
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore;
-import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Card, CardContent, Badge, Tabs, TabsContent, TabsList, TabsTrigger, Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, Alert, AlertDescription, useToast } from '@/components/ui';
+import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Card, CardContent, Badge, Tabs, TabsList, TabsTrigger, Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, Alert, AlertDescription, useToast } from '@/components/ui';
 // @ts-ignore;
 import { Search, Upload, Download, Trash2, Edit, Eye, X, FileImage, FileVideo, FileAudio, FileText, RefreshCw } from 'lucide-react';
 // @ts-ignore;
@@ -63,7 +63,13 @@ export function AssetLibrary(props) {
           }]
         }
       });
-      setAssets(result.records || []);
+
+      // 格式化文件大小
+      const formattedAssets = (result.records || []).map(asset => ({
+        ...asset,
+        formattedSize: asset.size ? `${(asset.size / 1024 / 1024).toFixed(1)} MB` : 'N/A'
+      }));
+      setAssets(formattedAssets);
       setTotalPages(Math.ceil(result.total / pageSize));
     } catch (error) {
       toast({
@@ -77,30 +83,24 @@ export function AssetLibrary(props) {
   }, [selectedType, searchTerm, currentPage, pageSize, $w.cloud, toast]);
 
   // 处理上传成功后的回调
-  const handleUploadSuccess = newAsset => {
-    // 立即将新素材添加到列表顶部
-    if (newAsset) {
-      setAssets(prevAssets => [newAsset, ...prevAssets]);
-      // 如果列表已满，移除最后一个
-      if (assets.length >= pageSize) {
-        setAssets(prevAssets => prevAssets.slice(0, pageSize));
-      }
-    }
-    // 同时刷新完整列表
+  const handleUploadSuccess = useCallback(newAsset => {
+    // 立即刷新列表
     fetchAssets();
-  };
+
+    // 如果上传成功，显示成功消息
+    if (newAsset) {
+      toast({
+        title: '上传成功',
+        description: `素材 "${newAsset.name}" 已添加到库中`,
+        variant: 'default'
+      });
+    }
+  }, [fetchAssets, toast]);
 
   // 处理删除素材
   const handleDelete = async asset => {
-    if (!confirm(`确定要删除素材 "${asset.name}" 吗？`)) return;
+    if (!window.confirm(`确定要删除素材 "${asset.name}" 吗？`)) return;
     try {
-      // 从云存储删除文件
-      const tcb = await $w.cloud.getCloudInstance();
-      await tcb.deleteFile({
-        fileList: [asset.url]
-      });
-
-      // 从数据库删除记录
       await $w.cloud.callDataSource({
         dataSourceName: 'asset_library',
         methodName: 'wedaDeleteV2',
@@ -119,15 +119,8 @@ export function AssetLibrary(props) {
         description: '素材已从库中移除'
       });
 
-      // 从本地状态中移除
-      setAssets(prevAssets => prevAssets.filter(a => a._id !== asset._id));
-
-      // 如果当前页为空且不是第一页，返回上一页
-      if (assets.length === 1 && currentPage > 1) {
-        setCurrentPage(currentPage - 1);
-      } else {
-        fetchAssets();
-      }
+      // 重新获取列表
+      fetchAssets();
     } catch (error) {
       toast({
         title: '删除失败',
@@ -164,11 +157,8 @@ export function AssetLibrary(props) {
         description: '素材信息已更新'
       });
 
-      // 更新本地状态
-      setAssets(prevAssets => prevAssets.map(asset => asset._id === editingAsset._id ? {
-        ...asset,
-        ...updatedData
-      } : asset));
+      // 重新获取列表
+      fetchAssets();
       setEditingAsset(null);
       setEditName('');
       setEditTags('');
@@ -184,22 +174,16 @@ export function AssetLibrary(props) {
   // 处理预览素材
   const handlePreview = async asset => {
     try {
-      const fileId = asset.url || asset.fileId || asset.cloudPath;
-      if (!fileId) {
-        throw new Error('无法获取文件ID');
-      }
-      const tcb = await $w.cloud.getCloudInstance();
-      const result = await tcb.getTempFileURL({
-        fileList: [fileId]
-      });
-      if (result.fileList && result.fileList[0] && result.fileList[0].tempFileURL) {
+      // 直接使用URL，不需要临时URL
+      const previewUrl = asset.url || asset.preview_url;
+      if (previewUrl) {
         setSelectedAsset({
           ...asset,
-          previewUrl: result.fileList[0].tempFileURL
+          previewUrl: previewUrl
         });
         setPreviewDialogOpen(true);
       } else {
-        throw new Error('获取预览URL失败');
+        throw new Error('无法获取预览URL');
       }
     } catch (error) {
       toast({
@@ -213,19 +197,12 @@ export function AssetLibrary(props) {
   // 处理下载素材
   const handleDownload = async asset => {
     try {
-      const fileId = asset.url || asset.fileId || asset.cloudPath;
-      if (!fileId) {
-        throw new Error('无法获取文件ID');
-      }
-      const tcb = await $w.cloud.getCloudInstance();
-      const result = await tcb.getTempFileURL({
-        fileList: [fileId]
-      });
-      if (result.fileList && result.fileList[0] && result.fileList[0].tempFileURL) {
+      const downloadUrl = asset.url || asset.downloadUrl;
+      if (downloadUrl) {
         // 创建下载链接
         const link = document.createElement('a');
-        link.href = result.fileList[0].tempFileURL;
-        link.download = asset.name;
+        link.href = downloadUrl;
+        link.download = asset.name || 'download';
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
         document.body.appendChild(link);
@@ -251,13 +228,10 @@ export function AssetLibrary(props) {
           }
         });
 
-        // 更新本地状态
-        setAssets(prevAssets => prevAssets.map(a => a._id === asset._id ? {
-          ...a,
-          download_count: newDownloadCount
-        } : a));
+        // 重新获取列表以更新下载次数
+        fetchAssets();
       } else {
-        throw new Error('获取下载URL失败');
+        throw new Error('无法获取下载URL');
       }
     } catch (error) {
       toast({
@@ -286,11 +260,11 @@ export function AssetLibrary(props) {
   const getAssetTypeColor = type => {
     switch (type) {
       case 'image':
-        return 'text-blue-600 bg-blue-100';
-      case 'video':
         return 'text-green-600 bg-green-100';
+      case 'video':
+        return 'text-red-600 bg-red-100';
       case 'audio':
-        return 'text-purple-600 bg-purple-100';
+        return 'text-blue-600 bg-blue-100';
       default:
         return 'text-gray-600 bg-gray-100';
     }
@@ -305,184 +279,191 @@ export function AssetLibrary(props) {
     fetchAssets();
   }, [fetchAssets]);
   return <div className="h-full flex flex-col">
-    <div className="border-b p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">素材库</h1>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
-            <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
-            刷新
-          </Button>
-          <Button onClick={() => setUploadDialogOpen(true)}>
-            <Upload className="w-4 h-4 mr-2" />
-            上传素材
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex gap-4">
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input placeholder="搜索素材..." value={searchTerm} onChange={e => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }} className="pl-10" />
+      <div className="border-b p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-bold">素材库</h1>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
+              <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
+              刷新
+            </Button>
+            <Button onClick={() => setUploadDialogOpen(true)}>
+              <Upload className="w-4 h-4 mr-2" />
+              上传素材
+            </Button>
           </div>
         </div>
 
-        <Select value={selectedType} onValueChange={value => {
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input placeholder="搜索素材..." value={searchTerm} onChange={e => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }} className="pl-10" />
+            </div>
+          </div>
+
+          <Select value={selectedType} onValueChange={value => {
           setSelectedType(value);
           setCurrentPage(1);
         }}>
-          <SelectTrigger className="w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">全部</SelectItem>
-            <SelectItem value="image">图片</SelectItem>
-            <SelectItem value="video">视频</SelectItem>
-            <SelectItem value="audio">音频</SelectItem>
-          </SelectContent>
-        </Select>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部</SelectItem>
+              <SelectItem value="image">图片</SelectItem>
+              <SelectItem value="video">视频</SelectItem>
+              <SelectItem value="audio">音频</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-    </div>
 
-    <div className="flex-1 overflow-auto p-4">
-      {loading ? <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div> : assets.length === 0 ? <div className="text-center py-12">
-          <FileImage className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-500">暂无素材</p>
-          <Button variant="outline" className="mt-4" onClick={() => setUploadDialogOpen(true)}>
-            开始上传
-          </Button>
-        </div> : <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-          {assets.map(asset => <Card key={asset._id} className="group relative overflow-hidden hover:shadow-lg transition-shadow">
-              <CardContent className="p-0">
-                <div className="aspect-square bg-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors" onClick={() => handlePreview(asset)}>
-                  {asset.thumbnail ? <img src={asset.thumbnail} alt={asset.name} className="w-full h-full object-cover" /> : <div className="text-gray-400">
-                      {getAssetIcon(asset.type)}
-                    </div>}
-                </div>
-
-                <div className="p-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium truncate flex-1" title={asset.name}>
-                      {asset.name}
-                    </span>
-                    <Badge variant="secondary" className={cn("text-xs", getAssetTypeColor(asset.type))}>
-                      {asset.type}
-                    </Badge>
+      <div className="flex-1 overflow-auto p-4">
+        {loading ? <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div> : assets.length === 0 ? <div className="text-center py-12">
+            <FileImage className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+            <p className="text-gray-500">暂无素材</p>
+            <Button variant="outline" className="mt-4" onClick={() => setUploadDialogOpen(true)}>
+              开始上传
+            </Button>
+          </div> : <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+            {assets.map(asset => <Card key={asset._id} className="group relative overflow-hidden hover:shadow-lg transition-shadow">
+                <CardContent className="p-0">
+                  <div className="aspect-square bg-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors" onClick={() => handlePreview(asset)}>
+                    {asset.thumbnail_url ? <img src={asset.thumbnail_url} alt={asset.name} className="w-full h-full object-cover" onError={e => {
+                e.target.style.display = 'none';
+                e.target.parentElement.innerHTML = `
+                            <div class="w-full h-full flex items-center justify-center bg-gray-200">
+                              ${getAssetIcon(asset.type).props.children}
+                            </div>
+                          `;
+              }} /> : <div className="text-gray-400">
+                        {getAssetIcon(asset.type)}
+                      </div>}
                   </div>
 
-                  <div className="text-xs text-gray-500">
-                    {(asset.size / 1024 / 1024).toFixed(1)} MB
-                    {asset.download_count > 0 && <span className="ml-2">下载 {asset.download_count}</span>}
+                  <div className="p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium truncate flex-1" title={asset.name}>
+                        {asset.name}
+                      </span>
+                      <Badge variant="secondary" className={cn("text-xs", getAssetTypeColor(asset.type))}>
+                        {asset.type}
+                      </Badge>
+                    </div>
+
+                    <div className="text-xs text-gray-500">
+                      {asset.formattedSize}
+                      {asset.download_count > 0 && <span className="ml-2">下载 {asset.download_count}</span>}
+                    </div>
+
+                    {asset.tags && asset.tags.length > 0 && <div className="mt-1 flex flex-wrap gap-1">
+                        {asset.tags.slice(0, 2).map((tag, idx) => <Badge key={idx} variant="outline" className="text-xs">
+                            {tag}
+                          </Badge>)}
+                      </div>}
                   </div>
 
-                  {asset.tags && asset.tags.length > 0 && <div className="mt-1 flex flex-wrap gap-1">
-                      {asset.tags.slice(0, 2).map((tag, idx) => <Badge key={idx} variant="outline" className="text-xs">
-                          {tag}
-                        </Badge>)}
-                    </div>}
-                </div>
-
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="flex gap-1">
-                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 bg-white/90 hover:bg-white shadow-sm" onClick={e => {
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0 bg-white/90 hover:bg-white shadow-sm" onClick={e => {
                   e.stopPropagation();
                   setEditingAsset(asset);
                   setEditName(asset.name);
                   setEditTags(asset.tags?.join(', ') || '');
                 }}>
-                      <Edit className="w-3 h-3" />
-                    </Button>
+                        <Edit className="w-3 h-3" />
+                      </Button>
 
-                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 bg-white/90 hover:bg-white shadow-sm" onClick={e => {
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0 bg-white/90 hover:bg-white shadow-sm" onClick={e => {
                   e.stopPropagation();
                   handleDownload(asset);
                 }}>
-                      <Download className="w-3 h-3" />
-                    </Button>
+                        <Download className="w-3 h-3" />
+                      </Button>
 
-                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 bg-white/90 hover:bg-white shadow-sm" onClick={e => {
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0 bg-white/90 hover:bg-white shadow-sm" onClick={e => {
                   e.stopPropagation();
                   handleDelete(asset);
                 }}>
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>)}
+                </CardContent>
+              </Card>)}
+          </div>}
+      </div>
+
+      {totalPages > 1 && <div className="border-t p-4">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1} />
+              </PaginationItem>
+
+              {[...Array(totalPages)].map((_, i) => <PaginationItem key={i}>
+                  <PaginationLink onClick={() => setCurrentPage(i + 1)} isActive={currentPage === i + 1}>
+                    {i + 1}
+                  </PaginationLink>
+                </PaginationItem>)}
+
+              <PaginationItem>
+                <PaginationNext onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>}
-    </div>
 
-    {totalPages > 1 && <div className="border-t p-4">
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1} />
-            </PaginationItem>
+      <AssetUploadDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} onSuccess={handleUploadSuccess} $w={$w} />
 
-            {[...Array(totalPages)].map((_, i) => <PaginationItem key={i}>
-                <PaginationLink onClick={() => setCurrentPage(i + 1)} isActive={currentPage === i + 1}>
-                  {i + 1}
-                </PaginationLink>
-              </PaginationItem>)}
+      <AssetPreviewDialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen} asset={selectedAsset} onDownload={handleDownload} onDelete={handleDelete} $w={$w} />
 
-            <PaginationItem>
-              <PaginationNext onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      </div>}
-
-    <AssetUploadDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} onSuccess={handleUploadSuccess} $w={$w} />
-
-    <AssetPreviewDialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen} asset={selectedAsset} onDownload={handleDownload} onDelete={handleDelete} $w={$w} />
-
-    {editingAsset && <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <Card className="w-full max-w-md mx-4">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">编辑素材</h3>
-              <Button variant="ghost" size="sm" onClick={() => {
+      {editingAsset && <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md mx-4">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">编辑素材</h3>
+                <Button variant="ghost" size="sm" onClick={() => {
               setEditingAsset(null);
               setEditName('');
               setEditTags('');
             }}>
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">名称</label>
-                <Input value={editName} onChange={e => setEditName(e.target.value)} placeholder="输入素材名称" />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium">标签</label>
-                <Input value={editTags} onChange={e => setEditTags(e.target.value)} placeholder="用逗号分隔多个标签" />
-              </div>
-
-              <div className="flex gap-2">
-                <Button onClick={handleUpdate} className="flex-1">
-                  保存
+                  <X className="w-4 h-4" />
                 </Button>
-                <Button variant="outline" onClick={() => {
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium">名称</label>
+                  <Input value={editName} onChange={e => setEditName(e.target.value)} placeholder="输入素材名称" />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium">标签</label>
+                  <Input value={editTags} onChange={e => setEditTags(e.target.value)} placeholder="用逗号分隔多个标签" />
+                </div>
+
+                <div className="flex gap-2">
+                  <Button onClick={handleUpdate} className="flex-1">
+                    保存
+                  </Button>
+                  <Button variant="outline" onClick={() => {
                 setEditingAsset(null);
                 setEditName('');
                 setEditTags('');
               }}>
-                  取消
-                </Button>
+                    取消
+                  </Button>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>}
-  </div>;
+            </CardContent>
+          </Card>
+        </div>}
+    </div>;
 }
