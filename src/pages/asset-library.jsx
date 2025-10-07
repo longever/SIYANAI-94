@@ -51,7 +51,7 @@ export default function AssetLibraryPage(props) {
         avatarUrl: currentUser.avatarUrl
       });
 
-      // 获取用户素材 - 使用owner_user_id字段进行过滤
+      // 获取用户素材 - 使用owner字段进行过滤
       const assetsData = await $w.cloud.callDataSource({
         dataSourceName: 'asset_library',
         methodName: 'wedaGetRecordsV2',
@@ -202,7 +202,7 @@ export default function AssetLibraryPage(props) {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <AssetGrid assets={filteredAssets} onAssetSelect={setSelectedAsset} onAssetDelete={handleDeleteAsset} />
+                <AssetGrid assets={filteredAssets} onAssetSelect={setSelectedAsset} onAssetDelete={handleDeleteAsset} $w={$w} />
               </CardContent>
             </Card>
           </div>
@@ -212,6 +212,6 @@ export default function AssetLibraryPage(props) {
 
     <AssetUploadDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} onUploadSuccess={handleUploadSuccess} $w={$w} />
 
-    <AssetPreviewDialog asset={selectedAsset} open={!!selectedAsset} onOpenChange={open => !open && setSelectedAsset(null)} />
+    <AssetPreviewDialog asset={selectedAsset} open={!!selectedAsset} onOpenChange={open => !open && setSelectedAsset(null)} onDelete={handleDeleteAsset} $w={$w} />
   </div>;
 }

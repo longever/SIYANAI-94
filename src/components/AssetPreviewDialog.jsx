@@ -29,21 +29,31 @@ export function AssetPreviewDialog({
     }
   }, [open, asset]);
   const loadPreviewUrl = async () => {
-    if (!asset) return;
+    if (!asset || !$w) return;
     setLoading(true);
     try {
-      const fileId = asset.url || asset.fileId || asset.cloudPath;
-      if (!fileId) {
-        throw new Error('无法获取文件ID');
+      // 优先使用已有的URL
+      if (asset.url) {
+        setPreviewUrl(asset.url);
+        setLoading(false);
+        return;
       }
-      const tcb = await $w.cloud.getCloudInstance();
-      const result = await tcb.getTempFileURL({
-        fileList: [fileId]
-      });
-      if (result.fileList && result.fileList[0] && result.fileList[0].tempFileURL) {
-        setPreviewUrl(result.fileList[0].tempFileURL);
+
+      // 如果需要从云存储获取临时URL
+      const fileId = asset.cloudPath || asset.fileId;
+      if (fileId) {
+        const tcb = await $w.cloud.getCloudInstance();
+        const result = await tcb.getTempFileURL({
+          fileList: [fileId]
+        });
+        if (result.fileList && result.fileList[0] && result.fileList[0].tempFileURL) {
+          setPreviewUrl(result.fileList[0].tempFileURL);
+        } else {
+          throw new Error('获取预览链接失败');
+        }
       } else {
-        throw new Error('获取预览链接失败');
+        // 如果没有云存储路径，直接使用url
+        setPreviewUrl(asset.preview_url || asset.url);
       }
     } catch (error) {
       console.error('获取预览链接失败:', error);
@@ -52,6 +62,8 @@ export function AssetPreviewDialog({
         description: error.message || '无法获取预览链接',
         variant: 'destructive'
       });
+      // 回退到原始URL
+      setPreviewUrl(asset.url || asset.preview_url);
     } finally {
       setLoading(false);
     }
@@ -82,7 +94,7 @@ export function AssetPreviewDialog({
               <p>图片加载失败，请尝试下载查看</p>
             </div>;
         }
-        return <img src={previewUrl} alt={asset.name} className="w-full h-full object-contain" onError={handleImageError} />;
+        return <img src={previewUrl} alt={asset.name} className="w-full h-full object-contain" onError={handleImageError} onLoad={() => setImageError(false)} />;
       case 'video':
         return <video src={previewUrl} controls className="w-full h-full" onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} />;
       case 'audio':
@@ -101,33 +113,41 @@ export function AssetPreviewDialog({
     }
   };
   const handleDownload = async () => {
-    if (!asset) return;
+    if (!asset || !$w) return;
     try {
-      const fileId = asset.url || asset.fileId || asset.cloudPath;
+      const fileId = asset.cloudPath || asset.fileId || asset.url;
       if (!fileId) {
         throw new Error('无法获取文件ID');
       }
-      const tcb = await $w.cloud.getCloudInstance();
-      const result = await tcb.getTempFileURL({
-        fileList: [fileId]
-      });
-      if (result.fileList && result.fileList[0] && result.fileList[0].tempFileURL) {
-        const link = document.createElement('a');
-        link.href = result.fileList[0].tempFileURL;
-        link.download = asset.name || 'download';
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        toast({
-          title: '下载开始',
-          description: `${asset.name} 下载已开始`
+      let downloadUrl = fileId;
+
+      // 如果是云存储路径，获取临时下载URL
+      if (fileId.startsWith('cloud://')) {
+        const tcb = await $w.cloud.getCloudInstance();
+        const result = await tcb.getTempFileURL({
+          fileList: [fileId]
         });
-        if (onDownload) {
-          onDownload(asset);
+        if (result.fileList && result.fileList[0] && result.fileList[0].tempFileURL) {
+          downloadUrl = result.fileList[0].tempFileURL;
+        } else {
+          throw new Error('获取下载链接失败');
         }
-      } else {
-        throw new Error('获取下载链接失败');
+      }
+
+      // 创建下载链接
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = asset.name || 'download';
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast({
+        title: '下载开始',
+        description: `${asset.name} 下载已开始`
+      });
+      if (onDownload) {
+        onDownload(asset);
       }
     } catch (error) {
       toast({
@@ -141,7 +161,9 @@ export function AssetPreviewDialog({
     if (!asset) return;
     if (confirm(`确定要删除素材 "${asset.name}" 吗？`)) {
       try {
-        await onDelete(asset);
+        if (onDelete) {
+          await onDelete(asset);
+        }
         onOpenChange(false);
       } catch (error) {
         toast({
