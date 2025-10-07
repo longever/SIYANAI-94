@@ -45,19 +45,7 @@ export function AssetPreviewDialog({
       });
       return;
     }
-
-    // 2. 校验 assetId 是否存在
-    const fileID = assetId || asset.cloudPath;
-    if (!fileID) {
-      const errorMsg = '文件ID缺失，无法获取预览链接';
-      setError(errorMsg);
-      toast({
-        title: '预览失败',
-        description: errorMsg,
-        variant: 'destructive'
-      });
-      return;
-    }
+    console.log("获取素材信息", asset)
     setLoading(true);
     setError(null);
     try {
@@ -66,7 +54,7 @@ export function AssetPreviewDialog({
 
       // 获取临时URL
       const res = await tcb.getTempFileURL({
-        fileList: [fileID]
+        fileList: [assetId]
       });
       if (res.fileList && res.fileList[0] && res.fileList[0].tempFileURL) {
         setPreviewUrl(res.fileList[0].tempFileURL);
