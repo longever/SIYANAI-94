@@ -95,6 +95,16 @@
       "name": "metadata",
       "title": "元数据",
       "type": "Object"
+    },
+    {
+      "name": "owner",
+      "title": "所有者",
+      "type": "String"
+    },
+    {
+      "name": "owner_user_id",
+      "title": "所有者用户ID",
+      "type": "String"
     }
   ]
 }

@@ -38,7 +38,8 @@ const ASSET_TYPES = {
 export function AssetUploadDialog({
   open,
   onOpenChange,
-  onUploadSuccess
+  onUploadSuccess,
+  $w
 }) {
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
@@ -122,7 +123,7 @@ export function AssetUploadDialog({
     formDataToUpload.append('file', file);
     try {
       // 上传到云存储
-      const tcb = await window.$w.cloud.getCloudInstance();
+      const tcb = await $w.cloud.getCloudInstance();
       const fileType = getFileType(file);
       const categoryFolder = getCategoryFolder(formData.category);
       const cloudPath = `assets/${categoryFolder}/${Date.now()}_${file.name}`;
@@ -136,7 +137,55 @@ export function AssetUploadDialog({
       throw error;
     }
   };
-  const createAssetRecord = async (file, fileUrl) => {
+  const getCurrentUserInfo = async () => {
+    try {
+      // 获取当前用户信息
+      const userData = await $w.cloud.callDataSource({
+        dataSourceName: 'users',
+        methodName: 'wedaGetRecordsV2',
+        params: {
+          filter: {
+            where: {
+              userId: {
+                $eq: $w.auth.currentUser?.userId || 'anonymous'
+              }
+            }
+          },
+          select: {
+            $master: true
+          },
+          pageSize: 1,
+          pageNumber: 1
+        }
+      });
+      if (userData.records && userData.records.length > 0) {
+        return userData.records[0];
+      } else {
+        // 如果用户不存在，创建新用户记录
+        const newUser = await $w.cloud.callDataSource({
+          dataSourceName: 'users',
+          methodName: 'wedaCreateV2',
+          params: {
+            data: {
+              userId: $w.auth.currentUser?.userId || 'anonymous',
+              name: $w.auth.currentUser?.name || 'Anonymous',
+              email: $w.auth.currentUser?.email || '',
+              createdAt: Date.now(),
+              updatedAt: Date.now()
+            }
+          }
+        });
+        return {
+          _id: newUser.id,
+          ...newUser
+        };
+      }
+    } catch (error) {
+      console.error('获取用户信息失败:', error);
+      throw error;
+    }
+  };
+  const createAssetRecord = async (file, fileUrl, userInfo) => {
     const fileType = getFileType(file);
     const assetData = {
       name: formData.name || file.name,
@@ -157,11 +206,13 @@ export function AssetUploadDialog({
       download_count: 0,
       usage_count: 0,
       metadata: {},
+      owner: userInfo._id,
+      owner_user_id: userInfo.userId || $w.auth.currentUser?.userId || 'anonymous',
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
     try {
-      const result = await window.$w.cloud.callDataSource({
+      const result = await $w.cloud.callDataSource({
         dataSourceName: 'asset_library',
         methodName: 'wedaCreateV2',
         params: {
@@ -186,6 +237,8 @@ export function AssetUploadDialog({
     setUploading(true);
     setUploadProgress(0);
     try {
+      // 获取当前用户信息
+      const userInfo = await getCurrentUserInfo();
       const uploadedAssets = [];
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -195,7 +248,7 @@ export function AssetUploadDialog({
         const fileUrl = await uploadFile(file);
 
         // 创建素材记录
-        const assetRecord = await createAssetRecord(file, fileUrl);
+        const assetRecord = await createAssetRecord(file, fileUrl, userInfo);
         uploadedAssets.push(assetRecord);
       }
       setUploadProgress(100);

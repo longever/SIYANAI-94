@@ -84,16 +84,22 @@ export default function AssetLibraryPage(props) {
           setUserSubscription(subscriptionData.records[0]);
         }
 
-        // 获取用户素材
+        // 获取用户素材 - 使用owner字段进行过滤
         const assetsData = await $w.cloud.callDataSource({
           dataSourceName: 'asset_library',
           methodName: 'wedaGetRecordsV2',
           params: {
             filter: {
               where: {
-                owner: {
-                  $eq: userData.records[0]._id
-                }
+                $or: [{
+                  owner: {
+                    $eq: userData.records[0]._id
+                  }
+                }, {
+                  owner_user_id: {
+                    $eq: userData.records[0].userId || $w.auth.currentUser?.userId
+                  }
+                }]
               }
             },
             select: {
@@ -119,44 +125,8 @@ export default function AssetLibraryPage(props) {
       setLoading(false);
     }
   };
-  const handleUploadAsset = async (file, metadata) => {
-    try {
-      setLoading(true);
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('owner', user._id);
-      formData.append('metadata', JSON.stringify(metadata));
-      const result = await $w.cloud.callFunction({
-        name: 'upload-asset',
-        data: {
-          file: formData,
-          metadata: {
-            ...metadata,
-            owner: user._id,
-            originalName: file.name,
-            size: file.size,
-            type: file.type
-          }
-        }
-      });
-      if (result.success) {
-        toast({
-          title: "Success",
-          description: "Asset uploaded successfully"
-        });
-        await loadAssetLibraryData();
-        setUploadDialogOpen(false);
-      }
-    } catch (error) {
-      console.error('Failed to upload asset:', error);
-      toast({
-        title: "Error",
-        description: "Failed to upload asset",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
+  const handleUploadSuccess = async uploadedAssets => {
+    await loadAssetLibraryData();
   };
   const handleDeleteAsset = async assetId => {
     try {
@@ -279,7 +249,7 @@ export default function AssetLibraryPage(props) {
       </div>
     </main>
 
-    <AssetUploadDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} onUpload={handleUploadAsset} $w={$w} />
+    <AssetUploadDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} onUploadSuccess={handleUploadSuccess} $w={$w} />
 
     <AssetPreviewDialog asset={selectedAsset} open={!!selectedAsset} onOpenChange={open => !open && setSelectedAsset(null)} />
   </div>;
