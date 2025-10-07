@@ -54,7 +54,7 @@ export function AssetPreviewDialog({
 
       // 获取临时URL
       const res = await tcb.getTempFileURL({
-        fileList: [assetId]
+        fileList: [asset.cloudPath]
       });
       if (res.fileList && res.fileList[0] && res.fileList[0].tempFileURL) {
         setPreviewUrl(res.fileList[0].tempFileURL);
