@@ -47,7 +47,7 @@ export function AssetPreviewDialog({
     }
 
     // 2. 校验 assetId 是否存在
-    const fileID = asset.fileId || asset.cloudPath;
+    const fileID = assetId || asset.cloudPath;
     if (!fileID) {
       const errorMsg = '文件ID缺失，无法获取预览链接';
       setError(errorMsg);
@@ -109,55 +109,55 @@ export function AssetPreviewDialog({
   const renderPreview = () => {
     if (loading) {
       return <div className="flex items-center justify-center h-full">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
-            <p className="text-sm text-gray-500">正在获取预览...</p>
-          </div>
-        </div>;
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+          <p className="text-sm text-gray-500">正在获取预览...</p>
+        </div>
+      </div>;
     }
     if (error && !previewUrl) {
       return <div className="flex items-center justify-center h-full">
-          <div className="text-center text-red-500">
-            <AlertCircle className="h-12 w-12 mx-auto mb-2" />
-            <p className="font-medium">{error}</p>
-            <p className="text-sm text-gray-500 mt-2">请检查网络连接或联系管理员</p>
-          </div>
-        </div>;
+        <div className="text-center text-red-500">
+          <AlertCircle className="h-12 w-12 mx-auto mb-2" />
+          <p className="font-medium">{error}</p>
+          <p className="text-sm text-gray-500 mt-2">请检查网络连接或联系管理员</p>
+        </div>
+      </div>;
     }
     if (!previewUrl) {
       return <div className="flex items-center justify-center h-full text-gray-500">
-          <div className="text-center">
-            <X className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-            <p>无法获取预览链接</p>
-          </div>
-        </div>;
+        <div className="text-center">
+          <X className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+          <p>无法获取预览链接</p>
+        </div>
+      </div>;
     }
     switch (asset.type) {
       case 'image':
         if (imageError) {
           return <div className="flex items-center justify-center h-full text-gray-500">
-              <div className="text-center">
-                <X className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-                <p>图片加载失败，请尝试下载查看</p>
-              </div>
-            </div>;
+            <div className="text-center">
+              <X className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+              <p>图片加载失败，请尝试下载查看</p>
+            </div>
+          </div>;
         }
         return <img src={previewUrl} alt={asset.name} className="w-full h-full object-contain" onError={handleImageError} onLoad={() => setImageError(false)} />;
       case 'video':
         return <video src={previewUrl} controls className="w-full h-full" onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} />;
       case 'audio':
         return <div className="flex items-center justify-center h-full">
-            <div className="w-full max-w-md">
-              <audio src={previewUrl} controls className="w-full" />
-            </div>
-          </div>;
+          <div className="w-full max-w-md">
+            <audio src={previewUrl} controls className="w-full" />
+          </div>
+        </div>;
       default:
         return <div className="flex items-center justify-center h-full text-gray-500">
-            <div className="text-center">
-              <X className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-              <p>不支持的预览类型，请下载查看</p>
-            </div>
-          </div>;
+          <div className="text-center">
+            <X className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+            <p>不支持的预览类型，请下载查看</p>
+          </div>
+        </div>;
     }
   };
   const handleOpenInNewTab = () => {
@@ -175,7 +175,7 @@ export function AssetPreviewDialog({
     if (!asset) return;
 
     // 1. 确保传入的 assetId 不为空
-    const fileID = asset.fileId || asset.cloudPath;
+    const fileID = asset._id || asset.cloudPath;
     if (!fileID) {
       const errorMsg = '文件ID缺失，无法下载';
       toast({
@@ -242,53 +242,53 @@ export function AssetPreviewDialog({
   };
   if (!asset) return null;
   return <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <span className="truncate">{asset.name}</span>
-            <Badge variant="secondary" className="capitalize">
-              {asset.type}
-            </Badge>
-          </DialogTitle>
-          <DialogDescription>
-            <div className="flex items-center gap-4 text-sm">
-              <span>文件大小: {(asset.size / 1024 / 1024).toFixed(2)} MB</span>
-              {asset.download_count > 0 && <span>下载次数: {asset.download_count}</span>}
-              {asset.createdAt && <span>上传时间: {new Date(asset.createdAt).toLocaleString()}</span>}
-            </div>
-          </DialogDescription>
-        </DialogHeader>
+    <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
+          <span className="truncate">{asset.name}</span>
+          <Badge variant="secondary" className="capitalize">
+            {asset.type}
+          </Badge>
+        </DialogTitle>
+        <DialogDescription>
+          <div className="flex items-center gap-4 text-sm">
+            <span>文件大小: {(asset.size / 1024 / 1024).toFixed(2)} MB</span>
+            {asset.download_count > 0 && <span>下载次数: {asset.download_count}</span>}
+            {asset.createdAt && <span>上传时间: {new Date(asset.createdAt).toLocaleString()}</span>}
+          </div>
+        </DialogDescription>
+      </DialogHeader>
 
-        <div className="flex-1 min-h-[400px] bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center">
-          {renderPreview()}
-        </div>
+      <div className="flex-1 min-h-[400px] bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center">
+        {renderPreview()}
+      </div>
 
-        {asset.tags && asset.tags.length > 0 && <div className="flex flex-wrap gap-2">
-            {asset.tags.map((tag, idx) => <Badge key={idx} variant="outline" className="text-xs">
-                {tag}
-              </Badge>)}
-          </div>}
+      {asset.tags && asset.tags.length > 0 && <div className="flex flex-wrap gap-2">
+        {asset.tags.map((tag, idx) => <Badge key={idx} variant="outline" className="text-xs">
+          {tag}
+        </Badge>)}
+      </div>}
 
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={handleOpenInNewTab} disabled={!previewUrl || loading} size="sm">
-            <ExternalLink className="w-4 h-4 mr-2" />
-            新窗口打开
-          </Button>
+      <DialogFooter className="gap-2">
+        <Button variant="outline" onClick={handleOpenInNewTab} disabled={!previewUrl || loading} size="sm">
+          <ExternalLink className="w-4 h-4 mr-2" />
+          新窗口打开
+        </Button>
 
-          <Button variant="outline" onClick={handleDownload} disabled={loading} size="sm">
-            <Download className="w-4 h-4 mr-2" />
-            下载
-          </Button>
+        <Button variant="outline" onClick={handleDownload} disabled={loading} size="sm">
+          <Download className="w-4 h-4 mr-2" />
+          下载
+        </Button>
 
-          <Button variant="destructive" onClick={handleDelete} disabled={loading} size="sm">
-            <Trash2 className="w-4 h-4 mr-2" />
-            删除
-          </Button>
+        <Button variant="destructive" onClick={handleDelete} disabled={loading} size="sm">
+          <Trash2 className="w-4 h-4 mr-2" />
+          删除
+        </Button>
 
-          <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={loading} size="sm">
-            关闭
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>;
+        <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={loading} size="sm">
+          关闭
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>;
 }
