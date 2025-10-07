@@ -11,6 +11,9 @@ import { Text2VideoPanel } from '@/components/Text2VideoPanel';
 import { AssetSelector } from '@/components/AssetSelector';
 import { VideoPreviewWindow } from '@/components/VideoPreviewWindow';
 export default function AIVideoCreatorPage(props) {
+  const {
+    $w
+  } = props;
   const [activeTab, setActiveTab] = useState('text2video');
   const [showAssetLibrary, setShowAssetLibrary] = useState(false);
   const [currentProject, setCurrentProject] = useState({
@@ -52,6 +55,15 @@ export default function AIVideoCreatorPage(props) {
   };
   const handleGenerate = async () => {
     try {
+      if (!$w?.cloud) {
+        toast({
+          title: "错误",
+          description: "云开发环境未初始化，请检查网络连接",
+          variant: "destructive"
+        });
+        return;
+      }
+
       // 调用AI生成视频
       const result = await $w.cloud.callFunction({
         name: 'ai-engine-service',
@@ -60,15 +72,20 @@ export default function AIVideoCreatorPage(props) {
           project: currentProject
         }
       });
-      setPreviewUrl(result.videoUrl);
-      toast({
-        title: "生成成功",
-        description: "AI视频已生成完成"
-      });
+      if (result?.videoUrl) {
+        setPreviewUrl(result.videoUrl);
+        toast({
+          title: "生成成功",
+          description: "AI视频已生成完成"
+        });
+      } else {
+        throw new Error('生成结果格式错误');
+      }
     } catch (error) {
+      console.error('AI视频生成失败:', error);
       toast({
         title: "生成失败",
-        description: error.message || "AI视频生成失败",
+        description: error.message || "AI视频生成失败，请稍后重试",
         variant: "destructive"
       });
     }
