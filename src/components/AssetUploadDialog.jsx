@@ -106,14 +106,28 @@ export function AssetUploadDialog({
         return FileText;
     }
   };
+  const getCategoryFolder = category => {
+    const folderMap = {
+      background: 'backgrounds',
+      character: 'characters',
+      prop: 'props',
+      effect: 'effects',
+      audio: 'audio',
+      template: 'templates'
+    };
+    return folderMap[category] || 'others';
+  };
   const uploadFile = async file => {
     const formDataToUpload = new FormData();
     formDataToUpload.append('file', file);
     try {
       // 上传到云存储
       const tcb = await window.$w.cloud.getCloudInstance();
+      const fileType = getFileType(file);
+      const categoryFolder = getCategoryFolder(formData.category);
+      const cloudPath = `saas_temp/${categoryFolder}/${Date.now()}_${file.name}`;
       const uploadResult = await tcb.uploadFile({
-        cloudPath: `assets/${Date.now()}_${file.name}`,
+        cloudPath: cloudPath,
         filePath: file
       });
       return uploadResult.fileID;
