@@ -158,6 +158,7 @@ export function AssetUploadDialog({
           pageNumber: 1
         }
       });
+      console.log("获取当前登录用户", $w.auth.currentUser)
       console.log("获取当前用户信息", userData)
       if (userData.records && userData.records.length > 0) {
         return userData.records[0];
