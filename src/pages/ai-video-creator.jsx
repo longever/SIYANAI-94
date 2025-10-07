@@ -94,7 +94,7 @@ export default function AIVideoCreatorPage(props) {
       {/* Header */}
       <header className="border-b px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="sm" onClick={() => props.$w.utils.navigateBack()}>
+          <Button variant="ghost" size="sm" onClick={() => $w.utils.navigateBack()}>
             <ChevronLeft className="w-4 h-4 mr-1" />
             返回
           </Button>
@@ -156,21 +156,21 @@ export default function AIVideoCreatorPage(props) {
               </TabsList>
 
               <TabsContent value="text2video" className="mt-4">
-                <Text2VideoPanel project={currentProject} onUpdate={updates => setCurrentProject(prev => ({
+                <Text2VideoPanel $w={$w} project={currentProject} onUpdate={updates => setCurrentProject(prev => ({
                 ...prev,
                 ...updates
               }))} onOpenAssetLibrary={() => setShowAssetLibrary(true)} />
               </TabsContent>
 
               <TabsContent value="image2video" className="mt-4">
-                <Image2VideoPanel project={currentProject} onUpdate={updates => setCurrentProject(prev => ({
+                <Image2VideoPanel $w={$w} project={currentProject} onUpdate={updates => setCurrentProject(prev => ({
                 ...prev,
                 ...updates
               }))} onOpenAssetLibrary={() => setShowAssetLibrary(true)} />
               </TabsContent>
 
               <TabsContent value="script" className="mt-4">
-                <ScriptGenerator project={currentProject} onUpdate={updates => setCurrentProject(prev => ({
+                <ScriptGenerator $w={$w} project={currentProject} onUpdate={updates => setCurrentProject(prev => ({
                 ...prev,
                 ...updates
               }))} onOpenAssetLibrary={() => setShowAssetLibrary(true)} />
@@ -182,7 +182,7 @@ export default function AIVideoCreatorPage(props) {
         {/* Right Panel - Preview */}
         <div className="flex-1 flex flex-col">
           <div className="flex-1 bg-muted flex items-center justify-center">
-            {previewUrl ? <VideoPreviewWindow url={previewUrl} title={currentProject.title} /> : <Card className="p-8 text-center">
+            {previewUrl ? <VideoPreviewWindow $w={$w} url={previewUrl} title={currentProject.title} /> : <Card className="p-8 text-center">
                 <div className="text-muted-foreground mb-4">
                   <Video className="w-16 h-16 mx-auto" />
                 </div>
@@ -219,7 +219,7 @@ export default function AIVideoCreatorPage(props) {
       {/* Asset Library */}
       {showAssetLibrary && <div className="fixed inset-0 bg-black/50 z-50 flex">
           <div className="ml-auto">
-            <AssetSelector onAssetSelect={handleAssetSelect} onClose={() => setShowAssetLibrary(false)} />
+            <AssetSelector $w={$w} onAssetSelect={handleAssetSelect} onClose={() => setShowAssetLibrary(false)} />
           </div>
         </div>}
     </div>;
