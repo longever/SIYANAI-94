@@ -5,9 +5,12 @@ import { X, Search, Image, Video, Music, Upload, Eye, Check } from 'lucide-react
 // @ts-ignore;
 import { Button, Input, Tabs, TabsContent, TabsList, TabsTrigger, ScrollArea, Dialog, DialogContent, DialogHeader, DialogTitle, Badge, useToast } from '@/components/ui';
 
+// @ts-ignore;
+import { AssetPreviewDialog } from './AssetPreviewDialog';
 export function AssetSelector({
   onAssetSelect,
-  onClose
+  onClose,
+  $w
 }) {
   const [assets, setAssets] = useState([]);
   const [selectedAsset, setSelectedAsset] = useState(null);
@@ -68,7 +71,18 @@ export function AssetSelector({
     }
   };
   const handleAssetClick = asset => {
-    setSelectedAsset(asset);
+    // 确保 asset 对象包含必要的字段
+    const validAsset = {
+      ...asset,
+      _id: asset._id || asset.id,
+      fileId: asset.fileId || asset.cloudPath || asset.file_id,
+      url: asset.url || asset.downloadUrl || asset.file_url,
+      name: asset.name || '未命名素材',
+      type: asset.type || 'unknown',
+      size: asset.size || 0,
+      thumbnailUrl: asset.thumbnailUrl || asset.thumbnail_url
+    };
+    setSelectedAsset(validAsset);
     setPreviewOpen(true);
   };
   const handleInsert = () => {
@@ -109,56 +123,38 @@ export function AssetSelector({
         {loading ? <div className="flex items-center justify-center h-32">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div> : <div className="grid grid-cols-2 gap-2">
-            {filteredAssets.map(asset => <div key={asset._id} className="relative group cursor-pointer rounded-lg overflow-hidden border hover:border-primary transition-colors" onClick={() => handleAssetClick(asset)}>
-                <div className="aspect-square bg-muted flex items-center justify-center">
-                  {asset.type === 'image' && asset.thumbnailUrl ? <img src={asset.thumbnailUrl} alt={asset.name} className="w-full h-full object-cover" /> : <div className="text-muted-foreground">
-                      {getAssetIcon(asset.type)}
-                    </div>}
-                </div>
-                
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <Eye className="w-6 h-6 text-white" />
-                </div>
-                
-                <div className="absolute top-1 right-1">
-                  <Badge variant="secondary" className="text-xs">
-                    {asset.type}
-                  </Badge>
-                </div>
-                
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
-                  <p className="text-white text-xs truncate">{asset.name}</p>
-                </div>
-              </div>)}
+            {filteredAssets.map(asset => {
+          // 确保每个 asset 都有有效的 ID
+          const assetId = asset._id || asset.id;
+          if (!assetId) {
+            console.warn('发现无效的素材项，缺少ID:', asset);
+            return null;
+          }
+          return <div key={assetId} className="relative group cursor-pointer rounded-lg overflow-hidden border hover:border-primary transition-colors" onClick={() => handleAssetClick(asset)}>
+                  <div className="aspect-square bg-muted flex items-center justify-center">
+                    {asset.type === 'image' && asset.thumbnailUrl ? <img src={asset.thumbnailUrl} alt={asset.name} className="w-full h-full object-cover" /> : <div className="text-muted-foreground">
+                        {getAssetIcon(asset.type)}
+                      </div>}
+                  </div>
+                  
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Eye className="w-6 h-6 text-white" />
+                  </div>
+                  
+                  <div className="absolute top-1 right-1">
+                    <Badge variant="secondary" className="text-xs">
+                      {asset.type}
+                    </Badge>
+                  </div>
+                  
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                    <p className="text-white text-xs truncate">{asset.name || '未命名素材'}</p>
+                  </div>
+                </div>;
+        })}
           </div>}
       </ScrollArea>
 
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle>预览素材</DialogTitle>
-          </DialogHeader>
-          
-          {selectedAsset && <div className="space-y-4">
-              <div className="bg-muted rounded-lg overflow-hidden">
-                {selectedAsset.type === 'image' ? <img src={selectedAsset.url} alt={selectedAsset.name} className="w-full h-auto max-h-[60vh] object-contain" /> : selectedAsset.type === 'video' ? <video src={selectedAsset.url} controls className="w-full max-h-[60vh]" /> : <audio src={selectedAsset.url} controls className="w-full" />}
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-semibold">{selectedAsset.name}</h4>
-                  <p className="text-sm text-muted-foreground">
-                    类型: {selectedAsset.type} | 大小: {selectedAsset.size}
-                  </p>
-                </div>
-                
-                <Button onClick={handleInsert}>
-                  <Check className="w-4 h-4 mr-2" />
-                  插入素材
-                </Button>
-              </div>
-            </div>}
-        </DialogContent>
-      </Dialog>
+      <AssetPreviewDialog open={previewOpen} onOpenChange={setPreviewOpen} asset={selectedAsset} $w={$w} />
     </div>;
 }

@@ -5,12 +5,15 @@ import { X, Search, Image, Video, Music, Upload, Eye, Check, Play, Pause, Downlo
 // @ts-ignore;
 import { Button, Input, Tabs, TabsContent, TabsList, TabsTrigger, ScrollArea, Dialog, DialogContent, DialogHeader, DialogTitle, Badge, useToast, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Card, CardContent, CardHeader, CardTitle, Skeleton } from '@/components/ui';
 
+// @ts-ignore;
+import { AssetPreviewDialog } from './AssetPreviewDialog';
 export function EnhancedAssetLibrary({
   onAssetSelect,
   onClose,
   selectedAssets = [],
   mode = 'select',
-  multiple = false
+  multiple = false,
+  $w
 }) {
   const [assets, setAssets] = useState([]);
   const [selectedAsset, setSelectedAsset] = useState(null);
@@ -73,7 +76,25 @@ export function EnhancedAssetLibrary({
         methodName: 'wedaGetRecordsV2',
         params
       });
-      setAssets(result.records || []);
+
+      // 标准化数据格式，确保包含所有必要字段
+      const normalizedAssets = (result.records || []).map(asset => ({
+        ...asset,
+        _id: asset._id || asset.id,
+        id: asset._id || asset.id,
+        fileId: asset.fileId || asset.cloudPath || asset.file_id,
+        url: asset.url || asset.downloadUrl || asset.file_url,
+        name: asset.name || '未命名素材',
+        type: asset.type || 'unknown',
+        size: asset.size || 0,
+        thumbnailUrl: asset.thumbnailUrl || asset.thumbnail_url,
+        createdAt: asset.createdAt || new Date().toISOString(),
+        download_count: asset.download_count || 0,
+        duration: asset.duration || 0,
+        dimensions: asset.dimensions || null,
+        tags: asset.tags || []
+      }));
+      setAssets(normalizedAssets);
       setTotalPages(Math.ceil((result.total || 0) / 24));
     } catch (error) {
       toast({
@@ -132,45 +153,25 @@ export function EnhancedAssetLibrary({
       setUploading(false);
     }
   };
-  const generateThumbnail = async asset => {
-    if (asset.type === 'video' && !asset.thumbnailUrl) {
-      try {
-        const result = await $w.cloud.callFunction({
-          name: 'media-service',
-          data: {
-            action: 'generateThumbnail',
-            videoUrl: asset.url,
-            time: 0
-          }
-        });
-
-        // 更新素材的缩略图URL
-        await $w.cloud.callDataSource({
-          dataSourceName: 'asset_library',
-          methodName: 'wedaUpdateV2',
-          params: {
-            data: {
-              thumbnailUrl: result.thumbnailUrl
-            },
-            filter: {
-              where: {
-                _id: {
-                  $eq: asset._id
-                }
-              }
-            }
-          }
-        });
-        return result.thumbnailUrl;
-      } catch (error) {
-        console.error('生成缩略图失败:', error);
-        return null;
-      }
-    }
-    return asset.thumbnailUrl;
-  };
   const handleAssetClick = asset => {
-    setSelectedAsset(asset);
+    // 确保传递标准化的 asset 对象
+    const normalizedAsset = {
+      ...asset,
+      _id: asset._id || asset.id,
+      id: asset._id || asset.id,
+      fileId: asset.fileId || asset.cloudPath || asset.file_id,
+      url: asset.url || asset.downloadUrl || asset.file_url,
+      name: asset.name || '未命名素材',
+      type: asset.type || 'unknown',
+      size: asset.size || 0,
+      thumbnailUrl: asset.thumbnailUrl || asset.thumbnail_url,
+      createdAt: asset.createdAt || new Date().toISOString(),
+      download_count: asset.download_count || 0,
+      duration: asset.duration || 0,
+      dimensions: asset.dimensions || null,
+      tags: asset.tags || []
+    };
+    setSelectedAsset(normalizedAsset);
     setPreviewOpen(true);
   };
   const handleInsert = () => {
@@ -270,61 +271,6 @@ export function EnhancedAssetLibrary({
           </div>
         </CardContent>
       </Card>;
-  };
-  const PreviewModal = () => {
-    const [isPlaying, setIsPlaying] = useState(false);
-    const videoRef = useRef(null);
-    const audioRef = useRef(null);
-    return <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>{selectedAsset?.name}</span>
-              <div className="flex items-center space-x-2">
-                <Button variant="outline" size="sm" onClick={() => window.open(selectedAsset?.url, '_blank')}>
-                  <Download className="w-4 h-4 mr-1" />
-                  下载
-                </Button>
-                <Button onClick={handleInsert}>
-                  <Check className="w-4 h-4 mr-1" />
-                  插入素材
-                </Button>
-              </div>
-            </DialogTitle>
-          </DialogHeader>
-          
-          {selectedAsset && <div className="space-y-4">
-              <div className="bg-muted rounded-lg overflow-hidden">
-                {selectedAsset.type === 'image' && <img src={selectedAsset.url} alt={selectedAsset.name} className="w-full h-auto max-h-[60vh] object-contain" />}
-                
-                {selectedAsset.type === 'video' && <video ref={videoRef} src={selectedAsset.url} controls className="w-full max-h-[60vh]" onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} />}
-                
-                {selectedAsset.type === 'audio' && <div className="p-8">
-                    <audio ref={audioRef} src={selectedAsset.url} controls className="w-full" />
-                    {selectedAsset.waveformUrl && <img src={selectedAsset.waveformUrl} alt="waveform" className="w-full h-32 object-contain mt-4" />}
-                  </div>}
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium">类型:</span> {selectedAsset.type}
-                </div>
-                <div>
-                  <span className="font-medium">大小:</span> {formatFileSize(selectedAsset.size)}
-                </div>
-                {selectedAsset.duration && <div>
-                    <span className="font-medium">时长:</span> {formatDuration(selectedAsset.duration)}
-                  </div>}
-                {selectedAsset.dimensions && <div>
-                    <span className="font-medium">尺寸:</span> {selectedAsset.dimensions}
-                  </div>}
-                <div className="col-span-2">
-                  <span className="font-medium">上传时间:</span> {new Date(selectedAsset.createdAt).toLocaleString()}
-                </div>
-              </div>
-            </div>}
-        </DialogContent>
-      </Dialog>;
   };
   return <div className="h-full flex flex-col bg-background">
       {/* Header */}
@@ -445,6 +391,7 @@ export function EnhancedAssetLibrary({
           </div>
         </div>}
 
-      <PreviewModal />
+      {/* 使用修复后的 AssetPreviewDialog */}
+      <AssetPreviewDialog open={previewOpen} onOpenChange={setPreviewOpen} asset={selectedAsset} $w={$w} />
     </div>;
 }

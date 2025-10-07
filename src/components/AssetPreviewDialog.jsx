@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Button, Badge, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, useToast } from '@/components/ui';
 // @ts-ignore;
-import { Download, Trash2, X, Play, Pause, ExternalLink, Loader2 } from 'lucide-react';
+import { Download, Trash2, X, Play, Pause, ExternalLink, Loader2, AlertCircle } from 'lucide-react';
 
 export function AssetPreviewDialog({
   open,
@@ -20,26 +20,51 @@ export function AssetPreviewDialog({
   const [imageError, setImageError] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   useEffect(() => {
     if (open && asset) {
       loadPreviewUrl();
     } else {
       setPreviewUrl(null);
       setImageError(false);
+      setError(null);
     }
   }, [open, asset]);
   const loadPreviewUrl = async () => {
     if (!asset) return;
+
+    // 1. 确保传入的 assetId 不为空
+    const assetId = asset._id || asset.id;
+    if (!assetId) {
+      const errorMsg = '素材ID缺失，无法预览';
+      setError(errorMsg);
+      toast({
+        title: '预览失败',
+        description: errorMsg,
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // 2. 校验 assetId 是否存在
+    const fileID = asset.fileId || asset.cloudPath;
+    if (!fileID) {
+      const errorMsg = '文件ID缺失，无法获取预览链接';
+      setError(errorMsg);
+      toast({
+        title: '预览失败',
+        description: errorMsg,
+        variant: 'destructive'
+      });
+      return;
+    }
     setLoading(true);
+    setError(null);
     try {
       // 获取云开发实例
       const tcb = await $w.cloud.getCloudInstance();
 
       // 获取临时URL
-      const fileID = asset.fileId || asset.cloudPath;
-      if (!fileID) {
-        throw new Error('无法获取文件ID');
-      }
       const res = await tcb.getTempFileURL({
         fileList: [fileID]
       });
@@ -50,15 +75,24 @@ export function AssetPreviewDialog({
       }
     } catch (error) {
       console.error('获取临时URL失败:', error);
+
+      // 4. 捕获异常并显示具体错误信息
+      const errorMessage = error.message || '无法获取预览链接';
+      setError(errorMessage);
       toast({
         title: '预览失败',
-        description: error.message || '无法获取预览链接',
+        description: errorMessage,
         variant: 'destructive'
       });
 
       // 回退到原始URL（如果有）
       if (asset.url) {
         setPreviewUrl(asset.url);
+        toast({
+          title: '使用备用链接',
+          description: '正在使用备用链接进行预览',
+          variant: 'default'
+        });
       }
     } finally {
       setLoading(false);
@@ -78,6 +112,15 @@ export function AssetPreviewDialog({
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
             <p className="text-sm text-gray-500">正在获取预览...</p>
+          </div>
+        </div>;
+    }
+    if (error && !previewUrl) {
+      return <div className="flex items-center justify-center h-full">
+          <div className="text-center text-red-500">
+            <AlertCircle className="h-12 w-12 mx-auto mb-2" />
+            <p className="font-medium">{error}</p>
+            <p className="text-sm text-gray-500 mt-2">请检查网络连接或联系管理员</p>
           </div>
         </div>;
     }
@@ -120,19 +163,33 @@ export function AssetPreviewDialog({
   const handleOpenInNewTab = () => {
     if (previewUrl) {
       window.open(previewUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      toast({
+        title: '无法打开',
+        description: '预览链接不可用',
+        variant: 'destructive'
+      });
     }
   };
   const handleDownload = async () => {
     if (!asset) return;
+
+    // 1. 确保传入的 assetId 不为空
+    const fileID = asset.fileId || asset.cloudPath;
+    if (!fileID) {
+      const errorMsg = '文件ID缺失，无法下载';
+      toast({
+        title: '下载失败',
+        description: errorMsg,
+        variant: 'destructive'
+      });
+      return;
+    }
     try {
       // 获取云开发实例
       const tcb = await $w.cloud.getCloudInstance();
 
       // 获取下载临时URL
-      const fileID = asset.fileId || asset.cloudPath;
-      if (!fileID) {
-        throw new Error('无法获取文件ID');
-      }
       const res = await tcb.getTempFileURL({
         fileList: [fileID]
       });
