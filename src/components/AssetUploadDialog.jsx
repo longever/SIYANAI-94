@@ -158,6 +158,7 @@ export function AssetUploadDialog({
           pageNumber: 1
         }
       });
+      console.log("获取当前用户信息", userData)
       if (userData.records && userData.records.length > 0) {
         return userData.records[0];
       } else {
@@ -187,6 +188,7 @@ export function AssetUploadDialog({
   };
   const createAssetRecord = async (file, fileUrl, userInfo) => {
     const fileType = getFileType(file);
+    console.log("创建素材记录owner: ", userInfo._id)
     const assetData = {
       name: formData.name || file.name,
       type: fileType,
