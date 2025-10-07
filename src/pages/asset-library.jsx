@@ -33,89 +33,52 @@ export default function AssetLibraryPage(props) {
     try {
       setLoading(true);
 
-      // 从数据源获取用户信息
-      const userData = await $w.cloud.callDataSource({
-        dataSourceName: 'users',
+      // 直接使用当前用户信息
+      const currentUser = $w.auth.currentUser;
+      if (!currentUser) {
+        toast({
+          title: "错误",
+          description: "请先登录",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+      setUser({
+        _id: currentUser.userId,
+        name: currentUser.name,
+        avatarUrl: currentUser.avatarUrl
+      });
+
+      // 获取用户素材 - 使用owner_user_id字段进行过滤
+      const assetsData = await $w.cloud.callDataSource({
+        dataSourceName: 'asset_library',
         methodName: 'wedaGetRecordsV2',
         params: {
           filter: {
             where: {
-              _id: {
-                $eq: $w.auth.currentUser?.userId || 'anonymous'
+              owner_user_id: {
+                $eq: currentUser.userId
               }
             }
           },
           select: {
             $master: true
           },
-          pageSize: 1,
+          orderBy: [{
+            createdAt: 'desc'
+          }],
+          pageSize: 100,
           pageNumber: 1
         }
       });
-      console.log("userData=", userData)
-      if (userData.records && userData.records.length > 0) {
-        setUser(userData.records[0]);
-
-        // 获取用户订阅信息
-        const subscriptionData = await $w.cloud.callDataSource({
-          dataSourceName: 'user_subscriptions',
-          methodName: 'wedaGetRecordsV2',
-          params: {
-            filter: {
-              where: {
-                userId: {
-                  $eq: userData.records[0]._id
-                },
-                status: {
-                  $eq: 'active'
-                }
-              }
-            },
-            select: {
-              $master: true
-            },
-            orderBy: [{
-              createdAt: 'desc'
-            }],
-            pageSize: 1,
-            pageNumber: 1
-          }
-        });
-        if (subscriptionData.records && subscriptionData.records.length > 0) {
-          setUserSubscription(subscriptionData.records[0]);
-        }
-
-        // 获取用户素材 - 使用owner字段进行过滤
-        const assetsData = await $w.cloud.callDataSource({
-          dataSourceName: 'asset_library',
-          methodName: 'wedaGetRecordsV2',
-          params: {
-            filter: {
-              where: {
-                owner: {
-                  $eq: userData.records[0]._id
-                }
-              }
-            },
-            select: {
-              $master: true
-            },
-            orderBy: [{
-              createdAt: 'desc'
-            }],
-            pageSize: 100,
-            pageNumber: 1
-          }
-        });
-
-        console.log("assetsData=", assetsData)
-        setAssets(assetsData.records || []);
-      }
+      console.log("用户素材查询结果:", assetsData);
+      setAssets(assetsData.records || []);
     } catch (error) {
-      console.error('Failed to load asset library data:', error);
+      console.error('加载素材库数据失败:', error);
       toast({
-        title: "Error",
-        description: "Failed to load asset library",
+        title: "错误",
+        description: "加载素材库失败，请稍后重试",
         variant: "destructive"
       });
     } finally {
@@ -142,15 +105,15 @@ export default function AssetLibraryPage(props) {
         }
       });
       toast({
-        title: "Success",
-        description: "Asset deleted successfully"
+        title: "成功",
+        description: "素材删除成功"
       });
       await loadAssetLibraryData();
     } catch (error) {
-      console.error('Failed to delete asset:', error);
+      console.error('删除素材失败:', error);
       toast({
-        title: "Error",
-        description: "Failed to delete asset",
+        title: "错误",
+        description: "删除素材失败",
         variant: "destructive"
       });
     } finally {
@@ -158,7 +121,7 @@ export default function AssetLibraryPage(props) {
     }
   };
   const filteredAssets = assets.filter(asset => {
-    const matchesSearch = asset.name.toLowerCase().includes(searchTerm.toLowerCase()) || asset.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesSearch = asset.name.toLowerCase().includes(searchTerm.toLowerCase()) || asset.tags && asset.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesType = selectedType === 'all' || asset.type === selectedType;
     return matchesSearch && matchesType;
   });
@@ -173,81 +136,81 @@ export default function AssetLibraryPage(props) {
     return <GlobalLoadingOverlay />;
   }
   return <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-    <ProjectHeader user={user} subscription={userSubscription} />
+      <ProjectHeader user={user} subscription={null} />
 
-    <main className="container mx-auto px-4 py-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
-            素材库
-          </h1>
-          <p className="text-slate-600 dark:text-slate-300">
-            管理您的所有视频素材、图片、音频等资源
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* 左侧筛选栏 */}
-          <div className="lg:col-span-1">
-            <Card>
-              <CardHeader>
-                <CardTitle>筛选</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Input placeholder="搜索素材..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full" />
-
-                <Tabs value={selectedType} onValueChange={setSelectedType} className="w-full">
-                  <TabsList className="grid w-full">
-                    <TabsTrigger value="all" className="text-sm">
-                      全部 ({assetStats.all})
-                    </TabsTrigger>
-                    <TabsTrigger value="image" className="text-sm">
-                      <Image className="w-4 h-4 mr-1" />
-                      图片 ({assetStats.image})
-                    </TabsTrigger>
-                    <TabsTrigger value="video" className="text-sm">
-                      <Video className="w-4 h-4 mr-1" />
-                      视频 ({assetStats.video})
-                    </TabsTrigger>
-                    <TabsTrigger value="audio" className="text-sm">
-                      <Music className="w-4 h-4 mr-1" />
-                      音频 ({assetStats.audio})
-                    </TabsTrigger>
-                    <TabsTrigger value="document" className="text-sm">
-                      <FileText className="w-4 h-4 mr-1" />
-                      文档 ({assetStats.document})
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-
-                <Button className="w-full" onClick={() => setUploadDialogOpen(true)}>
-                  <Upload className="w-4 h-4 mr-2" />
-                  上传素材
-                </Button>
-              </CardContent>
-            </Card>
+      <main className="container mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
+              素材库
+            </h1>
+            <p className="text-slate-600 dark:text-slate-300">
+              管理您的所有视频素材、图片、音频等资源
+            </p>
           </div>
 
-          {/* 右侧素材网格 */}
-          <div className="lg:col-span-3">
-            <Card>
-              <CardHeader>
-                <CardTitle>素材列表</CardTitle>
-                <CardDescription>
-                  共找到 {filteredAssets.length} 个素材
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <AssetGrid assets={filteredAssets} onAssetSelect={setSelectedAsset} onAssetDelete={handleDeleteAsset} />
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* 左侧筛选栏 */}
+            <div className="lg:col-span-1">
+              <Card>
+                <CardHeader>
+                  <CardTitle>筛选</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Input placeholder="搜索素材..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full" />
+
+                  <Tabs value={selectedType} onValueChange={setSelectedType} className="w-full">
+                    <TabsList className="grid w-full">
+                      <TabsTrigger value="all" className="text-sm">
+                        全部 ({assetStats.all})
+                      </TabsTrigger>
+                      <TabsTrigger value="image" className="text-sm">
+                        <Image className="w-4 h-4 mr-1" />
+                        图片 ({assetStats.image})
+                      </TabsTrigger>
+                      <TabsTrigger value="video" className="text-sm">
+                        <Video className="w-4 h-4 mr-1" />
+                        视频 ({assetStats.video})
+                      </TabsTrigger>
+                      <TabsTrigger value="audio" className="text-sm">
+                        <Music className="w-4 h-4 mr-1" />
+                        音频 ({assetStats.audio})
+                      </TabsTrigger>
+                      <TabsTrigger value="document" className="text-sm">
+                        <FileText className="w-4 h-4 mr-1" />
+                        文档 ({assetStats.document})
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+
+                  <Button className="w-full" onClick={() => setUploadDialogOpen(true)}>
+                    <Upload className="w-4 h-4 mr-2" />
+                    上传素材
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* 右侧素材网格 */}
+            <div className="lg:col-span-3">
+              <Card>
+                <CardHeader>
+                  <CardTitle>素材列表</CardTitle>
+                  <CardDescription>
+                    共找到 {filteredAssets.length} 个素材
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <AssetGrid assets={filteredAssets} onAssetSelect={setSelectedAsset} onAssetDelete={handleDeleteAsset} />
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
 
-    <AssetUploadDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} onUploadSuccess={handleUploadSuccess} $w={$w} />
+      <AssetUploadDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} onUploadSuccess={handleUploadSuccess} $w={$w} />
 
-    <AssetPreviewDialog asset={selectedAsset} open={!!selectedAsset} onOpenChange={open => !open && setSelectedAsset(null)} />
-  </div>;
+      <AssetPreviewDialog asset={selectedAsset} open={!!selectedAsset} onOpenChange={open => !open && setSelectedAsset(null)} />
+    </div>;
 }
