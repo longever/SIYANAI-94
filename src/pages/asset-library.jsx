@@ -52,6 +52,7 @@ export default function AssetLibraryPage(props) {
           pageNumber: 1
         }
       });
+      console.log("userData=", userData)
       if (userData.records && userData.records.length > 0) {
         setUser(userData.records[0]);
 
@@ -106,6 +107,8 @@ export default function AssetLibraryPage(props) {
             pageNumber: 1
           }
         });
+
+        console.log("assetsData=", assetsData)
         setAssets(assetsData.records || []);
       }
     } catch (error) {
