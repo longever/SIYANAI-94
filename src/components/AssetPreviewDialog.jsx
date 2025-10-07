@@ -1,9 +1,9 @@
 // @ts-ignore;
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore;
 import { Button, Badge, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, useToast } from '@/components/ui';
 // @ts-ignore;
-import { Download, Trash2, X, Play, Pause, ExternalLink, Loader2, AlertCircle } from 'lucide-react';
+import { Download, Trash2, X, Play, Pause, ExternalLink, Loader2, AlertCircle, Volume2 } from 'lucide-react';
 
 export function AssetPreviewDialog({
   open,
@@ -21,6 +21,8 @@ export function AssetPreviewDialog({
   const [previewUrl, setPreviewUrl] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const audioRef = useRef(null);
+  const videoRef = useRef(null);
   useEffect(() => {
     if (open && asset) {
       loadPreviewUrl();
@@ -28,12 +30,11 @@ export function AssetPreviewDialog({
       setPreviewUrl(null);
       setImageError(false);
       setError(null);
+      setIsPlaying(false);
     }
   }, [open, asset]);
   const loadPreviewUrl = async () => {
     if (!asset) return;
-
-    // 1. 确保传入的 assetId 不为空
     const assetId = asset._id || asset.id;
     if (!assetId) {
       const errorMsg = '素材ID缺失，无法预览';
@@ -45,26 +46,41 @@ export function AssetPreviewDialog({
       });
       return;
     }
-    console.log("获取素材信息", asset)
+    console.log("获取素材信息", asset);
     setLoading(true);
     setError(null);
     try {
-      // 获取云开发实例
       const tcb = await $w.cloud.getCloudInstance();
 
-      // 获取临时URL
+      // 使用 fileId 或 url 来获取临时URL
+      const filePath = asset.cloudPath || asset.url;
+      if (!filePath) {
+        throw new Error('文件路径缺失');
+      }
       const res = await tcb.getTempFileURL({
-        fileList: [asset.url]
+        fileList: [filePath]
       });
       if (res.fileList && res.fileList[0] && res.fileList[0].tempFileURL) {
-        setPreviewUrl(res.fileList[0].tempFileURL);
+        const tempUrl = res.fileList[0].tempFileURL;
+        setPreviewUrl(tempUrl);
+
+        // 预加载音频文件以验证可用性
+        if (asset.type === 'audio') {
+          const audio = new Audio();
+          audio.src = tempUrl;
+          audio.addEventListener('loadeddata', () => {
+            console.log('音频文件加载成功');
+          });
+          audio.addEventListener('error', e => {
+            console.error('音频文件加载失败:', e);
+            setError('音频文件加载失败，可能文件已损坏或格式不支持');
+          });
+        }
       } else {
         throw new Error('无法获取临时URL');
       }
     } catch (error) {
       console.error('获取临时URL失败:', error);
-
-      // 4. 捕获异常并显示具体错误信息
       const errorMessage = error.message || '无法获取预览链接';
       setError(errorMessage);
       toast({
@@ -73,7 +89,7 @@ export function AssetPreviewDialog({
         variant: 'destructive'
       });
 
-      // 回退到原始URL（如果有）
+      // 回退到原始URL
       if (asset.url) {
         setPreviewUrl(asset.url);
         toast({
@@ -93,6 +109,18 @@ export function AssetPreviewDialog({
       description: '无法加载图片预览，请尝试下载查看',
       variant: 'destructive'
     });
+  };
+  const handleAudioPlay = () => {
+    if (audioRef.current) {
+      audioRef.current.play().catch(error => {
+        console.error('音频播放失败:', error);
+        toast({
+          title: '播放失败',
+          description: '音频播放失败，请检查文件格式或网络连接',
+          variant: 'destructive'
+        });
+      });
+    }
   };
   const renderPreview = () => {
     if (loading) {
@@ -132,11 +160,26 @@ export function AssetPreviewDialog({
         }
         return <img src={previewUrl} alt={asset.name} className="w-full h-full object-contain" onError={handleImageError} onLoad={() => setImageError(false)} />;
       case 'video':
-        return <video src={previewUrl} controls className="w-full h-full" onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} />;
+        return <video ref={videoRef} src={previewUrl} controls className="w-full h-full" onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onError={e => {
+          console.error('视频播放错误:', e);
+          setError('视频播放失败，可能文件已损坏或格式不支持');
+        }} />;
       case 'audio':
         return <div className="flex items-center justify-center h-full">
-          <div className="w-full max-w-md">
-            <audio src={previewUrl} controls className="w-full" />
+          <div className="w-full max-w-md p-8">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <div className="flex items-center justify-center mb-4">
+                <Volume2 className="w-16 h-16 text-blue-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-center mb-2">{asset.name}</h3>
+              <p className="text-sm text-gray-500 text-center mb-4">
+                {formatFileSize(asset.size)}
+              </p>
+              <audio ref={audioRef} src={previewUrl} controls className="w-full" onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onError={e => {
+                console.error('音频播放错误:', e);
+                setError('音频播放失败，可能文件已损坏或格式不支持');
+              }} />
+            </div>
           </div>
         </div>;
       default:
@@ -147,6 +190,13 @@ export function AssetPreviewDialog({
           </div>
         </div>;
     }
+  };
+  const formatFileSize = bytes => {
+    if (!bytes) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
   const handleOpenInNewTab = () => {
     if (previewUrl) {
@@ -161,9 +211,7 @@ export function AssetPreviewDialog({
   };
   const handleDownload = async () => {
     if (!asset) return;
-
-    // 1. 确保传入的 assetId 不为空
-    const fileID = asset._id || asset.cloudPath;
+    const fileID = asset.fileId || asset.cloudPath || asset.url;
     if (!fileID) {
       const errorMsg = '文件ID缺失，无法下载';
       toast({
@@ -174,10 +222,7 @@ export function AssetPreviewDialog({
       return;
     }
     try {
-      // 获取云开发实例
       const tcb = await $w.cloud.getCloudInstance();
-
-      // 获取下载临时URL
       const res = await tcb.getTempFileURL({
         fileList: [fileID]
       });
@@ -240,7 +285,7 @@ export function AssetPreviewDialog({
         </DialogTitle>
         <DialogDescription>
           <div className="flex items-center gap-4 text-sm">
-            <span>文件大小: {(asset.size / 1024 / 1024).toFixed(2)} MB</span>
+            <span>文件大小: {formatFileSize(asset.size)}</span>
             {asset.download_count > 0 && <span>下载次数: {asset.download_count}</span>}
             {asset.createdAt && <span>上传时间: {new Date(asset.createdAt).toLocaleString()}</span>}
           </div>
