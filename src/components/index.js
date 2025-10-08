@@ -51,3 +51,4 @@ export * from './DigitalHuman/SaveToDatabase.jsx';
 export * from './DigitalHuman/VideoSettings.jsx';
 export * from './DigitalHuman/WorksList.jsx';
 export * from './DigitalHuman/SystemSelector.jsx';
+export * from './ScriptGenerator.jsx';
