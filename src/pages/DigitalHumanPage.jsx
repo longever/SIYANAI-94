@@ -1,13 +1,15 @@
 // @ts-ignore;
 import React, { useState } from 'react';
 // @ts-ignore;
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, useToast, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui';
+import { Button, Tabs, TabsContent, TabsList, TabsHeader, TabsTrigger, Card, CardContent, CardDescription, CardHeader, CardTitle, useToast } from '@/components/ui';
 
 import { FileUploadSection } from '@/components/DigitalHuman/FileUploadSection';
 import { AvatarPreview } from '@/components/DigitalHuman/AvatarPreview';
 import { VideoSettings } from '@/components/DigitalHuman/VideoSettings';
+import { SystemSelector } from '@/components/DigitalHuman/SystemSelector';
 import { GenerationModal } from '@/components/DigitalHuman/GenerationModal';
 import { WorksList } from '@/components/DigitalHuman/WorksList';
+import { SaveToDatabase } from '@/components/DigitalHuman/SaveToDatabase';
 export default function DigitalHumanPage(props) {
   const {
     $w
@@ -20,6 +22,7 @@ export default function DigitalHumanPage(props) {
     avatar: null,
     audio: null
   });
+  const [selectedSystem, setSelectedSystem] = useState('ali-dh');
   const [videoSettings, setVideoSettings] = useState({
     resolution: '1080p',
     fps: 30,
@@ -80,6 +83,7 @@ export default function DigitalHumanPage(props) {
             duration: videoData.duration,
             fileSize: videoData.size,
             settings: videoSettings,
+            system: selectedSystem,
             createdAt: new Date().toISOString()
           }
         }
@@ -119,6 +123,8 @@ export default function DigitalHumanPage(props) {
               </div>
 
               <div className="space-y-6">
+                <SystemSelector selectedSystem={selectedSystem} onSystemChange={setSelectedSystem} />
+
                 <VideoSettings settings={videoSettings} onSettingsChange={setVideoSettings} />
 
                 <Card>
