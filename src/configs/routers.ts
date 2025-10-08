@@ -5,7 +5,6 @@ import INDEX from '../pages/index.jsx';
 import MEMBERSHIP from '../pages/membership.jsx';
 import VIDEO_CREATOR-PRO from '../pages/video-creator-pro.jsx';
 import ASSET_LIBRARY from '../pages/asset-library.jsx';
-import CREATE from '../pages/create.jsx';
 import IMAGETOVIDEOPAGE from '../pages/ImageToVideoPage.jsx';
 import TEXTTOVIDEOPAGE from '../pages/TextToVideoPage.jsx';
 import WORKS from '../pages/works.jsx';
@@ -31,9 +30,6 @@ export const routers = [{
 }, {
   id: "asset-library",
   component: ASSET_LIBRARY
-}, {
-  id: "create",
-  component: CREATE
 }, {
   id: "ImageToVideoPage",
   component: IMAGETOVIDEOPAGE

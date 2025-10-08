@@ -1,226 +1,73 @@
 // @ts-ignore;
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 // @ts-ignore;
-import { ChevronLeft, Sparkles, Wand2, Type, Image as ImageIcon, Video, Music, Layers, Settings, Save, Download, Upload } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
 // @ts-ignore;
-import { Button, Card, Tabs, TabsContent, TabsList, TabsTrigger, Textarea, Input, Label, Badge, useToast } from '@/components/ui';
+import { Film, Image, User } from 'lucide-react';
 
-import { ScriptGenerator } from '@/components/ScriptGenerator';
-import { Image2VideoPanel } from '@/components/Image2VideoPanel';
-import { Text2VideoPanel } from '@/components/Text2VideoPanel';
-import { AssetSelector } from '@/components/AssetSelector';
-import { VideoPreviewWindow } from '@/components/VideoPreviewWindow';
-export default function AIVideoCreatorPage(props) {
+// @ts-ignore;
+import TextToVideoPage from './TextToVideoPage';
+// @ts-ignore;
+import ImageToVideoPage from './ImageToVideoPage';
+// @ts-ignore;
+import DigitalHumanPage from './DigitalHumanPage';
+export default function CreatePage(props) {
   const {
-    $w
+    $w,
+    style
   } = props;
-  const [activeTab, setActiveTab] = useState('text2video');
-  const [showAssetLibrary, setShowAssetLibrary] = useState(false);
-  const [currentProject, setCurrentProject] = useState({
-    id: null,
-    title: '',
-    description: '',
-    type: 'text2video',
-    settings: {}
-  });
-  const [previewUrl, setPreviewUrl] = useState(null);
-  const {
-    toast
-  } = useToast();
-  const handleAssetSelect = asset => {
-    // 根据当前活跃的标签页处理素材
-    switch (activeTab) {
-      case 'image2video':
-        // 将素材传递给 Image2VideoPanel
-        if (asset.type === 'image') {
-          setCurrentProject(prev => ({
-            ...prev,
-            imageUrl: asset.url
-          }));
-        }
-        break;
-      case 'text2video':
-        // 将素材作为参考图
-        setCurrentProject(prev => ({
-          ...prev,
-          referenceImage: asset.url
-        }));
-        break;
-    }
-    setShowAssetLibrary(false);
-    toast({
-      title: "素材已选择",
-      description: `${asset.name} 已添加到当前项目`
-    });
-  };
-  const handleGenerate = async () => {
-    try {
-      if (!$w?.cloud) {
-        toast({
-          title: "错误",
-          description: "云开发环境未初始化，请检查网络连接",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // 调用AI生成视频
-      const result = await $w.cloud.callFunction({
-        name: 'ai-engine-service',
-        data: {
-          action: 'generateVideo',
-          project: currentProject
-        }
-      });
-      if (result?.videoUrl) {
-        setPreviewUrl(result.videoUrl);
-        toast({
-          title: "生成成功",
-          description: "AI视频已生成完成"
-        });
-      } else {
-        throw new Error('生成结果格式错误');
-      }
-    } catch (error) {
-      console.error('AI视频生成失败:', error);
-      toast({
-        title: "生成失败",
-        description: error.message || "AI视频生成失败，请稍后重试",
-        variant: "destructive"
-      });
-    }
-  };
-  return <div className="h-screen flex flex-col bg-background">
-      {/* Header */}
-      <header className="border-b px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="sm" onClick={() => $w.utils.navigateBack()}>
-            <ChevronLeft className="w-4 h-4 mr-1" />
-            返回
-          </Button>
-          <h1 className="text-lg font-semibold">AI视频创作</h1>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm">
-            <Save className="w-4 h-4 mr-1" />
-            保存
-          </Button>
-          <Button size="sm" onClick={handleGenerate}>
-            <Sparkles className="w-4 h-4 mr-1" />
-            生成视频
-          </Button>
-        </div>
-      </header>
-
-      <div className="flex-1 flex">
-        {/* Left Panel - Settings */}
-        <aside className="w-96 border-r flex flex-col">
-          <div className="p-4 border-b">
-            <h2 className="font-semibold mb-4">项目设置</h2>
-            
-            <div className="space-y-4">
-              <div>
-                <Label>项目名称</Label>
-                <Input value={currentProject.title} onChange={e => setCurrentProject(prev => ({
-                ...prev,
-                title: e.target.value
-              }))} placeholder="输入项目名称" />
-              </div>
-              
-              <div>
-                <Label>项目描述</Label>
-                <Textarea value={currentProject.description} onChange={e => setCurrentProject(prev => ({
-                ...prev,
-                description: e.target.value
-              }))} placeholder="描述你的创作意图" rows={3} />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex-1 p-4">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="text2video" className="text-sm">
-                  <Type className="w-4 h-4 mr-1" />
-                  文生视频
-                </TabsTrigger>
-                <TabsTrigger value="image2video" className="text-sm">
-                  <ImageIcon className="w-4 h-4 mr-1" />
-                  图生视频
-                </TabsTrigger>
-                <TabsTrigger value="script" className="text-sm">
-                  <Wand2 className="w-4 h-4 mr-1" />
-                  脚本生成
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="text2video" className="mt-4">
-                <Text2VideoPanel $w={$w} project={currentProject} onUpdate={updates => setCurrentProject(prev => ({
-                ...prev,
-                ...updates
-              }))} onOpenAssetLibrary={() => setShowAssetLibrary(true)} />
-              </TabsContent>
-
-              <TabsContent value="image2video" className="mt-4">
-                <Image2VideoPanel $w={$w} project={currentProject} onUpdate={updates => setCurrentProject(prev => ({
-                ...prev,
-                ...updates
-              }))} onOpenAssetLibrary={() => setShowAssetLibrary(true)} />
-              </TabsContent>
-
-              <TabsContent value="script" className="mt-4">
-                <ScriptGenerator $w={$w} project={currentProject} onUpdate={updates => setCurrentProject(prev => ({
-                ...prev,
-                ...updates
-              }))} onOpenAssetLibrary={() => setShowAssetLibrary(true)} />
-              </TabsContent>
-            </Tabs>
-          </div>
-        </aside>
-
-        {/* Right Panel - Preview */}
-        <div className="flex-1 flex flex-col">
-          <div className="flex-1 bg-muted flex items-center justify-center">
-            {previewUrl ? <VideoPreviewWindow $w={$w} url={previewUrl} title={currentProject.title} /> : <Card className="p-8 text-center">
-                <div className="text-muted-foreground mb-4">
-                  <Video className="w-16 h-16 mx-auto" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">预览区域</h3>
-                <p className="text-sm text-muted-foreground">
-                  完成设置后点击"生成视频"查看效果
-                </p>
-              </Card>}
-          </div>
-          
-          {/* Quick Actions */}
-          <div className="border-t p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Button variant="outline" size="sm" onClick={() => setShowAssetLibrary(true)}>
-                  <Layers className="w-4 h-4 mr-1" />
-                  素材库
-                </Button>
-                <Button variant="outline" size="sm">
-                  <Upload className="w-4 h-4 mr-1" />
-                  上传素材
-                </Button>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Badge variant="outline">AI模式</Badge>
-                <Badge variant="secondary">高清</Badge>
-              </div>
-            </div>
-          </div>
-        </div>
+  const [activeFeature, setActiveFeature] = useState('text');
+  const features = [{
+    id: 'text',
+    name: '文生视频',
+    icon: Film,
+    description: '用文字描述生成精彩视频',
+    component: TextToVideoPage
+  }, {
+    id: 'image',
+    name: '图生视频',
+    icon: Image,
+    description: '让静态图片变成动态视频',
+    component: ImageToVideoPage
+  }, {
+    id: 'digital',
+    name: '数字人',
+    icon: User,
+    description: '创建AI数字人虚拟形象',
+    component: DigitalHumanPage
+  }];
+  const ActiveComponent = features.find(f => f.id === activeFeature)?.component;
+  return <div style={style} className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 p-4">
+    <div className="max-w-7xl mx-auto">
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-bold text-white mb-4">AI视频创作</h1>
+        <p className="text-xl text-purple-300">选择创作方式，释放您的创意</p>
       </div>
 
-      {/* Asset Library */}
-      {showAssetLibrary && <div className="fixed inset-0 bg-black/50 z-50 flex">
-          <div className="ml-auto">
-            <AssetSelector $w={$w} onAssetSelect={handleAssetSelect} onClose={() => setShowAssetLibrary(false)} />
-          </div>
-        </div>}
-    </div>;
+      {/* 功能选择器 */}
+      <div className="mb-8">
+        <Card className="bg-gray-800/50 border-purple-800/30 backdrop-blur-sm">
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {features.map(feature => {
+                const Icon = feature.icon;
+                return <button key={feature.id} onClick={() => setActiveFeature(feature.id)} className={`p-6 rounded-lg border-2 transition-all duration-300 ${activeFeature === feature.id ? 'border-purple-500 bg-purple-500/20' : 'border-gray-600 hover:border-purple-400 bg-gray-700/50'}`}>
+                  <div className="flex flex-col items-center space-y-3">
+                    <Icon className={`w-8 h-8 ${activeFeature === feature.id ? 'text-purple-400' : 'text-gray-400'}`} />
+                    <div>
+                      <h3 className={`font-semibold ${activeFeature === feature.id ? 'text-purple-300' : 'text-white'}`}>{feature.name}</h3>
+                      <p className="text-sm text-gray-400 mt-1">{feature.description}</p>
+                    </div>
+                  </div>
+                </button>;
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 动态渲染选中的功能组件 */}
+      {ActiveComponent && <ActiveComponent $w={$w} style={style} />}
+    </div>
+  </div>;
 }
