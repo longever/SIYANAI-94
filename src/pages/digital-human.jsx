@@ -11,7 +11,7 @@ import { DriveModeSelector } from '@/components/DriveModeSelector';
 import { BackgroundSelector } from '@/components/BackgroundSelector';
 import { ActionExpressionPanel } from '@/components/ActionExpressionPanel';
 import { DigitalHumanPreview } from '@/components/DigitalHumanPreview';
-export default function DigitalHumanPage(props) {
+export default function DigitalHuman(props) {
   const {
     $w,
     style
@@ -442,7 +442,7 @@ export default function DigitalHumanPage(props) {
           </div>
         </div>
       </header>
-      
+
       <div className="flex-1 flex">
         <div className="w-80 bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 p-4">
           <div className="space-y-4">
@@ -451,11 +451,11 @@ export default function DigitalHumanPage(props) {
             <Skeleton className="h-32 w-full" />
           </div>
         </div>
-        
+
         <div className="flex-1 bg-gray-100 dark:bg-gray-800 p-4">
           <Skeleton className="h-full w-full" />
         </div>
-        
+
         <div className="w-72 bg-gray-50 dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 p-4">
           <Skeleton className="h-64 w-full" />
         </div>
@@ -472,7 +472,7 @@ export default function DigitalHumanPage(props) {
           </Button>
           <h1 className="text-lg font-semibold">数字人创作</h1>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" onClick={handleSave} disabled={!selectedAvatar || !selectedVoice}>
             <Save className="w-4 h-4 mr-1" />
@@ -524,21 +524,21 @@ export default function DigitalHumanPage(props) {
 
     {/* 移动端菜单 */}
     {isMobileMenuOpen && <div className="fixed inset-0 bg-black bg-opacity-50 z-50 lg:hidden">
-        <div className="absolute left-0 top-0 h-full w-80 bg-white dark:bg-gray-800 overflow-y-auto">
-          <div className="p-4 flex justify-between items-center border-b">
-            <h2 className="font-semibold">配置面板</h2>
-            <Button variant="ghost" size="sm" onClick={() => setIsMobileMenuOpen(false)}>
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-          <div className="p-4 space-y-6">
-            <AvatarSelector avatars={avatars} selectedAvatar={selectedAvatar} onAvatarSelect={handleAvatarSelect} />
-            <VoiceSelector voices={voices} selectedVoice={selectedVoice} onVoiceSelect={handleVoiceSelect} />
-            <DriveModeSelector onModeChange={handleModeChange} />
-            <BackgroundSelector backgrounds={backgrounds} selectedBackground={selectedBackground} onBackgroundChange={handleBackgroundChange} />
-            <ActionExpressionPanel actions={actions} expressions={expressions} selectedAction={selectedAction} selectedExpression={selectedExpression} onActionChange={handleActionChange} onExpressionChange={handleExpressionChange} />
-          </div>
+      <div className="absolute left-0 top-0 h-full w-80 bg-white dark:bg-gray-800 overflow-y-auto">
+        <div className="p-4 flex justify-between items-center border-b">
+          <h2 className="font-semibold">配置面板</h2>
+          <Button variant="ghost" size="sm" onClick={() => setIsMobileMenuOpen(false)}>
+            <X className="w-4 h-4" />
+          </Button>
         </div>
-      </div>}
+        <div className="p-4 space-y-6">
+          <AvatarSelector avatars={avatars} selectedAvatar={selectedAvatar} onAvatarSelect={handleAvatarSelect} />
+          <VoiceSelector voices={voices} selectedVoice={selectedVoice} onVoiceSelect={handleVoiceSelect} />
+          <DriveModeSelector onModeChange={handleModeChange} />
+          <BackgroundSelector backgrounds={backgrounds} selectedBackground={selectedBackground} onBackgroundChange={handleBackgroundChange} />
+          <ActionExpressionPanel actions={actions} expressions={expressions} selectedAction={selectedAction} selectedExpression={selectedExpression} onActionChange={handleActionChange} onExpressionChange={handleExpressionChange} />
+        </div>
+      </div>
+    </div>}
   </div>;
 }
