@@ -1,9 +1,11 @@
 // @ts-ignore;
 import React, { useState } from 'react';
 // @ts-ignore;
-import { Button, useToast, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui';
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, useToast, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui';
 
 import { FileUploadSection } from '@/components/DigitalHuman/FileUploadSection';
+import { AvatarPreview } from '@/components/DigitalHuman/AvatarPreview';
+import { VideoSettings } from '@/components/DigitalHuman/VideoSettings';
 import { GenerationModal } from '@/components/DigitalHuman/GenerationModal';
 import { WorksList } from '@/components/DigitalHuman/WorksList';
 export default function DigitalHumanPage(props) {
@@ -19,7 +21,7 @@ export default function DigitalHumanPage(props) {
     audio: null
   });
   const [videoSettings, setVideoSettings] = useState({
-    resolution: '480p',
+    resolution: '1080p',
     fps: 30,
     quality: 'high',
     duration: 30
@@ -96,41 +98,54 @@ export default function DigitalHumanPage(props) {
     }
   };
   return <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
-    <div className="max-w-7xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">数字人视频生成</h1>
-        <p className="text-gray-600">上传头像和音频，生成逼真的数字人视频</p>
-      </div>
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">数字人视频生成</h1>
+          <p className="text-gray-600">上传头像和音频，生成逼真的数字人视频</p>
+        </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="create">创建视频</TabsTrigger>
-          <TabsTrigger value="works">我的作品</TabsTrigger>
-        </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="create">创建视频</TabsTrigger>
+            <TabsTrigger value="works">我的作品</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="create" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="space-y-6">
-              <FileUploadSection type="avatar" title="上传头像" description="支持 JPG、PNG 格式，建议尺寸 512x512" accept="image/*" onFileUpload={file => handleFileUpload('avatar', file)} uploadedFile={uploadedFiles.avatar} />
+          <TabsContent value="create" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-6">
+                <FileUploadSection type="avatar" title="上传头像" description="支持 JPG、PNG 格式，建议尺寸 512x512" accept="image/*" onFileUpload={file => handleFileUpload('avatar', file)} uploadedFile={uploadedFiles.avatar} />
 
-              <FileUploadSection type="audio" title="上传音频" description="支持 MP3、WAV 格式，最大 50MB" accept="audio/*" onFileUpload={file => handleFileUpload('audio', file)} uploadedFile={uploadedFiles.audio} />
+                <FileUploadSection type="audio" title="上传音频" description="支持 MP3、WAV 格式，最大 50MB" accept="audio/*" onFileUpload={file => handleFileUpload('audio', file)} uploadedFile={uploadedFiles.audio} />
+              </div>
+
+              <div className="space-y-6">
+                <VideoSettings settings={videoSettings} onSettingsChange={setVideoSettings} />
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>预览</CardTitle>
+                    <CardDescription>预览数字人效果</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <AvatarPreview avatarFile={uploadedFiles.avatar} audioFile={uploadedFiles.audio} />
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
-          </div>
+            <div className="flex justify-center">
+              <Button size="lg" onClick={handleGenerateVideo} disabled={!uploadedFiles.avatar || !uploadedFiles.audio || isGenerating} className="px-8">
+                {isGenerating ? '生成中...' : '开始生成'}
+              </Button>
+            </div>
+          </TabsContent>
 
-          <div className="flex justify-center">
-            <Button size="lg" onClick={handleGenerateVideo} disabled={!uploadedFiles.avatar || !uploadedFiles.audio || isGenerating} className="px-8">
-              {isGenerating ? '生成中...' : '开始生成'}
-            </Button>
-          </div>
-        </TabsContent>
+          <TabsContent value="works">
+            <WorksList />
+          </TabsContent>
+        </Tabs>
 
-        <TabsContent value="works">
-          <WorksList />
-        </TabsContent>
-      </Tabs>
-
-      <GenerationModal open={showGenerationModal} onOpenChange={setShowGenerationModal} progress={generationProgress} isGenerating={isGenerating} generatedVideo={generatedVideo} onSave={() => generatedVideo && handleSaveToDatabase(generatedVideo)} />
-    </div>
-  </div>;
+        <GenerationModal open={showGenerationModal} onOpenChange={setShowGenerationModal} progress={generationProgress} isGenerating={isGenerating} generatedVideo={generatedVideo} onSave={() => generatedVideo && handleSaveToDatabase(generatedVideo)} />
+      </div>
+    </div>;
 }
