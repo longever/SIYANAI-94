@@ -44,3 +44,6 @@ export * from './AssetUploadDialog.jsx';
 export * from './GlobalLoadingOverlay.jsx';
 export * from './ProAssetLibrary.jsx';
 export * from './ProjectHeader.jsx';
+export * from './StatsCard.jsx';
+export * from './VideoPlayerModal.jsx';
+export * from './WorkCard.jsx';

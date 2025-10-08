@@ -1,173 +1,73 @@
 // @ts-ignore;
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 // @ts-ignore;
-import { ChevronLeft, Play, Pause, SkipBack, SkipForward, Volume2, Maximize2, Film, Image as ImageIcon, Music, Layers, Settings, Save, Download, Upload } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
 // @ts-ignore;
-import { Button, Slider, Tabs, TabsContent, TabsList, TabsTrigger, Card, Badge, useToast } from '@/components/ui';
+import { Film, Image, User } from 'lucide-react';
 
-import { EnhancedAssetLibrary } from '@/components/EnhancedAssetLibrary';
-import { AssetSelector } from '@/components/AssetSelector';
-import { TimelineNode } from '@/components/TimelineNode';
-import { VideoPreview } from '@/components/VideoPreview';
-import { PropertyPanel } from '@/components/PropertyPanel';
+// @ts-ignore;
+import TextToVideoPage from './TextToVideoPage';
+// @ts-ignore;
+import ImageToVideoPage from './ImageToVideoPage';
+// @ts-ignore;
+import DigitalHumanPage from './digital-human';
 export default function CreatePage(props) {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(120);
-  const [volume, setVolume] = useState(75);
-  const [showAssetLibrary, setShowAssetLibrary] = useState(false);
-  const [timelineNodes, setTimelineNodes] = useState([]);
-  const [selectedNode, setSelectedNode] = useState(null);
-  const [currentEditType, setCurrentEditType] = useState('video');
   const {
-    toast
-  } = useToast();
-  const handleAssetSelect = asset => {
-    const newNode = {
-      id: Date.now().toString(),
-      type: asset.type,
-      name: asset.name,
-      url: asset.url,
-      duration: asset.duration || 5,
-      startTime: currentTime,
-      endTime: currentTime + (asset.duration || 5),
-      properties: {
-        position: {
-          x: 0,
-          y: 0
-        },
-        scale: 1,
-        opacity: 1,
-        rotation: 0
-      }
-    };
-    setTimelineNodes([...timelineNodes, newNode]);
-    setSelectedNode(newNode);
-    toast({
-      title: "素材已添加",
-      description: `${asset.name} 已添加到时间轴`
-    });
-  };
-  const handleNodeUpdate = (nodeId, updates) => {
-    setTimelineNodes(nodes => nodes.map(node => node.id === nodeId ? {
-      ...node,
-      ...updates
-    } : node));
-  };
-  const handleNodeDelete = nodeId => {
-    setTimelineNodes(nodes => nodes.filter(node => node.id !== nodeId));
-    if (selectedNode?.id === nodeId) {
-      setSelectedNode(null);
-    }
-  };
-  return <div className="h-screen flex flex-col bg-background">
-      {/* Header */}
-      <header className="border-b px-4 py-2 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="sm" onClick={() => props.$w.utils.navigateBack()}>
-            <ChevronLeft className="w-4 h-4 mr-1" />
-            返回
-          </Button>
-          <h1 className="text-lg font-semibold">视频创作</h1>
+    $w,
+    style
+  } = props;
+  const [activeFeature, setActiveFeature] = useState('text');
+  const features = [{
+    id: 'text',
+    name: '文生视频',
+    icon: Film,
+    description: '用文字描述生成精彩视频',
+    component: TextToVideoPage
+  }, {
+    id: 'image',
+    name: '图生视频',
+    icon: Image,
+    description: '让静态图片变成动态视频',
+    component: ImageToVideoPage
+  }, {
+    id: 'digital',
+    name: '数字人',
+    icon: User,
+    description: '创建AI数字人虚拟形象',
+    component: DigitalHumanPage
+  }];
+  const ActiveComponent = features.find(f => f.id === activeFeature)?.component;
+  return <div style={style} className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 p-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-white mb-4">AI视频创作</h1>
+          <p className="text-xl text-purple-300">选择创作方式，释放您的创意</p>
         </div>
-        
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm">
-            <Save className="w-4 h-4 mr-1" />
-            保存草稿
-          </Button>
-          <Button size="sm">
-            <Download className="w-4 h-4 mr-1" />
-            导出
-          </Button>
-        </div>
-      </header>
 
-      <div className="flex-1 flex">
-        {/* Left Sidebar - Tools */}
-        <aside className="w-16 border-r flex flex-col items-center py-4 space-y-2">
-          <Button variant="ghost" size="sm" className="w-10 h-10" onClick={() => setShowAssetLibrary(true)}>
-            <Layers className="w-5 h-5" />
-          </Button>
-          <Button variant="ghost" size="sm" className="w-10 h-10">
-            <Film className="w-5 h-5" />
-          </Button>
-          <Button variant="ghost" size="sm" className="w-10 h-10">
-            <ImageIcon className="w-5 h-5" />
-          </Button>
-          <Button variant="ghost" size="sm" className="w-10 h-10">
-            <Music className="w-5 h-5" />
-          </Button>
-          <Button variant="ghost" size="sm" className="w-10 h-10">
-            <Settings className="w-5 h-5" />
-          </Button>
-        </aside>
-
-        {/* Main Content */}
-        <div className="flex-1 flex">
-          {/* Preview Area */}
-          <div className="flex-1 flex flex-col">
-            <div className="flex-1 bg-muted flex items-center justify-center relative">
-              <VideoPreview nodes={timelineNodes} currentTime={currentTime} isPlaying={isPlaying} />
-              
-              {/* Playback Controls */}
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-background/90 backdrop-blur rounded-lg p-2 flex items-center space-x-2">
-                <Button variant="ghost" size="sm" onClick={() => setCurrentTime(0)}>
-                  <SkipBack className="w-4 h-4" />
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setIsPlaying(!isPlaying)}>
-                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setCurrentTime(duration)}>
-                  <SkipForward className="w-4 h-4" />
-                </Button>
-                
-                <div className="flex items-center space-x-2 ml-4">
-                  <span className="text-sm">{Math.floor(currentTime / 60)}:{(currentTime % 60).toString().padStart(2, '0')}</span>
-                  <Slider value={[currentTime]} max={duration} step={0.1} className="w-32" onValueChange={([value]) => setCurrentTime(value)} />
-                  <span className="text-sm">{Math.floor(duration / 60)}:{(duration % 60).toString().padStart(2, '0')}</span>
-                </div>
-                
-                <div className="flex items-center space-x-2 ml-4">
-                  <Volume2 className="w-4 h-4" />
-                  <Slider value={[volume]} max={100} step={1} className="w-20" onValueChange={([value]) => setVolume(value)} />
-                </div>
+        {/* 功能选择器 */}
+        <div className="mb-8">
+          <Card className="bg-gray-800/50 border-purple-800/30 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {features.map(feature => {
+                const Icon = feature.icon;
+                return <button key={feature.id} onClick={() => setActiveFeature(feature.id)} className={`p-6 rounded-lg border-2 transition-all duration-300 ${activeFeature === feature.id ? 'border-purple-500 bg-purple-500/20' : 'border-gray-600 hover:border-purple-400 bg-gray-700/50'}`}>
+                    <div className="flex flex-col items-center space-y-3">
+                      <Icon className={`w-8 h-8 ${activeFeature === feature.id ? 'text-purple-400' : 'text-gray-400'}`} />
+                      <div>
+                        <h3 className={`font-semibold ${activeFeature === feature.id ? 'text-purple-300' : 'text-white'}`}>{feature.name}</h3>
+                        <p className="text-sm text-gray-400 mt-1">{feature.description}</p>
+                      </div>
+                    </div>
+                  </button>;
+              })}
               </div>
-            </div>
-
-            {/* Timeline */}
-            <div className="h-48 border-t bg-background">
-              <div className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-medium">时间轴</h3>
-                  <div className="flex space-x-1">
-                    <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
-                      <Maximize2 className="w-3 h-3 mr-1" />
-                      适应
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="relative h-24 bg-muted rounded overflow-hidden">
-                  {timelineNodes.map(node => <TimelineNode key={node.id} node={node} isSelected={selectedNode?.id === node.id} onClick={() => setSelectedNode(node)} onUpdate={handleNodeUpdate} onDelete={handleNodeDelete} />)}
-                  
-                  {/* Playhead */}
-                  <div className="absolute top-0 bottom-0 w-0.5 bg-primary" style={{
-                  left: `${currentTime / duration * 100}%`
-                }} />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Sidebar - Properties */}
-          {selectedNode && <aside className="w-80 border-l">
-              <PropertyPanel node={selectedNode} onUpdate={updates => handleNodeUpdate(selectedNode.id, updates)} />
-            </aside>}
+            </CardContent>
+          </Card>
         </div>
+
+        {/* 动态渲染选中的功能组件 */}
+        {ActiveComponent && <ActiveComponent $w={$w} style={style} />}
       </div>
-
-      {/* Asset Library Sidebar */}
-      {showAssetLibrary && <AssetSelector onAssetSelect={handleAssetSelect} onClose={() => setShowAssetLibrary(false)} />}
     </div>;
 }
