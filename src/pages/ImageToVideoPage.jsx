@@ -1,10 +1,11 @@
 // @ts-ignore;
 import React, { useState, useRef } from 'react';
 // @ts-ignore;
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Textarea, useToast, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, RadioGroup, RadioGroupItem, Label } from '@/components/ui';
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, useToast, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, RadioGroup, RadioGroupItem, Label } from '@/components/ui';
 // @ts-ignore;
-import { Upload, Play, Loader2, Image as ImageIcon, Mic, Video, Settings, XCircle as XCircleIcon } from 'lucide-react';
+import { Upload, Play, Loader2, Image as ImageIcon, Video, Settings, XCircle as XCircleIcon } from 'lucide-react';
 
+import { ScriptGenerator } from '@/components/ScriptGenerator';
 export default function ImageToVideoPage(props) {
   const {
     $w,
@@ -14,7 +15,6 @@ export default function ImageToVideoPage(props) {
     toast
   } = useToast();
   const [imageFile, setImageFile] = useState(null);
-  const [textPrompt, setTextPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
   const [videoQuality, setVideoQuality] = useState('720p');
@@ -26,6 +26,7 @@ export default function ImageToVideoPage(props) {
     height: 512
   });
   const [selectedSystem, setSelectedSystem] = useState('wanx2.1');
+  const [generatedScript, setGeneratedScript] = useState(null);
 
   // 处理文件上传
   const handleFileUpload = (file, type) => {
@@ -57,6 +58,14 @@ export default function ImageToVideoPage(props) {
       });
       return;
     }
+    if (!generatedScript || !generatedScript.nodes || generatedScript.nodes.length === 0) {
+      toast({
+        title: "提示",
+        description: "请先生成视频脚本",
+        variant: "destructive"
+      });
+      return;
+    }
     setIsGenerating(true);
     setGenerationProgress(0);
 
@@ -76,6 +85,16 @@ export default function ImageToVideoPage(props) {
         return prev + 10;
       });
     }, 1000);
+  };
+
+  // 处理脚本生成
+  const handleScriptGenerate = script => {
+    setGeneratedScript(script);
+    toast({
+      title: "脚本已生成",
+      description: `已生成包含 ${script.nodes.length} 个节点的脚本`,
+      variant: "success"
+    });
   };
 
   // 文件上传组件
@@ -284,10 +303,15 @@ export default function ImageToVideoPage(props) {
                     </div>
                   </div>}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">视频描述</label>
-                  <Textarea placeholder="描述您想要生成的视频效果，例如：让图片中的人物微笑并眨眼..." value={textPrompt} onChange={e => setTextPrompt(e.target.value)} className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 min-h-[100px]" />
-                </div>
+                <ScriptGenerator onGenerate={handleScriptGenerate} />
+
+                {generatedScript && <div className="bg-gray-700/50 rounded-lg p-4">
+                    <h4 className="text-white font-medium mb-2">已生成脚本</h4>
+                    <p className="text-gray-300 text-sm">{generatedScript.title}</p>
+                    <p className="text-gray-400 text-xs mt-1">
+                      包含 {generatedScript.nodes.length} 个节点，总时长 {generatedScript.totalDuration} 秒
+                    </p>
+                  </div>}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -321,7 +345,7 @@ export default function ImageToVideoPage(props) {
                 <VideoSettingsControl settings={videoSettings} onChange={setVideoSettings} />
                 <SystemSelectorControl selectedSystem={selectedSystem} onChange={setSelectedSystem} />
 
-                <Button onClick={handleGenerate} disabled={isGenerating || !imageFile} className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white hover:from-purple-700 hover:to-purple-800">
+                <Button onClick={handleGenerate} disabled={isGenerating || !imageFile || !generatedScript} className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white hover:from-purple-700 hover:to-purple-800">
                   {isGenerating ? <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       生成中...
