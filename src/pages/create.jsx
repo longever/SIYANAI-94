@@ -10,7 +10,7 @@ import TextToVideoPage from './TextToVideoPage';
 // @ts-ignore;
 import ImageToVideoPage from './ImageToVideoPage';
 // @ts-ignore;
-import DigitalHumanPage from './digital-human';
+import DigitalHumanPage from './DigitalHumanPage';
 export default function CreatePage(props) {
   const {
     $w,
@@ -38,36 +38,36 @@ export default function CreatePage(props) {
   }];
   const ActiveComponent = features.find(f => f.id === activeFeature)?.component;
   return <div style={style} className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 p-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-4">AI视频创作</h1>
-          <p className="text-xl text-purple-300">选择创作方式，释放您的创意</p>
-        </div>
+    <div className="max-w-7xl mx-auto">
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-bold text-white mb-4">AI视频创作</h1>
+        <p className="text-xl text-purple-300">选择创作方式，释放您的创意</p>
+      </div>
 
-        {/* 功能选择器 */}
-        <div className="mb-8">
-          <Card className="bg-gray-800/50 border-purple-800/30 backdrop-blur-sm">
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {features.map(feature => {
+      {/* 功能选择器 */}
+      <div className="mb-8">
+        <Card className="bg-gray-800/50 border-purple-800/30 backdrop-blur-sm">
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {features.map(feature => {
                 const Icon = feature.icon;
                 return <button key={feature.id} onClick={() => setActiveFeature(feature.id)} className={`p-6 rounded-lg border-2 transition-all duration-300 ${activeFeature === feature.id ? 'border-purple-500 bg-purple-500/20' : 'border-gray-600 hover:border-purple-400 bg-gray-700/50'}`}>
-                    <div className="flex flex-col items-center space-y-3">
-                      <Icon className={`w-8 h-8 ${activeFeature === feature.id ? 'text-purple-400' : 'text-gray-400'}`} />
-                      <div>
-                        <h3 className={`font-semibold ${activeFeature === feature.id ? 'text-purple-300' : 'text-white'}`}>{feature.name}</h3>
-                        <p className="text-sm text-gray-400 mt-1">{feature.description}</p>
-                      </div>
+                  <div className="flex flex-col items-center space-y-3">
+                    <Icon className={`w-8 h-8 ${activeFeature === feature.id ? 'text-purple-400' : 'text-gray-400'}`} />
+                    <div>
+                      <h3 className={`font-semibold ${activeFeature === feature.id ? 'text-purple-300' : 'text-white'}`}>{feature.name}</h3>
+                      <p className="text-sm text-gray-400 mt-1">{feature.description}</p>
                     </div>
-                  </button>;
+                  </div>
+                </button>;
               })}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* 动态渲染选中的功能组件 */}
-        {ActiveComponent && <ActiveComponent $w={$w} style={style} />}
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    </div>;
+
+      {/* 动态渲染选中的功能组件 */}
+      {ActiveComponent && <ActiveComponent $w={$w} style={style} />}
+    </div>
+  </div>;
 }
