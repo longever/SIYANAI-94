@@ -10,7 +10,6 @@ import { SystemSelector } from './SystemSelector';
 import { GenerationModal } from './GenerationModal';
 import { WorksList } from './WorksList';
 import { SaveToDatabase } from './SaveToDatabase';
-import { ImageDescriptionMode } from './ImageDescriptionMode';
 export default function ImageAudioToVideo(props) {
   const {
     $w
@@ -19,7 +18,6 @@ export default function ImageAudioToVideo(props) {
     toast
   } = useToast();
   const [activeTab, setActiveTab] = useState('create');
-  const [createMode, setCreateMode] = useState('avatar'); // 'avatar' or 'description'
   const [uploadedFiles, setUploadedFiles] = useState({
     avatar: null,
     audio: null
@@ -42,7 +40,7 @@ export default function ImageAudioToVideo(props) {
     }));
   };
   const handleGenerateVideo = async () => {
-    if (createMode === 'avatar' && (!uploadedFiles.avatar || !uploadedFiles.audio)) {
+    if (!uploadedFiles.avatar || !uploadedFiles.audio) {
       toast({
         title: "缺少文件",
         description: "请上传头像和音频文件",
@@ -112,46 +110,35 @@ export default function ImageAudioToVideo(props) {
         </TabsList>
 
         <TabsContent value="create" className="space-y-6">
-          <div className="flex justify-center mb-6">
-            <div className="inline-flex rounded-lg border p-1">
-              <button onClick={() => setCreateMode('avatar')} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${createMode === 'avatar' ? 'bg-purple-600 text-white' : 'text-gray-600 hover:text-gray-900'}`}>
-                头像驱动
-              </button>
-              <button onClick={() => setCreateMode('description')} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${createMode === 'description' ? 'bg-purple-600 text-white' : 'text-gray-600 hover:text-gray-900'}`}>
-                图片描述
-              </button>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-6">
+              <FileUploadSection type="avatar" title="上传头像" description="支持 JPG、PNG 格式，建议尺寸 512x512" accept="image/*" onFileUpload={file => handleFileUpload('avatar', file)} uploadedFile={uploadedFiles.avatar} />
+
+              <FileUploadSection type="audio" title="上传音频" description="支持 MP3、WAV 格式，最大 50MB" accept="audio/*" onFileUpload={file => handleFileUpload('audio', file)} uploadedFile={uploadedFiles.audio} />
+            </div>
+
+            <div className="space-y-6">
+              <SystemSelector selectedModel={selectedModel} onSystemChange={setSelectedModel} />
+
+              <VideoSettings settings={videoSettings} onSettingsChange={setVideoSettings} />
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>预览</CardTitle>
+                  <CardDescription>预览数字人效果</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <AvatarPreview avatarFile={uploadedFiles.avatar} audioFile={uploadedFiles.audio} />
+                </CardContent>
+              </Card>
             </div>
           </div>
 
-          {createMode === 'avatar' ? <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="space-y-6">
-                <FileUploadSection type="avatar" title="上传头像" description="支持 JPG、PNG 格式，建议尺寸 512x512" accept="image/*" onFileUpload={file => handleFileUpload('avatar', file)} uploadedFile={uploadedFiles.avatar} />
-
-                <FileUploadSection type="audio" title="上传音频" description="支持 MP3、WAV 格式，最大 50MB" accept="audio/*" onFileUpload={file => handleFileUpload('audio', file)} uploadedFile={uploadedFiles.audio} />
-              </div>
-
-              <div className="space-y-6">
-                <SystemSelector selectedModel={selectedModel} onSystemChange={setSelectedModel} />
-
-                <VideoSettings settings={videoSettings} onSettingsChange={setVideoSettings} />
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>预览</CardTitle>
-                    <CardDescription>预览数字人效果</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <AvatarPreview avatarFile={uploadedFiles.avatar} audioFile={uploadedFiles.audio} />
-                  </CardContent>
-                </Card>
-              </div>
-            </div> : <ImageDescriptionMode selectedModel={selectedModel} onSystemChange={setSelectedModel} videoSettings={videoSettings} onSettingsChange={setVideoSettings} uploadedFiles={uploadedFiles} onFileUpload={handleFileUpload} onGenerate={handleGenerateVideo} isGenerating={isGenerating} />}
-
-          {createMode === 'avatar' && <div className="flex justify-center">
-              <Button size="lg" onClick={handleGenerateVideo} disabled={!uploadedFiles.avatar || !uploadedFiles.audio || isGenerating} className="px-8">
-                {isGenerating ? '生成中...' : '开始生成'}
-              </Button>
-            </div>}
+          <div className="flex justify-center">
+            <Button size="lg" onClick={handleGenerateVideo} disabled={!uploadedFiles.avatar || !uploadedFiles.audio || isGenerating} className="px-8">
+              {isGenerating ? '生成中...' : '开始生成'}
+            </Button>
+          </div>
         </TabsContent>
 
         <TabsContent value="works">
