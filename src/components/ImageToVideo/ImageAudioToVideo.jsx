@@ -1,7 +1,7 @@
 // @ts-ignore;
 import React, { useState } from 'react';
 // @ts-ignore;
-import { Button, Tabs, TabsContent, TabsList, TabsHeader, TabsTrigger, Card, CardContent, CardDescription, CardHeader, CardTitle, useToast } from '@/components/ui';
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Tabs, TabsContent, TabsList, TabsTrigger, useToast } from '@/components/ui';
 
 import { FileUploadSection } from './FileUploadSection';
 import { AvatarPreview } from './AvatarPreview';
