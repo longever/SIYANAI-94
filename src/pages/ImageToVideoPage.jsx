@@ -3,19 +3,28 @@ import React, { useState } from 'react';
 // @ts-ignore;
 import { Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent, CardDescription, CardHeader, CardTitle, Button } from '@/components/ui';
 // @ts-ignore;
-import { Upload, Image, FileAudio, Video } from 'lucide-react';
+import { Upload, Image, FileAudio, Video, Sparkles } from 'lucide-react';
 
+// @ts-ignore
+import { ScriptGenerator } from '@/components/ScriptGenerator';
 import DigitalHumanPage from './DigitalHumanPage';
 
 // 图+描述组件
 function ImageDescriptionMode() {
   const [imageFile, setImageFile] = useState(null);
   const [description, setDescription] = useState('');
+  const [showScriptGenerator, setShowScriptGenerator] = useState(false);
   const handleImageUpload = e => {
     const file = e.target.files[0];
     if (file) {
       setImageFile(file);
     }
+  };
+  const handleScriptGenerated = script => {
+    // 将生成的脚本内容转换为描述文字
+    const generatedDescription = script.nodes.map(node => node.content).join('\n\n');
+    setDescription(generatedDescription);
+    setShowScriptGenerator(false);
   };
   return <div className="space-y-6">
       <div>
@@ -35,11 +44,22 @@ function ImageDescriptionMode() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">图片描述</label>
+        <div className="flex justify-between items-center mb-2">
+          <label className="block text-sm font-medium">图片描述</label>
+          <Button variant="ghost" size="sm" onClick={() => setShowScriptGenerator(!showScriptGenerator)} className="text-blue-600 hover:text-blue-700">
+            <Sparkles className="w-4 h-4 mr-1" />
+            AI生成描述
+          </Button>
+        </div>
+        
+        {showScriptGenerator && <div className="mb-4">
+            <ScriptGenerator onGenerate={handleScriptGenerated} />
+          </div>}
+        
         <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="请输入图片的描述文字，AI将根据描述生成视频..." className="w-full min-h-[120px] p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
       </div>
 
-      <Button className="w-full" disabled={!imageFile || !description}>
+      <Button className="w-full" disabled={!imageFile || !description.trim()}>
         生成视频
       </Button>
     </div>;
