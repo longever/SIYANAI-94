@@ -1,31 +1,15 @@
 
-interface GenerationTask {
-  _id: string;
-  externalTaskId: string;
-  modelType: string;
-  status: string;
-  outputUrl?: string;
-  errorMsg?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
+    interface CloudFunctionEvent {
+      task_id: string;
+    }
 
-interface CloudFunctionEvent {
-  taskId: string;
-}
+    interface CloudFunctionResult {
+      task_id: string;
+      status: string;
+      progress: number;
+      video_url?: string;
+      error?: string;
+    }
 
-interface CloudFunctionResponse {
-  code: number;
-  message?: string;
-  data?: {
-    taskId: string;
-    externalTaskId: string;
-    modelType: string;
-    status: string;
-    outputUrl?: string;
-    errorMsg?: string;
-    updatedAt: string;
-  };
-}
-
-export declare function main(event: CloudFunctionEvent, context: any): Promise<CloudFunctionResponse>;
+    export declare function main(event: CloudFunctionEvent, context: any): Promise<CloudFunctionResult>;
+  

@@ -2,137 +2,140 @@
     'use strict';
 
     const cloudbase = require('@cloudbase/node-sdk');
-    const crypto = require('crypto');
-
-    // 初始化云开发环境
-    const app = cloudbase.init();
-    const models = app.models;
-
-    // 生成唯一taskId
-    function generateTaskId() {
-      const timestamp = Date.now().toString(36);
-      const randomStr = crypto.randomBytes(8).toString('hex');
-      return `task_${timestamp}_${randomStr}`;
-    }
-
-    // 调用通义万相图生视频API
-    async function callTongyiWanxiangAPI(inputParams) {
-      // 这里需要根据实际的通义万相API文档配置
-      // 示例使用fetch调用，实际使用时需要替换为真实的API配置
-      const apiUrl = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/video-generation';
-      
-      try {
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.TONGYI_API_KEY || ''}`
-          },
-          body: JSON.stringify({
-            model: 'wanx-video-generation-v1',
-            input: inputParams
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error(`API调用失败: ${response.status} ${response.statusText}`);
+    
+    // 平台API配置
+    const PLATFORM_CONFIGS = {
+      'tongyi-wanxiang': {
+        url: 'https://dashscope.aliyuncs.com/api/v1/services/aigc/video-generation/generation',
+        headers: {
+          'Authorization': `Bearer ${process.env.TONGYI_API_KEY}`,
+          'Content-Type': 'application/json'
         }
-
-        const result = await response.json();
-        return {
-          platformTaskId: result.output?.task_id || '',
-          status: result.output?.task_status || 'PROCESSING'
-        };
-      } catch (error) {
-        console.error('通义万相API调用失败:', error);
-        throw error;
       }
-    }
+    };
 
-    // 根据modelType调用对应平台API
-    async function callPlatformAPI(modelType, inputParams) {
-      switch (modelType) {
-        case 'tongyi-wanxiang':
-          return await callTongyiWanxiangAPI(inputParams);
-        default:
-          throw new Error(`不支持的模型类型: ${modelType}`);
-      }
-    }
+    const app = cloudbase.init({
+      env: cloudbase.SYMBOL_CURRENT_ENV
+    });
 
     exports.main = async (event, context) => {
-      const { userId, modelType, inputParams } = event;
-
-      // 参数验证
-      if (!userId || !modelType || !inputParams) {
-        return {
-          success: false,
-          error: '缺少必要参数: userId, modelType, inputParams'
-        };
-      }
-
-      let taskId;
       try {
-        // 生成本地唯一taskId
-        taskId = generateTaskId();
+        console.log('开始处理视频生成任务', event);
+        
+        // 1. 参数校验
+        const { video_model, ...taskParams } = event;
+        
+        if (!video_model) {
+          return {
+            code: 400,
+            message: '缺少必要参数: video_model'
+          };
+        }
 
-        // 创建初始任务记录
-        const initialTask = {
-          taskId,
-          userId,
-          modelType,
-          inputParams,
-          status: 'pending',
-          createTime: new Date(),
-          updateTime: new Date()
-        };
+        if (!PLATFORM_CONFIGS[video_model]) {
+          return {
+            code: 400,
+            message: `不支持的视频模型: ${video_model}`
+          };
+        }
 
-        // 写入数据模型
-        await models.generation_tasks.create({
-          data: initialTask
+        // 2. 创建任务记录
+        const models = app.models;
+        const taskRecord = await models.generation_tasks.create({
+          data: {
+            video_model,
+            task_params: taskParams,
+            status: 'pending',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
         });
 
-        console.log('任务创建成功:', taskId);
+        const taskId = taskRecord.data._id;
+        console.log('任务记录创建成功:', taskId);
 
-        // 调用平台API
-        const platformResult = await callPlatformAPI(modelType, inputParams);
+        // 3. 调用平台API
+        const platformConfig = PLATFORM_CONFIGS[video_model];
         
-        // 更新任务状态
-        await models.generation_tasks.update({
-          data: {
-            platformTaskId: platformResult.platformTaskId,
-            status: platformResult.status,
-            updateTime: new Date()
+        // 构造请求数据
+        const requestData = {
+          model: "wanx2.1-t2v",
+          input: {
+            prompt: taskParams.prompt || '',
+            image_url: taskParams.image_url || ''
           },
+          parameters: {
+            resolution: taskParams.resolution || '720p',
+            duration: taskParams.duration || 2,
+            ...taskParams.parameters
+          }
+        };
+
+        console.log('调用API:', platformConfig.url, requestData);
+
+        const response = await fetch(platformConfig.url, {
+          method: 'POST',
+          headers: platformConfig.headers,
+          body: JSON.stringify(requestData)
+        });
+
+        const apiResult = await response.json();
+        console.log('API响应:', apiResult);
+
+        if (!response.ok) {
+          throw new Error(`API调用失败: ${apiResult.message || response.statusText}`);
+        }
+
+        // 4. 更新任务记录
+        const updateData = {
+          task_id: apiResult.output?.task_id || apiResult.task_id,
+          status: apiResult.output?.task_status || 'submitted',
+          created_at: apiResult.output?.submit_time || new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          api_response: apiResult
+        };
+
+        await models.generation_tasks.update({
+          data: updateData,
           filter: {
             where: {
-              taskId: { $eq: taskId }
+              _id: {
+                $eq: taskId
+              }
             }
           }
         });
 
-        console.log('任务状态更新成功:', platformResult);
+        console.log('任务记录更新成功');
 
-        // 返回本地taskId
+        // 5. 返回结果
         return {
-          success: true,
-          taskId
+          code: 200,
+          data: {
+            task_id: updateData.task_id,
+            status: updateData.status,
+            created_at: updateData.created_at,
+            local_task_id: taskId
+          }
         };
 
       } catch (error) {
-        console.error('任务处理失败:', error);
+        console.error('处理视频生成任务失败:', error);
         
-        // 如果taskId已生成，更新任务状态为失败
-        if (taskId) {
+        // 更新任务状态为失败
+        if (event && event._id) {
           try {
-            await models.generation_tasks.update({
+            await app.models.generation_tasks.update({
               data: {
                 status: 'failed',
-                errorMessage: error.message,
-                updateTime: new Date()
+                error_msg: error.message,
+                updated_at: new Date().toISOString()
               },
               filter: {
                 where: {
-                  taskId: { $eq: taskId }
+                  _id: {
+                    $eq: event._id
+                  }
                 }
               }
             });
@@ -142,8 +145,8 @@
         }
 
         return {
-          success: false,
-          error: error.message
+          code: 500,
+          message: error.message || '处理视频生成任务失败'
         };
       }
     };

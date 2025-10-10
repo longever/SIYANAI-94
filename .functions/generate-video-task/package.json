@@ -1,7 +1,7 @@
 {
   "name": "generate-video-task",
   "version": "1.0.0",
-  "description": "视频生成任务管理云函数",
+  "description": "视频生成任务处理云函数",
   "main": "index.js",
   "dependencies": {
     "@cloudbase/node-sdk": "^3.10.0"
