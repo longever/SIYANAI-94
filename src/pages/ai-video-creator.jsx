@@ -10,7 +10,7 @@ import TextToVideoPage from './TextToVideoPage';
 // @ts-ignore;
 import ImageToVideoPage from './ImageToVideoPage';
 // @ts-ignore;
-import DigitalHumanPage from './DigitalHumanPage';
+import DigitalHuman from './digital-human';
 export default function CreatePage(props) {
   const {
     $w,
@@ -34,7 +34,7 @@ export default function CreatePage(props) {
     name: '数字人',
     icon: User,
     description: '创建AI数字人虚拟形象',
-    component: DigitalHumanPage
+    component: DigitalHuman
   }];
   const ActiveComponent = features.find(f => f.id === activeFeature)?.component;
   return <div style={style} className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 p-4">
