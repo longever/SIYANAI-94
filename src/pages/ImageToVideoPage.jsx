@@ -7,7 +7,7 @@ import { Upload, Image, FileAudio, Video, Sparkles } from 'lucide-react';
 
 // @ts-ignore
 import { ScriptGenerator } from '@/components/ScriptGenerator';
-import DigitalHumanPage from '@/components/ImageToVideo/ImageAudioToVideo';
+import DigitalHuman from './digital-human';
 import ImageAudioToVideo from '@/components/ImageToVideo/ImageAudioToVideo';
 
 // 图+描述组件
@@ -76,7 +76,7 @@ function ImageAudioMode() {
 // 图+视频模式 - 复用DigitalHumanPage
 function ImageVideoMode() {
   return <div>
-    <DigitalHumanPage />
+    <DigitalHuman />
   </div>;
 }
 export default function ImageToVideoPage(props) {
