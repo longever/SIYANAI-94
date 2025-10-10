@@ -103,11 +103,6 @@ export default function ImageAudioToVideo(props) {
   };
   return <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
     <div className="max-w-7xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">数字人视频生成</h1>
-        <p className="text-gray-600">上传头像和音频，生成逼真的数字人视频</p>
-      </div>
-
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="create">创建视频</TabsTrigger>
