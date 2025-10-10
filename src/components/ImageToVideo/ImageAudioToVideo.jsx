@@ -1,7 +1,7 @@
 // @ts-ignore;
 import React, { useState } from 'react';
 // @ts-ignore;
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Tabs, TabsContent, TabsList, TabsTrigger, useToast } from '@/components/ui';
+import { Button, Tabs, TabsContent, TabsList, TabsHeader, TabsTrigger, Card, CardContent, CardDescription, CardHeader, CardTitle, useToast } from '@/components/ui';
 
 import { FileUploadSection } from './FileUploadSection';
 import { AvatarPreview } from './AvatarPreview';
@@ -10,7 +10,7 @@ import { SystemSelector } from './SystemSelector';
 import { GenerationModal } from './GenerationModal';
 import { WorksList } from './WorksList';
 import { SaveToDatabase } from './SaveToDatabase';
-export default function ImageAudioToVideo(props) {
+export function ImageAudioToVideo(props) {
   const {
     $w
   } = props;

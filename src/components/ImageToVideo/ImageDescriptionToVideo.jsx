@@ -8,7 +8,7 @@ import { Upload, Sparkles } from 'lucide-react';
 import SystemSelector from '@/components/ImageToVideo/SystemSelector';
 import VideoSettings from '@/components/ImageToVideo/VideoSettings';
 import { ScriptGenerator } from '@/components/ScriptGenerator';
-export default function ImageDescriptionToVideo() {
+export   function ImageDescriptionToVideo() {
   const [imageFile, setImageFile] = useState(null);
   const [description, setDescription] = useState('');
   const [showScriptGenerator, setShowScriptGenerator] = useState(false);
