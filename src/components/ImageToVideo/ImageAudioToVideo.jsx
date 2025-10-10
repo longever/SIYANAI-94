@@ -22,7 +22,7 @@ export default function ImageAudioToVideo(props) {
     avatar: null,
     audio: null
   });
-  const [selectedSystem, setSelectedSystem] = useState('ali-dh');
+  const [selectedModel, setSelectedModel] = useState('tongyi-wanxiang');
   const [videoSettings, setVideoSettings] = useState({
     resolution: '1080p',
     fps: 30,
@@ -83,7 +83,7 @@ export default function ImageAudioToVideo(props) {
             duration: videoData.duration,
             fileSize: videoData.size,
             settings: videoSettings,
-            system: selectedSystem,
+            model: selectedModel,
             createdAt: new Date().toISOString()
           }
         }
@@ -118,7 +118,7 @@ export default function ImageAudioToVideo(props) {
             </div>
 
             <div className="space-y-6">
-              <SystemSelector selectedSystem={selectedSystem} onSystemChange={setSelectedSystem} />
+              <SystemSelector selectedModel={selectedModel} onSystemChange={setSelectedModel} />
 
               <VideoSettings settings={videoSettings} onSettingsChange={setVideoSettings} />
 
