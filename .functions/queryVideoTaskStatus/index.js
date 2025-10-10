@@ -2,259 +2,275 @@
 'use strict';
 
 const cloudbase = require('@cloudbase/node-sdk');
-const app = cloudbase.init({
-  env: cloudbase.SYMBOL_CURRENT_ENV
-});
+const https = require('https');
+const http = require('http');
+const { URL } = require('url');
 
+// 初始化云开发
+const app = cloudbase.init();
 const models = app.models;
 
 // 平台API配置
 const PLATFORM_APIS = {
-  runway: {
-    baseUrl: 'https://api.runwayml.com/v1',
-    queryEndpoint: '/tasks',
+  'runway': {
+    url: 'https://api.runwayml.com/v1/tasks',
     headers: {
-      'Authorization': `Bearer ${process.env.RUNWAY_API_KEY}`,
+      'Authorization': 'Bearer YOUR_RUNWAY_API_KEY',
       'Content-Type': 'application/json'
     }
   },
-  pika: {
-    baseUrl: 'https://api.pika.art/v1',
-    queryEndpoint: '/generations',
+  'pika': {
+    url: 'https://api.pika.art/v1/generations',
     headers: {
-      'Authorization': `Bearer ${process.env.PIKA_API_KEY}`,
+      'Authorization': 'Bearer YOUR_PIKA_API_KEY',
       'Content-Type': 'application/json'
     }
   },
-  stablevideo: {
-    baseUrl: 'https://api.stablevideo.com/v1',
-    queryEndpoint: '/tasks',
+  'kling': {
+    url: 'https://api.klingai.com/v1/videos',
     headers: {
-      'Authorization': `Bearer ${process.env.STABLEVIDEO_API_KEY}`,
+      'Authorization': 'Bearer YOUR_KLING_API_KEY',
       'Content-Type': 'application/json'
     }
   }
 };
 
-/**
- * 查询平台任务状态
- * @param {string} modelType - 平台类型
- * @param {string} platformTaskId - 平台任务ID
- * @returns {Promise<Object>} 平台返回的任务状态
- */
-async function queryPlatformStatus(modelType, platformTaskId) {
-  const platform = PLATFORM_APIS[modelType.toLowerCase()];
-  if (!platform) {
+// 下载文件到Buffer
+async function downloadFile(url) {
+  return new Promise((resolve, reject) => {
+    const urlObj = new URL(url);
+    const client = urlObj.protocol === 'https:' ? https : http;
+    
+    client.get(url, (res) => {
+      if (res.statusCode !== 200) {
+        reject(new Error(`下载失败，状态码: ${res.statusCode}`));
+        return;
+      }
+      
+      const chunks = [];
+      res.on('data', chunk => chunks.push(chunk));
+      res.on('end', () => resolve(Buffer.concat(chunks)));
+      res.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
+// 查询平台任务状态
+async function queryPlatformStatus(modelType, externalTaskId) {
+  const config = PLATFORM_APIS[modelType];
+  if (!config) {
     throw new Error(`不支持的平台类型: ${modelType}`);
   }
 
-  const url = `${platform.baseUrl}${platform.queryEndpoint}/${platformTaskId}`;
-  
-  try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: platform.headers
-    });
-
-    if (!response.ok) {
-      throw new Error(`平台API调用失败: ${response.status} ${response.statusText}`);
-    }
-
-    const result = await response.json();
-    return result;
-  } catch (error) {
-    throw new Error(`查询平台状态失败: ${error.message}`);
-  }
-}
-
-/**
- * 下载视频到云存储
- * @param {string} videoUrl - 视频下载地址
- * @param {string} taskId - 本地任务ID
- * @returns {Promise<string>} 云存储文件URL
- */
-async function downloadAndUploadVideo(videoUrl, taskId) {
-  try {
-    // 下载视频
-    const response = await fetch(videoUrl);
-    if (!response.ok) {
-      throw new Error(`下载视频失败: ${response.status} ${response.statusText}`);
-    }
-
-    const buffer = await response.arrayBuffer();
+  return new Promise((resolve, reject) => {
+    const url = `${config.url}/${externalTaskId}`;
+    const client = url.startsWith('https') ? https : http;
     
-    // 上传到云存储
-    const cloudPath = `videos/${taskId}.mp4`;
-    const uploadResult = await app.uploadFile({
-      cloudPath,
-      fileContent: Buffer.from(buffer)
+    const options = {
+      method: 'GET',
+      headers: config.headers
+    };
+
+    const req = client.request(url, options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const result = JSON.parse(data);
+          resolve(result);
+        } catch (e) {
+          reject(new Error('解析平台响应失败'));
+        }
+      });
     });
 
-    // 获取临时访问URL
-    const fileUrl = await app.getTempFileURL({
-      fileList: [uploadResult.fileID]
+    req.on('error', reject);
+    req.setTimeout(30000, () => {
+      req.destroy();
+      reject(new Error('请求超时'));
     });
-
-    return fileUrl.fileList[0].tempFileURL;
-  } catch (error) {
-    throw new Error(`视频处理失败: ${error.message}`);
-  }
+    req.end();
+  });
 }
 
-/**
- * 更新任务状态
- * @param {string} taskId - 任务ID
- * @param {Object} updateData - 更新数据
- */
-async function updateTaskStatus(taskId, updateData) {
+// 上传文件到云存储
+async function uploadToCloudStorage(buffer, filePath) {
   try {
-    await models.generation_tasks.update({
-      filter: {
-        where: {
-          _id: {
-            $eq: taskId
-          }
-        }
-      },
-      data: {
-        ...updateData,
-        updatedAt: Date.now()
-      }
+    const result = await app.uploadFile({
+      cloudPath: filePath,
+      fileContent: buffer
     });
+    
+    // 获取临时访问URL
+    const tempUrlResult = await app.getTempFileURL({
+      fileList: [result.fileID]
+    });
+    
+    return tempUrlResult.fileList[0].tempFileURL;
   } catch (error) {
-    throw new Error(`更新任务状态失败: ${error.message}`);
+    throw new Error(`上传文件失败: ${error.message}`);
   }
 }
 
 exports.main = async (event, context) => {
   try {
-    const { taskId } = event;
-
-    // 1. 参数校验
-    if (!taskId || typeof taskId !== 'string') {
+    // 1. 校验输入
+    if (!event.taskId || typeof event.taskId !== 'string') {
       return {
-        success: false,
-        error: 'taskId 不能为空且必须是字符串'
+        code: 400,
+        message: 'taskId 不能为空且必须为字符串'
       };
     }
 
-    // 2. 查询本地任务
+    // 2. 查询任务记录
     const taskResult = await models.generation_tasks.get({
       filter: {
         where: {
-          _id: {
-            $eq: taskId
-          }
+          _id: { $eq: event.taskId }
         }
-      },
-      select: {
-        _id: true,
-        platformTaskId: true,
-        modelType: true,
-        status: true,
-        outputUrl: true
       }
     });
 
-    if (!taskResult.data) {
+    if (!taskResult.data || !taskResult.data.records || taskResult.data.records.length === 0) {
       return {
-        success: false,
-        error: '任务不存在'
+        code: 404,
+        message: '任务记录不存在'
       };
     }
 
-    const task = taskResult.data;
-    
-    // 3. 调用平台查询API
-    const platformResult = await queryPlatformStatus(
-      task.modelType, 
-      task.platformTaskId
-    );
+    const task = taskResult.data.records[0];
+    const { externalTaskId, modelType, status: currentStatus } = task;
 
-    // 提取状态（根据不同平台的响应格式）
-    let status = 'unknown';
-    let videoUrl = null;
-    
+    if (!externalTaskId || !modelType) {
+      return {
+        code: 400,
+        message: '任务缺少 externalTaskId 或 modelType'
+      };
+    }
+
+    // 3. 查询平台状态
+    let platformResult;
+    try {
+      platformResult = await queryPlatformStatus(modelType, externalTaskId);
+    } catch (error) {
+      console.error('查询平台状态失败:', error);
+      return {
+        code: 500,
+        message: `查询平台状态失败: ${error.message}`
+      };
+    }
+
+    // 4. 解析平台响应
+    let newStatus = currentStatus;
+    let outputUrl = task.outputUrl || '';
+    let errorMsg = task.errorMsg || '';
+
     // 根据平台类型解析响应
-    switch (task.modelType.toLowerCase()) {
-      case 'runway':
-        status = platformResult.status || 'unknown';
-        videoUrl = platformResult.output?.url || platformResult.video_url;
-        break;
-      case 'pika':
-        status = platformResult.status || 'unknown';
-        videoUrl = platformResult.video?.url || platformResult.video_url;
-        break;
-      case 'stablevideo':
-        status = platformResult.status || 'unknown';
-        videoUrl = platformResult.video_url || platformResult.output?.url;
-        break;
-      default:
-        status = platformResult.status || 'unknown';
-        videoUrl = platformResult.video_url || platformResult.output?.url;
-    }
-
-    let outputUrl = null;
-
-    // 4. 状态判断和处理
-    if (status === 'completed' && videoUrl) {
-      try {
-        // 下载视频到云存储
-        outputUrl = await downloadAndUploadVideo(videoUrl, taskId);
-        
-        // 更新任务状态
-        await updateTaskStatus(taskId, {
-          status: 'completed',
-          outputUrl: outputUrl
-        });
-      } catch (downloadError) {
-        console.error('视频下载失败:', downloadError);
-        
-        // 更新为失败状态
-        await updateTaskStatus(taskId, {
-          status: 'failed',
-          outputUrl: null,
-          error: downloadError.message
-        });
-        
-        return {
-          success: false,
-          error: '视频下载失败',
-          details: downloadError.message
-        };
+    if (modelType === 'runway') {
+      newStatus = platformResult.status || 'unknown';
+      if (platformResult.output && platformResult.output[0]) {
+        outputUrl = platformResult.output[0];
       }
-    } else if (status === 'failed') {
-      // 更新失败状态
-      await updateTaskStatus(taskId, {
-        status: 'failed',
-        outputUrl: null,
-        error: platformResult.error || '平台任务失败'
-      });
-    } else {
-      // 更新其他状态
-      await updateTaskStatus(taskId, {
-        status: status,
-        outputUrl: null
-      });
+      if (platformResult.error) {
+        errorMsg = platformResult.error;
+      }
+    } else if (modelType === 'pika') {
+      newStatus = platformResult.status || 'unknown';
+      if (platformResult.videoUrl) {
+        outputUrl = platformResult.videoUrl;
+      }
+      if (platformResult.errorMessage) {
+        errorMsg = platformResult.errorMessage;
+      }
+    } else if (modelType === 'kling') {
+      newStatus = platformResult.task_status || 'unknown';
+      if (platformResult.task_result && platformResult.task_result.videos) {
+        outputUrl = platformResult.task_result.videos[0]?.url || '';
+      }
+      if (platformResult.task_message) {
+        errorMsg = platformResult.task_message;
+      }
     }
 
-    // 6. 返回结果
+    // 5. 更新本地任务
+    const updateData = {
+      status: newStatus,
+      outputUrl: outputUrl,
+      errorMsg: errorMsg,
+      updatedAt: new Date().toISOString()
+    };
+
+    await models.generation_tasks.update({
+      data: updateData,
+      filter: {
+        where: {
+          _id: { $eq: event.taskId }
+        }
+      }
+    });
+
+    // 6. 如果状态为success且outputUrl存在，下载并上传到云存储
+    if (newStatus === 'success' && outputUrl && !outputUrl.startsWith('cloud://')) {
+      try {
+        console.log('开始下载视频文件...');
+        const videoBuffer = await downloadFile(outputUrl);
+        
+        const fileName = `${event.taskId}.mp4`;
+        const cloudPath = `videos/${fileName}`;
+        
+        console.log('开始上传到云存储...');
+        const cloudStorageUrl = await uploadToCloudStorage(videoBuffer, cloudPath);
+        
+        // 更新outputUrl为云存储URL
+        await models.generation_tasks.update({
+          data: {
+            outputUrl: cloudStorageUrl,
+            updatedAt: new Date().toISOString()
+          },
+          filter: {
+            where: {
+              _id: { $eq: event.taskId }
+            }
+          }
+        });
+        
+        outputUrl = cloudStorageUrl;
+        console.log('视频已成功上传到云存储:', cloudStorageUrl);
+      } catch (error) {
+        console.error('下载或上传视频失败:', error);
+        // 不中断主流程，仅记录错误
+      }
+    }
+
+    // 7. 返回最新任务信息
+    const finalResult = await models.generation_tasks.get({
+      filter: {
+        where: {
+          _id: { $eq: event.taskId }
+        }
+      }
+    });
+
+    const finalTask = finalResult.data.records[0];
+
     return {
-      success: true,
+      code: 200,
       data: {
-        status,
-        outputUrl,
-        platformData: platformResult // 透传平台原始数据
+        taskId: finalTask._id,
+        externalTaskId: finalTask.externalTaskId,
+        modelType: finalTask.modelType,
+        status: finalTask.status,
+        outputUrl: finalTask.outputUrl,
+        errorMsg: finalTask.errorMsg,
+        updatedAt: finalTask.updatedAt
       }
     };
 
   } catch (error) {
-    console.error('查询任务状态失败:', error);
-    
+    console.error('云函数执行错误:', error);
     return {
-      success: false,
-      error: '查询任务状态失败',
-      details: error.message
+      code: 500,
+      message: `服务器内部错误: ${error.message}`
     };
   }
 };

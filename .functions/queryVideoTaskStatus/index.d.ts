@@ -1,31 +1,31 @@
 
-interface QueryVideoTaskStatusInput {
-  taskId: string;
-}
-
-interface PlatformResponse {
+interface GenerationTask {
+  _id: string;
+  externalTaskId: string;
+  modelType: string;
   status: string;
-  video_url?: string;
-  output?: {
-    url?: string;
-  };
-  error?: string;
-  [key: string]: any;
-}
-
-interface QueryVideoTaskStatusOutput {
-  success: boolean;
-  data?: {
-    status: string;
-    outputUrl: string | null;
-    platformData?: PlatformResponse;
-  };
-  error?: string;
-  details?: string;
+  outputUrl?: string;
+  errorMsg?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface CloudFunctionEvent {
   taskId: string;
 }
 
-export declare function main(event: CloudFunctionEvent, context: any): Promise<QueryVideoTaskStatusOutput>;
+interface CloudFunctionResponse {
+  code: number;
+  message?: string;
+  data?: {
+    taskId: string;
+    externalTaskId: string;
+    modelType: string;
+    status: string;
+    outputUrl?: string;
+    errorMsg?: string;
+    updatedAt: string;
+  };
+}
+
+export declare function main(event: CloudFunctionEvent, context: any): Promise<CloudFunctionResponse>;

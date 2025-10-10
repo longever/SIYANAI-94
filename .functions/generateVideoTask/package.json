@@ -1,0 +1,10 @@
+
+{
+  "name": "generateVideoTask",
+  "version": "1.0.0",
+  "description": "视频生成任务创建云函数，支持通义万相等平台",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.3.7"
+  }
+}

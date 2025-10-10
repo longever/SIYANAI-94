@@ -2,67 +2,71 @@
 [
   {
     "_id": "task_001",
-    "owner": "user_123",
+    "taskId": "gen_20241011_001",
+    "userId": "user_123456",
     "status": "success",
-    "model_type": "tongyi-wanxiang",
-    "input_params": {
-      "prompt": "一只可爱的猫咪在草地上玩耍",
+    "modelType": "tongyi-wanxiang",
+    "inputParams": {
+      "prompt": "一只可爱的猫咪在花园里玩耍",
+      "style": "anime",
       "duration": 5,
-      "resolution": "1080p",
-      "style": "realistic"
+      "resolution": "1080p"
     },
-    "output_url": "https://example.com/videos/cat_playing.mp4",
-    "error_msg": "",
-    "createdAt": 1728547200000,
-    "updatedAt": 1728547800000
+    "outputUrl": "https://example.com/output/video_001.mp4",
+    "errorMsg": "",
+    "createdAt": 1728604800000,
+    "updatedAt": 1728604900000
   },
   {
     "_id": "task_002",
-    "owner": "user_456",
-    "status": "failed",
-    "model_type": "keling",
-    "input_params": {
-      "prompt": "未来城市景观",
+    "taskId": "gen_20241011_002",
+    "userId": "user_789012",
+    "status": "running",
+    "modelType": "keling",
+    "inputParams": {
+      "prompt": "未来城市景观，赛博朋克风格",
+      "style": "cyberpunk",
       "duration": 10,
-      "resolution": "4k",
-      "style": "cyberpunk"
+      "resolution": "4k"
     },
-    "output_url": "",
-    "error_msg": "模型调用超时，请稍后重试",
-    "createdAt": 1728548000000,
-    "updatedAt": 1728548100000
+    "outputUrl": "",
+    "errorMsg": "",
+    "createdAt": 1728605000000,
+    "updatedAt": 1728605000000
   },
   {
     "_id": "task_003",
-    "owner": "user_789",
-    "status": "running",
-    "model_type": "pixverse",
-    "input_params": {
-      "prompt": "日落海滩风景",
+    "taskId": "gen_20241011_003",
+    "userId": "user_345678",
+    "status": "failed",
+    "modelType": "stable-diffusion",
+    "inputParams": {
+      "prompt": "山水画风格的中国古建筑",
+      "style": "traditional",
       "duration": 8,
-      "resolution": "1080p",
-      "style": "cinematic"
+      "resolution": "2k"
     },
-    "output_url": "",
-    "error_msg": "",
-    "createdAt": 1728549000000,
-    "updatedAt": 1728549200000
+    "outputUrl": "",
+    "errorMsg": "模型调用超时，请稍后重试",
+    "createdAt": 1728605100000,
+    "updatedAt": 1728605200000
   },
   {
     "_id": "task_004",
-    "owner": "user_123",
+    "taskId": "gen_20241011_004",
+    "userId": "user_123456",
     "status": "pending",
-    "model_type": "tongyi-wanxiang",
-    "input_params": {
-      "prompt": "雪山日出延时摄影",
-      "duration": 15,
-      "resolution": "4k",
-      "style": "nature"
+    "modelType": "tongyi-wanxiang",
+    "inputParams": {
+      "prompt": "日落时分的海滩风景",
+      "style": "realistic",
+      "duration": 6,
+      "resolution": "1080p"
     },
-    "output_url": "",
-    "error_msg": "",
-    "createdAt": 1728550000000,
-    "updatedAt": 1728550000000
+    "outputUrl": "",
+    "errorMsg": "",
+    "createdAt": 1728605300000,
+    "updatedAt": 1728605300000
   }
 ]
   
