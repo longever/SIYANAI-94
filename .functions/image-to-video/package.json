@@ -1,0 +1,11 @@
+
+    {
+      "name": "image-to-video",
+      "version": "1.0.0",
+      "description": "图生视频任务管理云函数，支持通义万相等平台",
+      "main": "index.js",
+      "dependencies": {
+        "@cloudbase/node-sdk": "^3.3.7"
+      }
+    }
+  
