@@ -94,88 +94,88 @@ export default function TextToVideoPage(props) {
     }
   };
   return <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
-    <div className="max-w-7xl mx-auto">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="create">创建视频</TabsTrigger>
-          <TabsTrigger value="works">我的作品</TabsTrigger>
-        </TabsList>
+      <div className="max-w-7xl mx-auto">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="create">创建视频</TabsTrigger>
+            <TabsTrigger value="works">我的作品</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="create" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>文本描述</CardTitle>
-                  <CardDescription>输入您想要生成的视频描述，越详细效果越好</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="prompt">视频描述</Label>
-                      <Textarea id="prompt" placeholder="例如：一只可爱的橘猫在花园里追逐蝴蝶，阳光明媚，花朵盛开，4K画质，写实风格..." value={textPrompt} onChange={e => setTextPrompt(e.target.value)} className="min-h-[120px]" />
+          <TabsContent value="create" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>文本描述</CardTitle>
+                    <CardDescription>输入您想要生成的视频描述，越详细效果越好</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="prompt">视频描述</Label>
+                        <Textarea id="prompt" placeholder="例如：一只可爱的橘猫在花园里追逐蝴蝶，阳光明媚，花朵盛开，4K画质，写实风格..." value={textPrompt} onChange={e => setTextPrompt(e.target.value)} className="min-h-[120px]" />
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        建议描述包含：主体、动作、场景、光线、风格等要素
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-500">
-                      建议描述包含：主体、动作、场景、光线、风格等要素
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>高级设置</CardTitle>
-                  <CardDescription>调整视频生成参数</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <VideoSettings settings={videoSettings} onChange={setVideoSettings} />
-                </CardContent>
-              </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>高级设置</CardTitle>
+                    <CardDescription>调整视频生成参数</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <VideoSettings settings={videoSettings} onSettingsChange={setVideoSettings} showStyle={true} />
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="space-y-6">
+                <SystemSelector selectedModel={selectedModel} onSystemChange={setSelectedModel} />
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>预览</CardTitle>
+                    <CardDescription>基于文本描述预览生成效果</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
+                      {textPrompt ? <div className="text-center p-4">
+                          <div className="text-6xl mb-4">🎬</div>
+                          <p className="text-sm text-gray-600">
+                            基于您的描述生成视频预览
+                          </p>
+                          <p className="text-xs text-gray-400 mt-2">
+                            {textPrompt.substring(0, 50)}...
+                          </p>
+                        </div> : <div className="text-gray-400">
+                          <svg className="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 16h4m10 0h4" />
+                          </svg>
+                          <p>输入文本描述后预览</p>
+                        </div>}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
-            <div className="space-y-6">
-              <SystemSelector value={selectedModel} onChange={setSelectedModel} />
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>预览</CardTitle>
-                  <CardDescription>基于文本描述预览生成效果</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
-                    {textPrompt ? <div className="text-center p-4">
-                      <div className="text-6xl mb-4">🎬</div>
-                      <p className="text-sm text-gray-600">
-                        基于您的描述生成视频预览
-                      </p>
-                      <p className="text-xs text-gray-400 mt-2">
-                        {textPrompt.substring(0, 50)}...
-                      </p>
-                    </div> : <div className="text-gray-400">
-                      <svg className="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 16h4m10 0h4" />
-                      </svg>
-                      <p>输入文本描述后预览</p>
-                    </div>}
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="flex justify-center">
+              <Button size="lg" onClick={handleGenerateVideo} disabled={!textPrompt.trim() || isGenerating} className="px-8">
+                {isGenerating ? '生成中...' : '开始生成'}
+              </Button>
             </div>
-          </div>
+          </TabsContent>
 
-          <div className="flex justify-center">
-            <Button size="lg" onClick={handleGenerateVideo} disabled={!textPrompt.trim() || isGenerating} className="px-8">
-              {isGenerating ? '生成中...' : '开始生成'}
-            </Button>
-          </div>
-        </TabsContent>
+          <TabsContent value="works">
+            <WorksList type="text-to-video" />
+          </TabsContent>
+        </Tabs>
 
-        <TabsContent value="works">
-          <WorksList type="text-to-video" />
-        </TabsContent>
-      </Tabs>
-
-      <GenerationModal open={showGenerationModal} onOpenChange={setShowGenerationModal} progress={generationProgress} isGenerating={isGenerating} generatedVideo={generatedVideo} onSave={() => generatedVideo && handleSaveToDatabase(generatedVideo)} />
-    </div>
-  </div>;
+        <GenerationModal open={showGenerationModal} onOpenChange={setShowGenerationModal} progress={generationProgress} isGenerating={isGenerating} generatedVideo={generatedVideo} onSave={() => generatedVideo && handleSaveToDatabase(generatedVideo)} />
+      </div>
+    </div>;
 }

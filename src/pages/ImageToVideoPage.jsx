@@ -4,11 +4,21 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent, CardDescription, CardHeader, CardTitle, Button } from '@/components/ui';
 // @ts-ignore;
 import { Upload, Image, FileAudio, Video, Sparkles } from 'lucide-react';
- 
-import { ImageAudioToVideo } from '@/components/ImageToVideo/ImageAudioToVideo';
-import {ImageVideoToVideo} from '@/components/ImageToVideo/ImageVideoToVideo';
-import {ImageDescriptionToVideo} from '@/components/ImageToVideo/ImageDescriptionToVideo';
-   
+
+import { ScriptGenerator } from '@/components/ScriptGenerator';
+import ImageAudioToVideo from '@/components/ImageToVideo/ImageAudioToVideo';
+import ImageVideoToVideo from '@/components/ImageToVideo/ImageVideoToVideo';
+import ImageDescriptionMode from '@/components/ImageToVideo/ImageDescriptionMode';
+
+// 图+音频组件
+function ImageAudioMode() {
+  return <ImageAudioToVideo />;
+}
+
+// 图+视频组件
+function ImageVideoMode() {
+  return <ImageVideoToVideo />;
+}
 export default function ImageToVideoPage(props) {
   const [activeTab, setActiveTab] = useState('description');
   return <div className="min-h-screen bg-gray-50">
@@ -43,7 +53,7 @@ export default function ImageToVideoPage(props) {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ImageDescriptionToVideo />
+                <ImageDescriptionMode />
               </CardContent>
             </Card>
           </TabsContent>
@@ -57,7 +67,7 @@ export default function ImageToVideoPage(props) {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ImageAudioToVideo />
+                <ImageAudioMode />
               </CardContent>
             </Card>
           </TabsContent>
@@ -71,7 +81,7 @@ export default function ImageToVideoPage(props) {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ImageVideoToVideo />
+                <ImageVideoMode />
               </CardContent>
             </Card>
           </TabsContent>

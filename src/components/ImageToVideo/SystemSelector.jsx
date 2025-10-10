@@ -26,7 +26,7 @@ const systems = [{
   name: '电影风格',
   description: '电影级别的视觉效果'
 }];
-export   function SystemSelector({
+export default function SystemSelector({
   value,
   onChange
 }) {

@@ -9,7 +9,7 @@ import { SystemSelector } from './SystemSelector';
 import { GenerationModal } from './GenerationModal';
 import { WorksList } from './WorksList';
 import { SaveToDatabase } from './SaveToDatabase';
-export  function ImageVideoToVideo(props) {
+export function ImageVideoToVideo(props) {
   const {
     $w
   } = props;
@@ -121,7 +121,7 @@ export  function ImageVideoToVideo(props) {
             <div className="space-y-6">
               <SystemSelector value={selectedModel} onChange={setSelectedModel} />
 
-              <VideoSettings settings={videoSettings} onChange={setVideoSettings} />
+              <VideoSettings settings={videoSettings} onChange={setVideoSettings} showStyle={true} />
 
               <Card>
                 <CardHeader>

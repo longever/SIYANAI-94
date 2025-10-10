@@ -10,7 +10,7 @@ import { SystemSelector } from './SystemSelector';
 import { GenerationModal } from './GenerationModal';
 import { WorksList } from './WorksList';
 import { SaveToDatabase } from './SaveToDatabase';
-export function ImageAudioToVideo(props) {
+export default function ImageAudioToVideo(props) {
   const {
     $w
   } = props;

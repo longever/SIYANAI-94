@@ -73,7 +73,7 @@ const fpsOptions = [{
   label: '60 FPS',
   description: '流畅动画'
 }];
-export  function VideoSettings({
+export default function VideoSettings({
   settings,
   onChange
 }) {
