@@ -3,20 +3,21 @@ import React, { useState } from 'react';
 // @ts-ignore;
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Textarea, Label, useToast } from '@/components/ui';
 // @ts-ignore;
-import { Upload, Play } from 'lucide-react';
+import { Upload, Play, Settings } from 'lucide-react';
 
 import { FileUploadSection } from './FileUploadSection';
 import { VideoSettings } from './VideoSettings';
 import { ImageGenerationModal } from './ImageGenerationModal';
-export function ImageVideoToVideo() {
+import { SaveToDatabase } from './SaveToDatabase';
+export function ImageToVideo() {
   const [imageFile, setImageFile] = useState(null);
-  const [videoFile, setVideoFile] = useState(null);
   const [prompt, setPrompt] = useState('');
   const [settings, setSettings] = useState({
     duration: 5,
     fps: 24,
     resolution: '720p'
   });
+  const [isGenerating, setIsGenerating] = useState(false);
   const [showGenerationModal, setShowGenerationModal] = useState(false);
   const {
     toast
@@ -30,51 +31,40 @@ export function ImageVideoToVideo() {
       });
       return;
     }
-    if (!videoFile) {
-      toast({
-        title: '提示',
-        description: '请先上传视频',
-        variant: 'destructive'
-      });
-      return;
-    }
     setShowGenerationModal(true);
   };
   const handleGenerationSuccess = async taskData => {
+    setIsGenerating(false);
+    // 可以在这里处理生成成功后的逻辑
     console.log('Generation completed:', taskData);
   };
   return <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>图片+视频转视频</CardTitle>
+          <CardTitle>图片转视频</CardTitle>
           <CardDescription>
-            上传静态图片和参考视频，AI将为您生成风格一致的新视频
+            上传静态图片，AI将为您生成动态视频
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            <FileUploadSection type="image" file={imageFile} onFileChange={setImageFile} accept="image/*" label="上传图片" description="作为视频的主要视觉内容" />
-            
-            <FileUploadSection type="video" file={videoFile} onFileChange={setVideoFile} accept="video/*" label="上传参考视频" description="作为动作和风格的参考" />
-          </div>
+          <FileUploadSection type="image" file={imageFile} onFileChange={setImageFile} accept="image/*" label="上传图片" description="支持 JPG、PNG、WEBP 格式" />
 
           <div className="space-y-2">
             <Label htmlFor="prompt">视频描述</Label>
-            <Textarea id="prompt" placeholder="描述您希望生成的视频效果，例如：保持参考视频的动作，但使用上传图片的风格" value={prompt} onChange={e => setPrompt(e.target.value)} rows={3} />
+            <Textarea id="prompt" placeholder="描述您希望生成的视频效果，例如：让图片中的人物微笑并眨眼" value={prompt} onChange={e => setPrompt(e.target.value)} rows={3} />
           </div>
 
           <VideoSettings settings={settings} onSettingsChange={setSettings} />
 
-          <Button onClick={handleGenerate} disabled={!imageFile || !videoFile} className="w-full" size="lg">
+          <Button onClick={handleGenerate} disabled={!imageFile || isGenerating} className="w-full" size="lg">
             <Play className="mr-2 h-4 w-4" />
             生成视频
           </Button>
         </CardContent>
       </Card>
 
-      <ImageGenerationModal open={showGenerationModal} onOpenChange={setShowGenerationModal} type="image_video_to_video" params={{
+      <ImageGenerationModal open={showGenerationModal} onOpenChange={setShowGenerationModal} type="image_to_video" params={{
       imageUrl: imageFile?.url || '',
-      videoUrl: videoFile?.url || '',
       prompt,
       settings
     }} onSuccess={handleGenerationSuccess} />

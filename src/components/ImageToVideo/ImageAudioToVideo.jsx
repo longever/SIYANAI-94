@@ -1,152 +1,82 @@
 // @ts-ignore;
 import React, { useState } from 'react';
 // @ts-ignore;
-import { Button, Tabs, TabsContent, TabsList, TabsHeader, TabsTrigger, Card, CardContent, CardDescription, CardHeader, CardTitle, useToast } from '@/components/ui';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Textarea, Label, useToast } from '@/components/ui';
+// @ts-ignore;
+import { Upload, Play } from 'lucide-react';
 
 import { FileUploadSection } from './FileUploadSection';
-import { AvatarPreview } from './AvatarPreview';
 import { VideoSettings } from './VideoSettings';
-import { SystemSelector } from './SystemSelector';
-import { GenerationModal } from './GenerationModal';
-import { WorksList } from './WorksList';
-import { SaveToDatabase } from './SaveToDatabase';
-export default function ImageAudioToVideo(props) {
-  const {
-    $w
-  } = props;
+import { ImageGenerationModal } from './ImageGenerationModal';
+export function ImageAudioToVideo() {
+  const [imageFile, setImageFile] = useState(null);
+  const [audioFile, setAudioFile] = useState(null);
+  const [prompt, setPrompt] = useState('');
+  const [settings, setSettings] = useState({
+    duration: 5,
+    fps: 24,
+    resolution: '720p'
+  });
+  const [showGenerationModal, setShowGenerationModal] = useState(false);
   const {
     toast
   } = useToast();
-  const [activeTab, setActiveTab] = useState('create');
-  const [uploadedFiles, setUploadedFiles] = useState({
-    avatar: null,
-    audio: null
-  });
-  const [selectedModel, setSelectedModel] = useState('tongyi-wanxiang');
-  const [videoSettings, setVideoSettings] = useState({
-    resolution: '1080p',
-    fps: 30,
-    quality: 'high',
-    duration: 30
-  });
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [showGenerationModal, setShowGenerationModal] = useState(false);
-  const [generationProgress, setGenerationProgress] = useState(0);
-  const [generatedVideo, setGeneratedVideo] = useState(null);
-  const handleFileUpload = (type, file) => {
-    setUploadedFiles(prev => ({
-      ...prev,
-      [type]: file
-    }));
-  };
-  const handleGenerateVideo = async () => {
-    if (!uploadedFiles.avatar || !uploadedFiles.audio) {
+  const handleGenerate = () => {
+    if (!imageFile) {
       toast({
-        title: "缺少文件",
-        description: "请上传头像和音频文件",
-        variant: "destructive"
+        title: '提示',
+        description: '请先上传图片',
+        variant: 'destructive'
       });
       return;
     }
-    setIsGenerating(true);
-    setShowGenerationModal(true);
-    setGenerationProgress(0);
-
-    // 模拟生成过程
-    const interval = setInterval(() => {
-      setGenerationProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsGenerating(false);
-          setGeneratedVideo({
-            url: 'https://example.com/generated-video.mp4',
-            thumbnail: 'https://example.com/thumbnail.jpg',
-            duration: videoSettings.duration,
-            size: '25.6 MB'
-          });
-          return 100;
-        }
-        return prev + 10;
-      });
-    }, 500);
-  };
-  const handleSaveToDatabase = async videoData => {
-    try {
-      const result = await $w.cloud.callDataSource({
-        dataSourceName: 'digital_human_videos',
-        methodName: 'wedaCreateV2',
-        params: {
-          data: {
-            title: `数字人视频 - ${new Date().toLocaleString()}`,
-            videoUrl: videoData.url,
-            thumbnailUrl: videoData.thumbnail,
-            duration: videoData.duration,
-            fileSize: videoData.size,
-            settings: videoSettings,
-            model: selectedModel,
-            createdAt: new Date().toISOString()
-          }
-        }
-      });
+    if (!audioFile) {
       toast({
-        title: "保存成功",
-        description: "视频已保存到作品库"
+        title: '提示',
+        description: '请先上传音频',
+        variant: 'destructive'
       });
-      setActiveTab('works');
-    } catch (error) {
-      toast({
-        title: "保存失败",
-        description: error.message,
-        variant: "destructive"
-      });
+      return;
     }
+    setShowGenerationModal(true);
   };
-  return <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
-    <div className="max-w-7xl mx-auto">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="create">创建视频</TabsTrigger>
-          <TabsTrigger value="works">我的作品</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="create" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="space-y-6">
-              <FileUploadSection type="avatar" title="上传头像" description="支持 JPG、PNG 格式，建议尺寸 512x512" accept="image/*" onFileUpload={file => handleFileUpload('avatar', file)} uploadedFile={uploadedFiles.avatar} />
-
-              <FileUploadSection type="audio" title="上传音频" description="支持 MP3、WAV 格式，最大 50MB" accept="audio/*" onFileUpload={file => handleFileUpload('audio', file)} uploadedFile={uploadedFiles.audio} />
-            </div>
-
-            <div className="space-y-6">
-              <SystemSelector selectedModel={selectedModel} onSystemChange={setSelectedModel} />
-
-              <VideoSettings settings={videoSettings} onSettingsChange={setVideoSettings} />
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>预览</CardTitle>
-                  <CardDescription>预览数字人效果</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <AvatarPreview avatarFile={uploadedFiles.avatar} audioFile={uploadedFiles.audio} />
-                </CardContent>
-              </Card>
-            </div>
+  const handleGenerationSuccess = async taskData => {
+    console.log('Generation completed:', taskData);
+  };
+  return <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>图片+音频转视频</CardTitle>
+          <CardDescription>
+            上传静态图片和音频，AI将为您生成同步的视频
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
+            <FileUploadSection type="image" file={imageFile} onFileChange={setImageFile} accept="image/*" label="上传图片" description="支持 JPG、PNG、WEBP 格式" />
+            
+            <FileUploadSection type="audio" file={audioFile} onFileChange={setAudioFile} accept="audio/*" label="上传音频" description="支持 MP3、WAV、M4A 格式" />
           </div>
 
-          <div className="flex justify-center">
-            <Button size="lg" onClick={handleGenerateVideo} disabled={!uploadedFiles.avatar || !uploadedFiles.audio || isGenerating} className="px-8">
-              {isGenerating ? '生成中...' : '开始生成'}
-            </Button>
+          <div className="space-y-2">
+            <Label htmlFor="prompt">视频描述</Label>
+            <Textarea id="prompt" placeholder="描述您希望生成的视频效果，例如：让图片中的人物随着音乐节奏动起来" value={prompt} onChange={e => setPrompt(e.target.value)} rows={3} />
           </div>
-        </TabsContent>
 
-        <TabsContent value="works">
-          <WorksList />
-        </TabsContent>
-      </Tabs>
+          <VideoSettings settings={settings} onSettingsChange={setSettings} />
 
-      <GenerationModal open={showGenerationModal} onOpenChange={setShowGenerationModal} progress={generationProgress} isGenerating={isGenerating} generatedVideo={generatedVideo} onSave={() => generatedVideo && handleSaveToDatabase(generatedVideo)} />
-    </div>
-  </div>;
+          <Button onClick={handleGenerate} disabled={!imageFile || !audioFile} className="w-full" size="lg">
+            <Play className="mr-2 h-4 w-4" />
+            生成视频
+          </Button>
+        </CardContent>
+      </Card>
+
+      <ImageGenerationModal open={showGenerationModal} onOpenChange={setShowGenerationModal} type="image_audio_to_video" params={{
+      imageUrl: imageFile?.url || '',
+      audioUrl: audioFile?.url || '',
+      prompt,
+      settings
+    }} onSuccess={handleGenerationSuccess} />
+    </div>;
 }
