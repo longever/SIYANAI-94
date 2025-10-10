@@ -1,0 +1,12 @@
+
+    {
+      "name": "image-to-video-create-task",
+      "version": "1.0.0",
+      "description": "创建图片转视频任务，支持通义万相等平台",
+      "main": "index.js",
+      "dependencies": {
+        "@cloudbase/node-sdk": "^3.3.7",
+        "uuid": "^9.0.0"
+      }
+    }
+  
