@@ -1,87 +1,101 @@
 
-    # generateImageToVideo 云函数
+    # 图生视频云函数使用说明
 
-    将多张图片合成为视频的云函数。
+    ## 功能概述
+    该云函数接收用户上传的图片、音频、视频素材，调用AI视频生成模型创建视频任务。
 
-    ## 使用说明
+    ## 调用方式
 
-    ### 前提条件
-    1. 云开发环境已开通
-    2. 已安装 FFmpeg（云函数运行环境已内置）
-    3. 已创建 `video_tasks` 数据集合（可选）
-
-    ### 调用示例
-
+    ### 小程序端调用示例
     ```javascript
-    // 小程序端调用
+    // 上传图片生成视频
     wx.cloud.callFunction({
       name: 'generateImageToVideo',
       data: {
-        images: [
-          'cloud://env-name/image1.jpg',
-          'cloud://env-name/image2.jpg',
-          'cloud://env-name/image3.jpg'
-        ],
-        fps: 10,
-        width: 720,
-        height: 1280,
-        durationPerFrame: 0.5
-      }
-    }).then(res => {
-      if (res.result.success) {
-        console.log('视频生成成功:', res.result.downloadUrl);
-      } else {
-        console.error('视频生成失败:', res.result.error);
+        // 文件通过formData上传
+        prompt: '创建一个梦幻风格的动画视频',
+        duration: 10,
+        resolution: '1920x1080',
+        style: 'fantasy',
+        fps: 30
+      },
+      files: {
+        image: tempFilePath, // 图片文件路径
+        audio: audioFilePath // 可选：音频文件路径
+      },
+      success: res => {
+        console.log('任务创建成功:', res.result);
+        // res.result: { taskId, status, message }
+      },
+      fail: err => {
+        console.error('任务创建失败:', err);
       }
     });
+    ```
 
-    // 云函数间调用
-    const cloud = require('wx-server-sdk');
-    cloud.init();
-    
-    const result = await cloud.callFunction({
+    ### Web端调用示例
+    ```javascript
+    // 使用FormData上传
+    const formData = new FormData();
+    formData.append('image', imageFile);
+    formData.append('audio', audioFile); // 可选
+    formData.append('prompt', '创建一个科幻风格的视频');
+    formData.append('duration', '8');
+    formData.append('resolution', '1920x1080');
+
+    wx.cloud.callFunction({
       name: 'generateImageToVideo',
-      data: {
-        images: ['cloud://env-name/image1.jpg'],
-        fps: 15,
-        width: 1080,
-        height: 1920
+      data: formData,
+      success: res => {
+        console.log('任务创建成功:', res.result);
       }
     });
     ```
 
-    ### 参数说明
+    ## 参数说明
 
-    | 参数名 | 类型 | 必填 | 默认值 | 说明 |
-    |--------|------|------|--------|------|
-    | images | string[] | 是 | - | 图片在云存储中的 fileID 列表 |
-    | fps | number | 否 | 10 | 输出视频的帧率 |
-    | width | number | 否 | 720 | 输出视频宽度 |
-    | height | number | 否 | 1280 | 输出视频高度 |
-    | durationPerFrame | number | 否 | 0.5 | 每帧持续时间（秒） |
+    ### 必需参数
+    - **image**: 图片文件 (支持 jpeg, png, webp)
+    - **prompt**: 视频生成提示词 (string)
 
-    ### 返回结果
+    ### 可选参数
+    - **audio**: 音频文件 (支持 mp3, wav, m4a)
+    - **video**: 视频文件 (支持 mp4, mov, avi)
+    - **duration**: 视频时长，默认5秒，范围1-60秒
+    - **resolution**: 分辨率，默认"1280x720"，支持"1920x1080"
+    - **style**: 视频风格描述
+    - **fps**: 帧率，默认24，范围12-60
 
-    成功时：
+    ## 返回结果
+
+    ### 成功响应
     ```json
     {
-      "success": true,
-      "fileID": "cloud://env-name/videos/xxx.mp4",
-      "downloadUrl": "https://xxx.com/xxx.mp4"
+      "taskId": "uuid-string",
+      "status": "pending",
+      "message": "任务已创建，正在处理中"
     }
     ```
 
-    失败时：
+    ### 错误响应
     ```json
     {
-      "success": false,
-      "error": "错误信息"
+      "error": "参数验证失败",
+      "details": ["必需参数：image文件缺失", "prompt不能为空"],
+      "statusCode": 400
     }
     ```
 
-    ### 注意事项
-    1. 函数执行时间可能较长，建议设置超时时间为 300 秒以上
-    2. 临时文件存储在 /tmp 目录，函数执行完毕后会自动清理
-    3. 建议图片尺寸与输出视频尺寸一致，避免拉伸变形
-    4. 单次处理图片数量建议不超过 100 张
+    ## 环境变量配置
+    需要在云函数配置中设置以下环境变量：
+    - `VIDEO_API_BASE_URL`: 视频生成API的基础URL
+    - `VIDEO_API_KEY`: API访问密钥
+
+    ## 数据模型
+    任务信息会保存到 `generation_tasks` 数据模型中，包含：
+    - 任务ID和状态
+    - 上传的文件链接
+    - 生成参数
+    - API响应信息
+    - 创建和更新时间
   

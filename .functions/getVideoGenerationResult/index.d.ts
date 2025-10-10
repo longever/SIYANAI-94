@@ -1,23 +1,49 @@
 
-    interface CloudFunctionEvent {
-      taskId: string;
-    }
-
-    interface TaskResult {
-      taskId: string;
+    interface VideoTaskStatus {
       status: 'pending' | 'processing' | 'completed' | 'failed';
       progress: number;
-      outputUrl?: string;
-      createdAt?: string;
-      updatedAt?: string;
-      [key: string]: any;
+      videoUrl?: string;
+      error?: string;
     }
 
-    interface CloudFunctionResponse {
-      code: number;
-      message: string;
-      data: TaskResult | null;
+    interface GenerationTask {
+      _id: string;
+      externalTaskId: string;
+      status: string;
+      progress: number;
+      resultUrl?: string;
+      videoUrl?: string;
+      errorMessage?: string;
+      createdAt: string;
+      updatedAt: string;
     }
 
-    export declare function main(event: CloudFunctionEvent, context: any): Promise<CloudFunctionResponse>;
+    interface ProcessResult {
+      success: boolean;
+      data?: GenerationTask;
+      error?: {
+        code: string;
+        message: string;
+      };
+    }
+
+    interface BatchProcessResult {
+      success: boolean;
+      processedCount: number;
+      results: Array<{
+        taskId: string;
+        success: boolean;
+        data?: GenerationTask;
+        error?: {
+          code: string;
+          message: string;
+        };
+      }>;
+    }
+
+    interface CloudFunctionEvent {
+      taskId?: string;
+    }
+
+    export declare function main(event: CloudFunctionEvent, context: any): Promise<ProcessResult | BatchProcessResult>;
   

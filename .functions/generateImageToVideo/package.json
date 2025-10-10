@@ -2,10 +2,10 @@
     {
       "name": "generateImageToVideo",
       "version": "1.0.0",
-      "description": "将多张图片合成为视频的云函数",
+      "description": "图生视频云函数，支持上传图片、音频、视频素材并调用AI模型生成视频",
       "main": "index.js",
       "dependencies": {
-        "@cloudbase/node-sdk": "^3.3.7",
+        "@cloudbase/node-sdk": "^3.10.0",
         "uuid": "^9.0.0"
       }
     }

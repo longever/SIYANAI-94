@@ -2,7 +2,7 @@
     {
       "name": "getVideoGenerationResult",
       "version": "1.0.0",
-      "description": "获取视频生成结果并更新任务状态的云函数",
+      "description": "轮询或回调获取视频生成结果，更新任务状态并下载视频到云存储",
       "main": "index.js",
       "dependencies": {
         "@cloudbase/node-sdk": "^3.3.7"

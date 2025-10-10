@@ -1,0 +1,11 @@
+
+    {
+      "triggers": [
+        {
+          "name": "videoGenerationPoller",
+          "type": "timer",
+          "config": "0 */2 * * * * *"
+        }
+      ]
+    }
+  

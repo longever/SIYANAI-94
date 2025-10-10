@@ -1,26 +1,51 @@
 
-    interface ImageToVideoParams {
-      images: string[];
-      fps?: number;
-      width?: number;
-      height?: number;
-      durationPerFrame?: number;
+    interface FileUpload {
+      originalname: string;
+      mimetype: string;
+      size: number;
+      buffer: Buffer;
     }
 
-    interface SuccessResult {
-      success: true;
-      fileID: string;
-      downloadUrl: string;
+    interface TaskFiles {
+      image?: string;
+      audio?: string;
+      video?: string;
     }
 
-    interface ErrorResult {
-      success: false;
-      error: string;
+    interface GenerationTask {
+      taskId: string;
+      status: 'pending' | 'processing' | 'completed' | 'failed';
+      prompt: string;
+      duration: number;
+      resolution: string;
+      style?: string;
+      fps: number;
+      files: TaskFiles;
+      createdAt: Date;
+      updatedAt: Date;
+      apiResponse?: any;
     }
 
-    type CloudFunctionResult = SuccessResult | ErrorResult;
+    interface CloudFunctionEvent {
+      body?: any;
+      files?: {
+        image?: FileUpload;
+        audio?: FileUpload;
+        video?: FileUpload;
+      };
+      headers?: {
+        [key: string]: string;
+      };
+    }
 
-    interface CloudFunctionEvent extends ImageToVideoParams {}
+    interface CloudFunctionResponse {
+      taskId?: string;
+      status?: string;
+      message?: string;
+      error?: string;
+      details?: any;
+      statusCode?: number;
+    }
 
-    export declare function main(event: CloudFunctionEvent, context: any): Promise<CloudFunctionResult>;
+    export declare function main(event: CloudFunctionEvent, context: any): Promise<CloudFunctionResponse>;
   
