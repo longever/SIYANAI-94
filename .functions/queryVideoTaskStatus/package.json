@@ -1,0 +1,10 @@
+
+{
+  "name": "queryVideoTaskStatus",
+  "version": "1.0.0",
+  "description": "查询视频生成任务状态，处理完成后的视频下载和存储",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.3.7"
+  }
+}

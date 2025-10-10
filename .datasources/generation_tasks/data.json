@@ -2,96 +2,67 @@
 [
   {
     "_id": "task_001",
-    "taskId": "gen_20241010_001",
-    "userId": "user_123456",
-    "inputType": "image+text",
-    "inputAssets": {
-      "imageUrl": "https://example.com/uploads/sample1.jpg",
-      "text": "一只可爱的橘猫在阳光下慵懒地伸懒腰，背景是温暖的午后阳光",
-      "imageSize": "1920x1080",
-      "imageFormat": "jpg"
+    "owner": "user_123",
+    "status": "success",
+    "model_type": "tongyi-wanxiang",
+    "input_params": {
+      "prompt": "一只可爱的猫咪在草地上玩耍",
+      "duration": 5,
+      "resolution": "1080p",
+      "style": "realistic"
     },
-    "outputUrl": "https://example.com/outputs/generated_video_001.mp4",
-    "status": "completed",
-    "progress": 100,
-    "errorMessage": "",
-    "createdAt": 1728576000000,
-    "updatedAt": 1728576600000
+    "output_url": "https://example.com/videos/cat_playing.mp4",
+    "error_msg": "",
+    "createdAt": 1728547200000,
+    "updatedAt": 1728547800000
   },
   {
     "_id": "task_002",
-    "taskId": "gen_20241010_002",
-    "userId": "user_789012",
-    "inputType": "image+audio",
-    "inputAssets": {
-      "imageUrl": "https://example.com/uploads/portrait.jpg",
-      "audioUrl": "https://example.com/uploads/voiceover.mp3",
-      "imageSize": "1080x1080",
-      "audioDuration": 30.5,
-      "audioFormat": "mp3"
+    "owner": "user_456",
+    "status": "failed",
+    "model_type": "keling",
+    "input_params": {
+      "prompt": "未来城市景观",
+      "duration": 10,
+      "resolution": "4k",
+      "style": "cyberpunk"
     },
-    "outputUrl": "",
-    "status": "processing",
-    "progress": 65,
-    "errorMessage": "",
-    "createdAt": 1728579600000,
-    "updatedAt": 1728579900000
+    "output_url": "",
+    "error_msg": "模型调用超时，请稍后重试",
+    "createdAt": 1728548000000,
+    "updatedAt": 1728548100000
   },
   {
     "_id": "task_003",
-    "taskId": "gen_20241010_003",
-    "userId": "user_345678",
-    "inputType": "image+video",
-    "inputAssets": {
-      "imageUrl": "https://example.com/uploads/avatar.png",
-      "videoUrl": "https://example.com/uploads/reference_motion.mp4",
-      "imageSize": "512x512",
-      "videoDuration": 15.0,
-      "videoFormat": "mp4"
+    "owner": "user_789",
+    "status": "running",
+    "model_type": "pixverse",
+    "input_params": {
+      "prompt": "日落海滩风景",
+      "duration": 8,
+      "resolution": "1080p",
+      "style": "cinematic"
     },
-    "outputUrl": "",
-    "status": "pending",
-    "progress": 0,
-    "errorMessage": "",
-    "createdAt": 1728583200000,
-    "updatedAt": 1728583200000
+    "output_url": "",
+    "error_msg": "",
+    "createdAt": 1728549000000,
+    "updatedAt": 1728549200000
   },
   {
     "_id": "task_004",
-    "taskId": "gen_20241010_004",
-    "userId": "user_901234",
-    "inputType": "image+text",
-    "inputAssets": {
-      "imageUrl": "https://example.com/uploads/landscape.jpg",
-      "text": "夕阳下的海滩，海浪轻轻拍打着沙滩，天空呈现出橙红色的渐变",
-      "imageSize": "2560x1440",
-      "imageFormat": "jpg"
+    "owner": "user_123",
+    "status": "pending",
+    "model_type": "tongyi-wanxiang",
+    "input_params": {
+      "prompt": "雪山日出延时摄影",
+      "duration": 15,
+      "resolution": "4k",
+      "style": "nature"
     },
-    "outputUrl": "",
-    "status": "failed",
-    "progress": 45,
-    "errorMessage": "AI服务调用超时，请稍后重试",
-    "createdAt": 1728586800000,
-    "updatedAt": 1728587700000
-  },
-  {
-    "_id": "task_005",
-    "taskId": "gen_20241010_005",
-    "userId": "user_567890",
-    "inputType": "image+audio",
-    "inputAssets": {
-      "imageUrl": "https://example.com/uploads/product.jpg",
-      "audioUrl": "https://example.com/uploads/product_description.mp3",
-      "imageSize": "800x600",
-      "audioDuration": 45.2,
-      "audioFormat": "mp3"
-    },
-    "outputUrl": "https://example.com/outputs/product_demo_005.mp4",
-    "status": "completed",
-    "progress": 100,
-    "errorMessage": "",
-    "createdAt": 1728590400000,
-    "updatedAt": 1728591300000
+    "output_url": "",
+    "error_msg": "",
+    "createdAt": 1728550000000,
+    "updatedAt": 1728550000000
   }
 ]
   
