@@ -1,0 +1,48 @@
+
+{
+  "name": "generation_tasks",
+  "title": "图生视频任务",
+  "schemas": [
+    {
+      "name": "taskId",
+      "title": "任务ID",
+      "type": "String"
+    },
+    {
+      "name": "userId",
+      "title": "用户ID",
+      "type": "String"
+    },
+    {
+      "name": "inputType",
+      "title": "输入类型",
+      "type": "String"
+    },
+    {
+      "name": "inputAssets",
+      "title": "输入素材",
+      "type": "Object"
+    },
+    {
+      "name": "outputUrl",
+      "title": "输出视频URL",
+      "type": "Url"
+    },
+    {
+      "name": "status",
+      "title": "任务状态",
+      "type": "String"
+    },
+    {
+      "name": "progress",
+      "title": "进度百分比",
+      "type": "Number"
+    },
+    {
+      "name": "errorMessage",
+      "title": "错误信息",
+      "type": "String"
+    }
+  ]
+}
+  
