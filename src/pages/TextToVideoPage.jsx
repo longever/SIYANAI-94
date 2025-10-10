@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 // @ts-ignore;
 import { Button, Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent, CardDescription, CardHeader, CardTitle, Textarea, useToast, Label, Input } from '@/components/ui';
 
-import { SystemSelector } from '@/components/ImageToVideo/SystemSelector';
-import { VideoSettings } from '@/components/ImageToVideo/VideoSettings';
+// import { SystemSelector } from '@/components/ImageToVideo/SystemSelector';
+// import { VideoSettings } from '@/components/ImageToVideo/VideoSettings';
 import { GenerationModal } from '@/components/ImageToVideo/GenerationModal';
 import { WorksList } from '@/components/ImageToVideo/WorksList';
 export default function TextToVideoPage(props) {
@@ -128,13 +128,13 @@ export default function TextToVideoPage(props) {
                   <CardDescription>调整视频生成参数</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <VideoSettings settings={videoSettings} onChange={setVideoSettings} />
+                  {/* <VideoSettings settings={videoSettings} onChange={setVideoSettings} /> */}
                 </CardContent>
               </Card>
             </div>
 
             <div className="space-y-6">
-              <SystemSelector value={selectedModel} onChange={setSelectedModel} />
+              {/* <SystemSelector value={selectedModel} onChange={setSelectedModel} /> */}
 
               <Card>
                 <CardHeader>
