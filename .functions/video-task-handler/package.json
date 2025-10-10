@@ -1,0 +1,11 @@
+
+    {
+      "name": "video-task-handler",
+      "version": "1.0.0",
+      "description": "处理视频生成任务状态查询和文件上传的云函数",
+      "main": "index.js",
+      "dependencies": {
+        "@cloudbase/node-sdk": "^3.3.7"
+      }
+    }
+  
