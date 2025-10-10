@@ -5,9 +5,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent, CardDescri
 // @ts-ignore;
 import { Upload, Image, FileAudio, Video, Sparkles } from 'lucide-react';
  
-import ImageAudioToVideo from '@/components/ImageToVideo/ImageAudioToVideo';
-import ImageVideoToVideo from '@/components/ImageToVideo/ImageVideoToVideo';
-import ImageDescriptionToVideo from '@/components/ImageToVideo/ImageDescriptionToVideo';
+import { ImageAudioToVideo } from '@/components/ImageToVideo/ImageAudioToVideo';
+import {ImageVideoToVideo} from '@/components/ImageToVideo/ImageVideoToVideo';
+import {ImageDescriptionToVideo} from '@/components/ImageToVideo/ImageDescriptionToVideo';
    
 export default function ImageToVideoPage(props) {
   const [activeTab, setActiveTab] = useState('description');
