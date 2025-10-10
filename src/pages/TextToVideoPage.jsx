@@ -1,7 +1,7 @@
 // @ts-ignore;
 import React, { useState } from 'react';
 // @ts-ignore;
-import { Button, Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent, CardDescription, CardHeader, CardTitle, Textarea, useToast, Label } from '@/components/ui';
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Textarea, useToast, Label, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui';
 
 import { SystemSelector } from '@/components/ImageToVideo/SystemSelector';
 import { VideoSettings } from '@/components/ImageToVideo/VideoSettings';

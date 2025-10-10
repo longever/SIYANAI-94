@@ -75,10 +75,11 @@ const fpsOptions = [{
 }];
 export default function VideoSettings({
   settings,
-  onChange
+  onSettingsChange,
+  showStyle = false
 }) {
   const handleSettingChange = (key, value) => {
-    onChange({
+    onSettingsChange({
       ...settings,
       [key]: value
     });
@@ -127,22 +128,22 @@ export default function VideoSettings({
         </div>
 
         {/* 风格 */}
-        <div>
-          <Label className="text-sm text-gray-700">风格</Label>
-          <Select value={settings.style} onValueChange={value => handleSettingChange('style', value)}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {styles.map(style => <SelectItem key={style.value} value={style.value}>
-                  <div>
-                    <div className="font-medium">{style.label}</div>
-                    <div className="text-xs text-gray-500">{style.description}</div>
-                  </div>
-                </SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
+        {showStyle && <div>
+            <Label className="text-sm text-gray-700">风格</Label>
+            <Select value={settings.style} onValueChange={value => handleSettingChange('style', value)}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {styles.map(style => <SelectItem key={style.value} value={style.value}>
+                    <div>
+                      <div className="font-medium">{style.label}</div>
+                      <div className="text-xs text-gray-500">{style.description}</div>
+                    </div>
+                  </SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>}
 
         {/* 帧率 */}
         <div>
