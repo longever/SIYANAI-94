@@ -1,7 +1,7 @@
 // @ts-ignore;
 import React, { useState } from 'react';
 // @ts-ignore;
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Textarea, useToast, Label, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui';
+import { Button, Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent, CardDescription, CardHeader, CardTitle, Textarea, useToast, Label, Input } from '@/components/ui';
 
 import { SystemSelector } from '@/components/ImageToVideo/SystemSelector';
 import { VideoSettings } from '@/components/ImageToVideo/VideoSettings';
@@ -128,7 +128,7 @@ export default function TextToVideoPage(props) {
                     <CardDescription>调整视频生成参数</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <VideoSettings settings={videoSettings} onSettingsChange={setVideoSettings} showStyle={true} />
+                    <VideoSettings settings={videoSettings} onSettingsChange={setVideoSettings}   />
                   </CardContent>
                 </Card>
               </div>
