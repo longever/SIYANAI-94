@@ -1,12 +1,15 @@
 // @ts-ignore;
 import React, { useState } from 'react';
 // @ts-ignore;
-import { Button, Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent, CardDescription, CardHeader, CardTitle, Textarea, useToast, Label, Input } from '@/components/ui';
+import { Button, Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent, CardDescription, CardHeader, CardTitle, Textarea, useToast, Label, Input, Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
+// @ts-ignore;
+import { Sparkles } from 'lucide-react';
 
 import { SystemSelector } from '@/components/ImageToVideo/SystemSelector';
 import { VideoSettings } from '@/components/ImageToVideo/VideoSettings';
 import { GenerationModal } from '@/components/ImageToVideo/GenerationModal';
 import { WorksList } from '@/components/ImageToVideo/WorksList';
+import { ScriptGenerator } from '@/components/ScriptGenerator';
 export default function TextToVideoPage(props) {
   const {
     $w
@@ -28,6 +31,7 @@ export default function TextToVideoPage(props) {
   const [showGenerationModal, setShowGenerationModal] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
   const [generatedVideo, setGeneratedVideo] = useState(null);
+  const [showScriptGenerator, setShowScriptGenerator] = useState(false);
   const handleGenerateVideo = async () => {
     if (!textPrompt.trim()) {
       toast({
@@ -93,6 +97,16 @@ export default function TextToVideoPage(props) {
       });
     }
   };
+  const handleScriptGenerated = script => {
+    // 将生成的脚本转换为文本描述
+    const generatedDescription = script.nodes.map(node => node.content).join('；');
+    setTextPrompt(generatedDescription);
+    setShowScriptGenerator(false);
+    toast({
+      title: "描述生成成功",
+      description: "AI已为您生成详细的视频描述"
+    });
+  };
   return <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
       <div className="max-w-7xl mx-auto">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -106,8 +120,16 @@ export default function TextToVideoPage(props) {
               <div className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>文本描述</CardTitle>
-                    <CardDescription>输入您想要生成的视频描述，越详细效果越好</CardDescription>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>文本描述</CardTitle>
+                        <CardDescription>输入您想要生成的视频描述，越详细效果越好</CardDescription>
+                      </div>
+                      <Button size="sm" onClick={() => setShowScriptGenerator(true)} className="bg-purple-600 hover:bg-purple-700 flex items-center gap-2">
+                        <Sparkles className="w-4 h-4" />
+                        AI生成
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
@@ -176,6 +198,15 @@ export default function TextToVideoPage(props) {
         </Tabs>
 
         <GenerationModal open={showGenerationModal} onOpenChange={setShowGenerationModal} progress={generationProgress} isGenerating={isGenerating} generatedVideo={generatedVideo} onSave={() => generatedVideo && handleSaveToDatabase(generatedVideo)} />
+
+        <Dialog open={showScriptGenerator} onOpenChange={setShowScriptGenerator}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>AI智能脚本生成</DialogTitle>
+            </DialogHeader>
+            <ScriptGenerator onGenerate={handleScriptGenerated} />
+          </DialogContent>
+        </Dialog>
       </div>
     </div>;
 }

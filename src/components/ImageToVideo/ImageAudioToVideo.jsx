@@ -118,9 +118,9 @@ export default function ImageAudioToVideo(props) {
             </div>
 
             <div className="space-y-6">
-              <SystemSelector value={selectedModel} onChange={setSelectedModel} />
+              <SystemSelector selectedModel={selectedModel} onSystemChange={setSelectedModel} />
 
-              <VideoSettings settings={videoSettings} onChange={setVideoSettings} />
+              <VideoSettings settings={videoSettings} onSettingsChange={setVideoSettings} />
 
               <Card>
                 <CardHeader>
