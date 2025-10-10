@@ -121,7 +121,7 @@ export default function ImageVideoToVideo(props) {
             <div className="space-y-6">
               <SystemSelector value={selectedModel} onChange={setSelectedModel} />
 
-              <VideoSettings settings={videoSettings} onChange={setVideoSettings} showStyle={true} />
+              <VideoSettings settings={videoSettings} onChange={setVideoSettings} />
 
               <Card>
                 <CardHeader>
