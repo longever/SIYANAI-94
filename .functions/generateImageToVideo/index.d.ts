@@ -1,22 +1,26 @@
 
-    interface ModelParams {
-      [key: string]: any;
+    interface ImageToVideoParams {
+      images: string[];
+      fps?: number;
+      width?: number;
+      height?: number;
+      durationPerFrame?: number;
     }
 
-    interface CloudFunctionEvent {
-      userId: string;
-      inputType: 'text' | 'audio' | 'video';
-      imageUrl: string;
-      text?: string;
-      audioUrl?: string;
-      videoUrl?: string;
-      modelParams: ModelParams;
+    interface SuccessResult {
+      success: true;
+      fileID: string;
+      downloadUrl: string;
     }
 
-    interface CloudFunctionResult {
-      taskId?: string;
-      error?: string;
+    interface ErrorResult {
+      success: false;
+      error: string;
     }
+
+    type CloudFunctionResult = SuccessResult | ErrorResult;
+
+    interface CloudFunctionEvent extends ImageToVideoParams {}
 
     export declare function main(event: CloudFunctionEvent, context: any): Promise<CloudFunctionResult>;
   

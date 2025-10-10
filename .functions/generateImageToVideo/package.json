@@ -2,10 +2,11 @@
     {
       "name": "generateImageToVideo",
       "version": "1.0.0",
-      "description": "图片转视频任务创建云函数",
+      "description": "将多张图片合成为视频的云函数",
       "main": "index.js",
       "dependencies": {
-        "@cloudbase/node-sdk": "^3.10.0"
+        "@cloudbase/node-sdk": "^3.3.7",
+        "uuid": "^9.0.0"
       }
     }
   

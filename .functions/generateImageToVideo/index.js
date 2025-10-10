@@ -2,208 +2,188 @@
     'use strict';
 
     const cloudbase = require('@cloudbase/node-sdk');
-    const https = require('https');
+    const fs = require('fs').promises;
+    const path = require('path');
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const { v4: uuidv4 } = require('uuid');
 
-    // 初始化云开发环境
+    const execAsync = promisify(exec);
+
     const app = cloudbase.init({
-      env: cloudbase.SYMBOL_CURRENT_ENV,
+      env: cloudbase.SYMBOL_CURRENT_ENV
     });
 
-    // 视频生成模型API配置
-    const MODEL_API_CONFIG = {
-      host: 'api.example.com', // 请替换为实际的API域名
-      path: '/v1/video/generate',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer YOUR_API_KEY' // 请替换为实际的API密钥
-      }
-    };
+    const db = app.database();
+    const storage = app.storage();
 
-    /**
-     * 验证输入参数
-     * @param {Object} params - 输入参数
-     * @throws {Error} 参数验证失败时抛出错误
-     */
-    function validateParams(params) {
-      const { userId, inputType, imageUrl, modelParams, text, audioUrl, videoUrl } = params;
-
-      // 检查必填参数
-      if (!userId) {
-        throw new Error('userId 不能为空');
-      }
-      if (!inputType) {
-        throw new Error('inputType 不能为空');
-      }
-      if (!imageUrl) {
-        throw new Error('imageUrl 不能为空');
-      }
-      if (!modelParams || typeof modelParams !== 'object') {
-        throw new Error('modelParams 不能为空且必须是对象');
-      }
-
-      // 检查inputType的有效性
-      const validInputTypes = ['text', 'audio', 'video'];
-      if (!validInputTypes.includes(inputType)) {
-        throw new Error('inputType 必须是 text、audio 或 video 之一');
-      }
-
-      // 根据inputType检查对应的附加参数
-      if (inputType === 'text' && !text) {
-        throw new Error('当 inputType 为 text 时，text 不能为空');
-      }
-      if (inputType === 'audio' && !audioUrl) {
-        throw new Error('当 inputType 为 audio 时，audioUrl 不能为空');
-      }
-      if (inputType === 'video' && !videoUrl) {
-        throw new Error('当 inputType 为 video 时，videoUrl 不能为空');
-      }
-
-      // 检查多余的参数
-      if (inputType !== 'text' && text) {
-        throw new Error('当 inputType 不为 text 时，不能提供 text 参数');
-      }
-      if (inputType !== 'audio' && audioUrl) {
-        throw new Error('当 inputType 不为 audio 时，不能提供 audioUrl 参数');
-      }
-      if (inputType !== 'video' && videoUrl) {
-        throw new Error('当 inputType 不为 video 时，不能提供 videoUrl 参数');
+    async function downloadImage(fileID, destPath) {
+      try {
+        const file = storage.file(fileID);
+        const [buffer] = await file.download();
+        await fs.writeFile(destPath, buffer);
+        return true;
+      } catch (error) {
+        console.error(`下载图片失败: ${fileID}`, error);
+        throw new Error(`图片下载失败: ${fileID}`);
       }
     }
 
-    /**
-     * 调用视频生成模型API
-     * @param {Object} requestData - 请求数据
-     * @returns {Promise<string>} 返回任务ID
-     */
-    async function callVideoGenerationAPI(requestData) {
-      return new Promise((resolve, reject) => {
-        const postData = JSON.stringify(requestData);
-        
-        const options = {
-          ...MODEL_API_CONFIG,
-          headers: {
-            ...MODEL_API_CONFIG.headers,
-            'Content-Length': Buffer.byteLength(postData)
+    async function uploadVideo(localPath, cloudPath) {
+      try {
+        const file = storage.file(cloudPath);
+        const buffer = await fs.readFile(localPath);
+        await file.save(buffer, {
+          metadata: {
+            contentType: 'video/mp4'
           }
+        });
+        
+        const [url] = await file.getSignedUrl({
+          action: 'read',
+          expires: Date.now() + 1000 * 60 * 60 * 24 * 7 // 7天有效期
+        });
+        
+        return {
+          fileID: cloudPath,
+          downloadUrl: url
         };
-
-        const req = https.request(options, (res) => {
-          let data = '';
-          
-          res.on('data', (chunk) => {
-            data += chunk;
-          });
-          
-          res.on('end', () => {
-            try {
-              const response = JSON.parse(data);
-              if (res.statusCode === 200 && response.taskId) {
-                resolve(response.taskId);
-              } else {
-                reject(new Error(`API调用失败: ${response.message || data}`));
-              }
-            } catch (error) {
-              reject(new Error(`API响应解析失败: ${error.message}`));
-            }
-          });
-        });
-
-        req.on('error', (error) => {
-          reject(new Error(`网络请求失败: ${error.message}`));
-        });
-
-        req.write(postData);
-        req.end();
-      });
+      } catch (error) {
+        console.error('上传视频失败', error);
+        throw new Error('上传失败');
+      }
     }
 
-    /**
-     * 保存任务信息到数据模型
-     * @param {Object} taskInfo - 任务信息
-     * @returns {Promise<Object>} 保存结果
-     */
-    async function saveTaskToDatabase(taskInfo) {
-      const models = app.models;
+    async function createVideoFromImages(images, fps, width, height, durationPerFrame) {
+      const tempDir = path.join('/tmp', `generateImageToVideo_${uuidv4()}`);
+      const outputPath = path.join('/tmp', 'output.mp4');
       
       try {
-        const result = await models.generation_tasks.create({
-          data: {
-            ...taskInfo,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            status: 'pending'
-          }
-        });
+        // 创建临时目录
+        await fs.mkdir(tempDir, { recursive: true });
         
-        return result;
+        // 下载所有图片
+        console.log('开始下载图片...');
+        for (let i = 0; i < images.length; i++) {
+          const imagePath = path.join(tempDir, `${String(i + 1).padStart(4, '0')}.jpg`);
+          await downloadImage(images[i], imagePath);
+        }
+        
+        // 使用 ffmpeg 创建视频
+        console.log('开始合成视频...');
+        const ffmpegCommand = `ffmpeg -framerate ${fps} -i ${tempDir}/%04d.jpg -c:v libx264 -r ${fps} -s ${width}x${height} -pix_fmt yuv420p -t ${images.length * durationPerFrame} ${outputPath}`;
+        
+        try {
+          await execAsync(ffmpegCommand);
+        } catch (error) {
+          console.error('FFmpeg 执行失败', error);
+          throw new Error('视频合成失败');
+        }
+        
+        // 检查输出文件是否存在
+        try {
+          await fs.access(outputPath);
+        } catch (error) {
+          throw new Error('视频文件未生成');
+        }
+        
+        return outputPath;
+        
       } catch (error) {
-        throw new Error(`数据库写入失败: ${error.message}`);
+        // 清理临时文件
+        try {
+          await fs.rm(tempDir, { recursive: true, force: true });
+          await fs.unlink(outputPath).catch(() => {});
+        } catch (cleanupError) {
+          console.error('清理临时文件失败', cleanupError);
+        }
+        throw error;
       }
     }
 
     exports.main = async (event, context) => {
       try {
-        console.log('收到请求:', JSON.stringify(event));
+        const { images, fps = 10, width = 720, height = 1280, durationPerFrame = 0.5 } = event;
         
         // 参数验证
-        validateParams(event);
-        
-        const { userId, inputType, imageUrl, text, audioUrl, videoUrl, modelParams } = event;
-        
-        // 构造API请求数据
-        const apiRequestData = {
-          imageUrl,
-          inputType,
-          modelParams
-        };
-        
-        // 根据inputType添加对应的附加字段
-        if (inputType === 'text') {
-          apiRequestData.text = text;
-        } else if (inputType === 'audio') {
-          apiRequestData.audioUrl = audioUrl;
-        } else if (inputType === 'video') {
-          apiRequestData.videoUrl = videoUrl;
+        if (!images || !Array.isArray(images) || images.length === 0) {
+          return {
+            success: false,
+            error: 'images 参数不能为空数组'
+          };
         }
         
-        // 调用视频生成模型API
-        console.log('调用视频生成API:', JSON.stringify(apiRequestData));
-        const taskId = await callVideoGenerationAPI(apiRequestData);
-        console.log('获取到任务ID:', taskId);
-        
-        // 保存任务信息到数据库
-        const taskInfo = {
-          taskId,
-          userId,
-          inputType,
-          imageUrl,
-          modelParams: JSON.stringify(modelParams),
-          status: 'pending'
-        };
-        
-        // 添加对应的附加字段
-        if (inputType === 'text') {
-          taskInfo.text = text;
-        } else if (inputType === 'audio') {
-          taskInfo.audioUrl = audioUrl;
-        } else if (inputType === 'video') {
-          taskInfo.videoUrl = videoUrl;
+        if (fps <= 0 || width <= 0 || height <= 0 || durationPerFrame <= 0) {
+          return {
+            success: false,
+            error: 'fps、width、height、durationPerFrame 必须为正数'
+          };
         }
         
-        await saveTaskToDatabase(taskInfo);
-        console.log('任务信息已保存到数据库');
+        console.log(`开始处理 ${images.length} 张图片，参数: fps=${fps}, width=${width}, height=${height}, durationPerFrame=${durationPerFrame}`);
         
-        // 返回成功结果
+        // 创建视频
+        const videoPath = await createVideoFromImages(images, fps, width, height, durationPerFrame);
+        
+        // 上传视频到云存储
+        const cloudPath = `videos/${uuidv4()}.mp4`;
+        const uploadResult = await uploadVideo(videoPath, cloudPath);
+        
+        // 可选：记录到数据模型
+        try {
+          await db.collection('video_tasks').add({
+            fileID: uploadResult.fileID,
+            downloadUrl: uploadResult.downloadUrl,
+            images: images,
+            params: {
+              fps,
+              width,
+              height,
+              durationPerFrame
+            },
+            createdAt: new Date(),
+            status: 'completed'
+          });
+        } catch (dbError) {
+          console.error('记录任务到数据库失败', dbError);
+        }
+        
+        // 清理临时文件
+        try {
+          await fs.unlink(videoPath);
+        } catch (cleanupError) {
+          console.error('清理视频文件失败', cleanupError);
+        }
+        
         return {
-          taskId
+          success: true,
+          fileID: uploadResult.fileID,
+          downloadUrl: uploadResult.downloadUrl
         };
         
       } catch (error) {
-        console.error('处理请求时发生错误:', error);
+        console.error('云函数执行失败', error);
         
-        // 返回错误信息
+        // 可选：记录失败任务
+        try {
+          await db.collection('video_tasks').add({
+            images: event.images || [],
+            params: {
+              fps: event.fps || 10,
+              width: event.width || 720,
+              height: event.height || 1280,
+              durationPerFrame: event.durationPerFrame || 0.5
+            },
+            createdAt: new Date(),
+            status: 'failed',
+            error: error.message
+          });
+        } catch (dbError) {
+          console.error('记录失败任务到数据库失败', dbError);
+        }
+        
         return {
+          success: false,
           error: error.message
         };
       }
