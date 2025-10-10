@@ -8,7 +8,6 @@ import ASSET_LIBRARY from '../pages/asset-library.jsx';
 import IMAGETOVIDEOPAGE from '../pages/ImageToVideoPage.jsx';
 import TEXTTOVIDEOPAGE from '../pages/TextToVideoPage.jsx';
 import WORKS from '../pages/works.jsx';
-import DIGITALHUMANPAGE from '../pages/DigitalHumanPage.jsx';
 export const routers = [{
   id: "ai-video-creator",
   component: AI_VIDEO-CREATOR
@@ -39,7 +38,4 @@ export const routers = [{
 }, {
   id: "works",
   component: WORKS
-}, {
-  id: "DigitalHumanPage",
-  component: DIGITALHUMANPAGE
 }]
