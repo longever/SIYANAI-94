@@ -98,8 +98,8 @@ async function createTaskRecord(taskData) {
     userId: taskData.userId,
     callbackUrl: taskData.callbackUrl || '',
     status: 'created',
-    createdAt: Date.new(),
-    updatedAt: Date.new(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
     result: null
   };
 
@@ -120,7 +120,7 @@ async function updateTaskRecord(taskId, updateData) {
 
   const update = {
     ...updateData,
-    updatedAt: Date.new()
+    updatedAt: new Date()
   };
 
   console.log('更新任务记录:', { taskId, update });
@@ -212,3 +212,4 @@ exports.main = async (event, context) => {
     };
   }
 };
+  
