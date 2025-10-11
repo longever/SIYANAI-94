@@ -81,7 +81,6 @@ export default function ImageVideoToVideo(props) {
             duration: 15,
             fps: 30
           },
-          // 确保时间戳为数字类型
           createdAt: Date.now(),
           updatedAt: Date.now()
         }
@@ -126,6 +125,7 @@ export default function ImageVideoToVideo(props) {
           if (result.status === 'completed') {
             clearInterval(interval);
             setIsGenerating(false);
+
             // 获取生成的视频URL
             const tcb = await $w.cloud.getCloudInstance();
             const videoUrl = await tcb.getTempFileURL({
@@ -170,7 +170,6 @@ export default function ImageVideoToVideo(props) {
             fileSize: videoData.size,
             type: 'image-video-to-video',
             taskId: taskId,
-            // 确保时间戳为数字类型
             createdAt: Date.now(),
             updatedAt: Date.now()
           }
@@ -189,64 +188,64 @@ export default function ImageVideoToVideo(props) {
     }
   };
   return <div className="space-y-6">
-    <div className="grid grid-cols-2 gap-6">
-      <div>
-        <label className="block text-sm font-medium mb-2">上传人物图片</label>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-          <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" id="image-upload-video" />
-          <label htmlFor="image-upload-video" className="cursor-pointer">
-            {imageFile ? <div className="space-y-2">
-              <img src={URL.createObjectURL(imageFile)} alt="预览" className="max-w-full h-32 object-contain mx-auto rounded" />
-              <p className="text-sm text-gray-600">{imageFile.name}</p>
-            </div> : <div className="space-y-2">
-              <Upload className="w-8 h-8 mx-auto text-gray-400" />
-              <p className="text-sm text-gray-600">点击上传图片</p>
-            </div>}
-          </label>
+      <div className="grid grid-cols-2 gap-6">
+        <div>
+          <label className="block text-sm font-medium mb-2">上传人物图片</label>
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+            <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" id="image-upload-video" />
+            <label htmlFor="image-upload-video" className="cursor-pointer">
+              {imageFile ? <div className="space-y-2">
+                  <img src={URL.createObjectURL(imageFile)} alt="预览" className="max-w-full h-32 object-contain mx-auto rounded" />
+                  <p className="text-sm text-gray-600">{imageFile.name}</p>
+                </div> : <div className="space-y-2">
+                  <Upload className="w-8 h-8 mx-auto text-gray-400" />
+                  <p className="text-sm text-gray-600">点击上传图片</p>
+                </div>}
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2">上传动作参考视频</label>
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+            <input type="file" accept="video/*" onChange={handleVideoUpload} className="hidden" id="video-upload" />
+            <label htmlFor="video-upload" className="cursor-pointer">
+              {videoFile ? <div className="space-y-2">
+                  <Play className="w-8 h-8 mx-auto text-gray-400" />
+                  <p className="text-sm text-gray-600">{videoFile.name}</p>
+                </div> : <div className="space-y-2">
+                  <Upload className="w-8 h-8 mx-auto text-gray-400" />
+                  <p className="text-sm text-gray-600">点击上传视频</p>
+                </div>}
+            </label>
+          </div>
         </div>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-2">上传动作参考视频</label>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-          <input type="file" accept="video/*" onChange={handleVideoUpload} className="hidden" id="video-upload" />
-          <label htmlFor="video-upload" className="cursor-pointer">
-            {videoFile ? <div className="space-y-2">
-              <Play className="w-8 h-8 mx-auto text-gray-400" />
-              <p className="text-sm text-gray-600">{videoFile.name}</p>
-            </div> : <div className="space-y-2">
-              <Upload className="w-8 h-8 mx-auto text-gray-400" />
-              <p className="text-sm text-gray-600">点击上传视频</p>
-            </div>}
-          </label>
-        </div>
-      </div>
-    </div>
+      {videoFile && <VideoPreview videoUrl={URL.createObjectURL(videoFile)} />}
 
-    {videoFile && <VideoPreview videoUrl={URL.createObjectURL(videoFile)} />}
+      <Button className="w-full" disabled={!imageFile || !videoFile || isGenerating} onClick={handleGenerateVideo}>
+        {isGenerating ? '生成中...' : '开始合成'}
+      </Button>
 
-    <Button className="w-full" disabled={!imageFile || !videoFile || isGenerating} onClick={handleGenerateVideo}>
-      {isGenerating ? '生成中...' : '开始合成'}
-    </Button>
+      <GenerationModal isOpen={showGenerationModal} onClose={() => setShowGenerationModal(false)} generationData={generationData} />
 
-    <GenerationModal isOpen={showGenerationModal} onClose={() => setShowGenerationModal(false)} generationData={generationData} />
-
-    {generatedVideo && <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-      <h3 className="text-lg font-semibold mb-2">生成结果</h3>
-      <video src={generatedVideo.url} controls className="w-full max-w-md mx-auto rounded" poster={generatedVideo.thumbnail} />
-      <div className="flex gap-2 mt-4">
-        <Button variant="outline" onClick={() => window.open(generatedVideo.url, '_blank')}>
-          <Play className="w-4 h-4 mr-2" />
-          预览
-        </Button>
-        <Button variant="outline" onClick={() => window.open(generatedVideo.url, '_blank')}>
-          <Download className="w-4 h-4 mr-2" />
-          下载
-        </Button>
-        <Button onClick={() => handleSaveToDatabase(generatedVideo)}>
-          保存到作品库
-        </Button>
-      </div>
-    </div>}
-  </div>;
+      {generatedVideo && <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+          <h3 className="text-lg font-semibold mb-2">生成结果</h3>
+          <video src={generatedVideo.url} controls className="w-full max-w-md mx-auto rounded" poster={generatedVideo.thumbnail} />
+          <div className="flex gap-2 mt-4">
+            <Button variant="outline" onClick={() => window.open(generatedVideo.url, '_blank')}>
+              <Play className="w-4 h-4 mr-2" />
+              预览
+            </Button>
+            <Button variant="outline" onClick={() => window.open(generatedVideo.url, '_blank')}>
+              <Download className="w-4 h-4 mr-2" />
+              下载
+            </Button>
+            <Button onClick={() => handleSaveToDatabase(generatedVideo)}>
+              保存到作品库
+            </Button>
+          </div>
+        </div>}
+    </div>;
 }
