@@ -44,7 +44,10 @@ export async function saveDigitalHumanVideo(data, $w) {
           error_message: data.error_message || '',
           usage_stats: data.usage_stats || {},
           retry_count: data.retry_count || 0,
-          created_from: data.created_from || 'web'
+          created_from: data.created_from || 'web',
+          createdAt: Date.now(),
+          // 修改为数字类型时间戳
+          updatedAt: Date.now() // 修改为数字类型时间戳
         }
       }
     });
@@ -60,7 +63,10 @@ export async function updateDigitalHumanVideo(taskId, updateData, $w) {
       dataSourceName: 'digital_human_videos',
       methodName: 'wedaUpdateV2',
       params: {
-        data: updateData,
+        data: {
+          ...updateData,
+          updatedAt: Date.now() // 确保更新时也使用数字类型时间戳
+        },
         filter: {
           where: {
             task_id: {

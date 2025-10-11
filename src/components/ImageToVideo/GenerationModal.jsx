@@ -135,7 +135,9 @@ export function GenerationModal({
                 ...result,
                 ...generationData,
                 type: 'digital_human',
-                createdAt: new Date().toISOString()
+                createdAt: Date.now(),
+                // 修改为数字类型时间戳
+                updatedAt: Date.now() // 修改为数字类型时间戳
               }} />
             </CardContent>
           </Card>
