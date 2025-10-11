@@ -89,6 +89,14 @@ export function WorksList({
     };
     return modelMap[model] || model;
   };
+  const getTypeLabel = type => {
+    const typeMap = {
+      'image-description-to-video': '图+描述',
+      'image-audio-to-video': '图+音频',
+      'video-to-video': '图+视频'
+    };
+    return typeMap[type] || type;
+  };
   if (loading) {
     return <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {[...Array(6)].map((_, i) => <Card key={i} className="animate-pulse">
@@ -132,6 +140,7 @@ export function WorksList({
             <div className="flex items-center gap-2 mb-3">
               <Badge variant="secondary">{getModelLabel(work.model)}</Badge>
               <Badge variant="outline">{work.duration}s</Badge>
+              {work.type && <Badge variant="outline">{getTypeLabel(work.type)}</Badge>}
             </div>
             <div className="flex items-center justify-between text-sm text-gray-500">
               <span>{new Date(work.createdAt).toLocaleDateString()}</span>
