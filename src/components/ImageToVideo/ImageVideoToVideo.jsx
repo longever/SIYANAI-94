@@ -8,7 +8,6 @@ import { VideoSettings } from './VideoSettings';
 import { SystemSelector } from './SystemSelector';
 import { GenerationModal } from './GenerationModal';
 import { WorksList } from './WorksList';
-import { SaveToDatabase } from './SaveToDatabase';
 export default function ImageVideoToVideo(props) {
   const {
     $w

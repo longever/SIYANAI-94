@@ -9,7 +9,6 @@ import { VideoSettings } from './VideoSettings';
 import { SystemSelector } from './SystemSelector';
 import { GenerationModal } from './GenerationModal';
 import { WorksList } from './WorksList';
-import { SaveToDatabase } from './SaveToDatabase';
 export default function ImageAudioToVideo(props) {
   const {
     $w
@@ -187,51 +186,51 @@ export default function ImageAudioToVideo(props) {
     }
   };
   return <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
-    <div className="max-w-7xl mx-auto">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="create">创建视频</TabsTrigger>
-          <TabsTrigger value="works">我的作品</TabsTrigger>
-        </TabsList>
+      <div className="max-w-7xl mx-auto">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="create">创建视频</TabsTrigger>
+            <TabsTrigger value="works">我的作品</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="create" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="space-y-6">
-              <FileUploadSection type="avatar" title="上传头像" description="支持 JPG、PNG 格式，建议尺寸 512x512" accept="image/*" onFileUpload={file => handleFileUpload('avatar', file)} uploadedFile={uploadedFiles.avatar} />
+          <TabsContent value="create" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-6">
+                <FileUploadSection type="avatar" title="上传头像" description="支持 JPG、PNG 格式，建议尺寸 512x512" accept="image/*" onFileUpload={file => handleFileUpload('avatar', file)} uploadedFile={uploadedFiles.avatar} />
 
-              <FileUploadSection type="audio" title="上传音频" description="支持 MP3、WAV 格式，最大 50MB" accept="audio/*" onFileUpload={file => handleFileUpload('audio', file)} uploadedFile={uploadedFiles.audio} />
+                <FileUploadSection type="audio" title="上传音频" description="支持 MP3、WAV 格式，最大 50MB" accept="audio/*" onFileUpload={file => handleFileUpload('audio', file)} uploadedFile={uploadedFiles.audio} />
+              </div>
+
+              <div className="space-y-6">
+                <SystemSelector selectedModel={selectedModel} onSystemChange={setSelectedModel} />
+
+                <VideoSettings settings={videoSettings} onSettingsChange={setVideoSettings} />
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>预览</CardTitle>
+                    <CardDescription>预览数字人效果</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <AvatarPreview avatarFile={uploadedFiles.avatar} audioFile={uploadedFiles.audio} />
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
-            <div className="space-y-6">
-              <SystemSelector selectedModel={selectedModel} onSystemChange={setSelectedModel} />
-
-              <VideoSettings settings={videoSettings} onSettingsChange={setVideoSettings} />
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>预览</CardTitle>
-                  <CardDescription>预览数字人效果</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <AvatarPreview avatarFile={uploadedFiles.avatar} audioFile={uploadedFiles.audio} />
-                </CardContent>
-              </Card>
+            <div className="flex justify-center">
+              <Button size="lg" onClick={handleGenerateVideo} disabled={!uploadedFiles.avatar || !uploadedFiles.audio || isGenerating} className="px-8">
+                {isGenerating ? '生成中...' : '开始生成'}
+              </Button>
             </div>
-          </div>
+          </TabsContent>
 
-          <div className="flex justify-center">
-            <Button size="lg" onClick={handleGenerateVideo} disabled={!uploadedFiles.avatar || !uploadedFiles.audio || isGenerating} className="px-8">
-              {isGenerating ? '生成中...' : '开始生成'}
-            </Button>
-          </div>
-        </TabsContent>
+          <TabsContent value="works">
+            <WorksList type="image-audio-to-video" />
+          </TabsContent>
+        </Tabs>
 
-        <TabsContent value="works">
-          <WorksList type="image-audio-to-video" />
-        </TabsContent>
-      </Tabs>
-
-      <GenerationModal open={showGenerationModal} onOpenChange={setShowGenerationModal} progress={generationProgress} isGenerating={isGenerating} generatedVideo={generatedVideo} onSave={() => generatedVideo && handleSaveToDatabase(generatedVideo)} />
-    </div>
-  </div>;
+        <GenerationModal open={showGenerationModal} onOpenChange={setShowGenerationModal} progress={generationProgress} isGenerating={isGenerating} generatedVideo={generatedVideo} onSave={() => generatedVideo && handleSaveToDatabase(generatedVideo)} />
+      </div>
+    </div>;
 }
