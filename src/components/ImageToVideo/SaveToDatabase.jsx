@@ -45,9 +45,9 @@ export async function saveDigitalHumanVideo(data, $w) {
           usage_stats: data.usage_stats || {},
           retry_count: data.retry_count || 0,
           created_from: data.created_from || 'web',
+          // 确保时间戳为数字类型
           createdAt: Date.now(),
-          // 修改为数字类型时间戳
-          updatedAt: Date.now() // 修改为数字类型时间戳
+          updatedAt: Date.now()
         }
       }
     });
@@ -65,7 +65,8 @@ export async function updateDigitalHumanVideo(taskId, updateData, $w) {
       params: {
         data: {
           ...updateData,
-          updatedAt: Date.now() // 确保更新时也使用数字类型时间戳
+          // 确保更新时也使用数字类型时间戳
+          updatedAt: Date.now()
         },
         filter: {
           where: {

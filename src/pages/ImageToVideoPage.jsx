@@ -69,7 +69,10 @@ function ImageDescriptionMode(props) {
             resolution: '1080p',
             duration: 10,
             fps: 30
-          }
+          },
+          // 确保时间戳为数字类型
+          createdAt: Date.now(),
+          updatedAt: Date.now()
         }
       });
       if (result.status === 'running') {
@@ -163,7 +166,9 @@ function ImageDescriptionMode(props) {
             prompt: description,
             type: 'image-description-to-video',
             taskId: taskId,
-            createdAt: Date.now()
+            // 确保时间戳为数字类型
+            createdAt: Date.now(),
+            updatedAt: Date.now()
           }
         }
       });
