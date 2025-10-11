@@ -53,7 +53,7 @@ export function ProAssetLibrary({
         type: asset.type || 'unknown',
         size: asset.size || 0,
         thumbnailUrl: asset.thumbnailUrl || asset.thumbnail_url,
-        createdAt: asset.createdAt || new Date().toISOString(),
+        createdAt: asset.createdAt || Date.new(),
         download_count: asset.download_count || 0,
         duration: asset.duration || 0,
         dimensions: asset.dimensions || null,
@@ -126,7 +126,7 @@ export function ProAssetLibrary({
       type: asset.type || 'unknown',
       size: asset.size || 0,
       thumbnailUrl: asset.thumbnailUrl || asset.thumbnail_url,
-      createdAt: asset.createdAt || new Date().toISOString(),
+      createdAt: asset.createdAt || Date.new(),
       download_count: asset.download_count || 0,
       duration: asset.duration || 0,
       dimensions: asset.dimensions || null,
@@ -192,80 +192,80 @@ export function ProAssetLibrary({
   };
   const filteredAssets = assets.filter(asset => asset.name.toLowerCase().includes(searchTerm.toLowerCase()) || asset.type.toLowerCase().includes(searchTerm.toLowerCase()));
   return <div className="space-y-4">
-      <div className="flex gap-2">
-        <Input placeholder="搜索素材..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="flex-1" />
-        <Button size="sm" variant="outline">
-          <Search className="w-4 h-4" />
-        </Button>
-      </div>
+    <div className="flex gap-2">
+      <Input placeholder="搜索素材..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="flex-1" />
+      <Button size="sm" variant="outline">
+        <Search className="w-4 h-4" />
+      </Button>
+    </div>
 
-      <div className="space-y-2">
-        <Button className="w-full" size="sm" onClick={() => document.getElementById('pro-asset-upload').click()}>
-          <Upload className="w-4 h-4 mr-2" />
-          上传素材
-        </Button>
-        
-        <input id="pro-asset-upload" type="file" multiple accept="image/*,video/*,audio/*" className="hidden" onChange={handleFileUpload} />
-        
-        <div className="text-sm text-slate-500">
-          共 {filteredAssets.length} 个素材
+    <div className="space-y-2">
+      <Button className="w-full" size="sm" onClick={() => document.getElementById('pro-asset-upload').click()}>
+        <Upload className="w-4 h-4 mr-2" />
+        上传素材
+      </Button>
+
+      <input id="pro-asset-upload" type="file" multiple accept="image/*,video/*,audio/*" className="hidden" onChange={handleFileUpload} />
+
+      <div className="text-sm text-slate-500">
+        共 {filteredAssets.length} 个素材
+      </div>
+    </div>
+
+    <div className="space-y-2 max-h-96 overflow-y-auto">
+      {loading ? [...Array(6)].map((_, i) => <Card key={i} className="p-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gray-200 rounded animate-pulse"></div>
+          <div className="flex-1 space-y-2">
+            <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-3 bg-gray-200 rounded animate-pulse w-1/3"></div>
+          </div>
         </div>
-      </div>
+      </Card>) : filteredAssets.length === 0 ? <div className="text-center py-8">
+        <Folder className="w-12 h-12 mx-auto text-gray-400 mb-2" />
+        <p className="text-sm text-gray-500">暂无素材</p>
+      </div> : filteredAssets.map(asset => <Card key={asset._id} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-muted rounded flex items-center justify-center flex-shrink-0">
+            {getAssetIcon(asset.type)}
+          </div>
 
-      <div className="space-y-2 max-h-96 overflow-y-auto">
-        {loading ? [...Array(6)].map((_, i) => <Card key={i} className="p-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gray-200 rounded animate-pulse"></div>
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="h-3 bg-gray-200 rounded animate-pulse w-1/3"></div>
-                </div>
-              </div>
-            </Card>) : filteredAssets.length === 0 ? <div className="text-center py-8">
-            <Folder className="w-12 h-12 mx-auto text-gray-400 mb-2" />
-            <p className="text-sm text-gray-500">暂无素材</p>
-          </div> : filteredAssets.map(asset => <Card key={asset._id} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-muted rounded flex items-center justify-center flex-shrink-0">
-                  {getAssetIcon(asset.type)}
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{asset.name}</p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Badge variant="outline" className="text-xs">
-                      {asset.type}
-                    </Badge>
-                    <span>{formatFileSize(asset.size)}</span>
-                    {asset.duration > 0 && <span>{Math.floor(asset.duration / 60)}:{(asset.duration % 60).toString().padStart(2, '0')}</span>}
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="sm" onClick={e => {
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">{asset.name}</p>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Badge variant="outline" className="text-xs">
+                {asset.type}
+              </Badge>
+              <span>{formatFileSize(asset.size)}</span>
+              {asset.duration > 0 && <span>{Math.floor(asset.duration / 60)}:{(asset.duration % 60).toString().padStart(2, '0')}</span>}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" onClick={e => {
               e.stopPropagation();
               handleAssetClick(asset);
             }}>
-                    <Eye className="w-3 h-3" />
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={e => {
+              <Eye className="w-3 h-3" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={e => {
               e.stopPropagation();
               onAssetsChange(asset);
             }}>
-                    <Download className="w-3 h-3" />
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={e => {
+              <Download className="w-3 h-3" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={e => {
               e.stopPropagation();
               handleDeleteAsset(asset);
             }}>
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
-                </div>
-              </div>
-            </Card>)}
-      </div>
+              <Trash2 className="w-3 h-3" />
+            </Button>
+          </div>
+        </div>
+      </Card>)}
+    </div>
 
-      {/* 使用修复后的 AssetPreviewDialog */}
-      <AssetPreviewDialog open={previewOpen} onOpenChange={setPreviewOpen} asset={selectedAsset} $w={$w} onDelete={handleDeleteAsset} />
-    </div>;
+    {/* 使用修复后的 AssetPreviewDialog */}
+    <AssetPreviewDialog open={previewOpen} onOpenChange={setPreviewOpen} asset={selectedAsset} $w={$w} onDelete={handleDeleteAsset} />
+  </div>;
 }

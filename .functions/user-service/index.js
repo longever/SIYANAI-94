@@ -234,7 +234,7 @@ const updateUser = async (userId, updateData) => {
     throw new Error('没有可更新的字段');
   }
 
-  filteredData.updatedAt = new Date().toISOString();
+  filteredData.updatedAt = Date.new();
 
   await models.users.update({
     data: filteredData,

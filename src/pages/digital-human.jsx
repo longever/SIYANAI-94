@@ -285,7 +285,7 @@ export default function DigitalHuman(props) {
         expression: selectedExpression,
         driveMode: driveMode,
         previewUrl: previewUrl,
-        createdAt: new Date()
+        createdAt: Date.new(),
       };
       const result = await $w.cloud.callFunction({
         name: 'media-service',
