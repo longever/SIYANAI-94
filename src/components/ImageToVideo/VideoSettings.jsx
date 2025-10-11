@@ -4,7 +4,7 @@ import React from 'react';
 import { Button, Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage, Input, Textarea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Slider, Card, CardContent, CardDescription, CardHeader, CardTitle, Switch } from '@/components/ui';
 
 import { useForm } from 'react-hook-form';
-import ImageVideoPreview from './ImageVideoPreview';
+import { ImageVideoPreview } from './ImageVideoPreview';
 const formSchema = {
   title: value => {
     if (typeof value !== 'string' || value.trim().length === 0) {
