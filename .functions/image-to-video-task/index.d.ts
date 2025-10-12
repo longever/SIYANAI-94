@@ -25,6 +25,10 @@ interface CloudFunctionResponse {
   taskId?: string;
   status: 'DETECTING' | 'DETECT_FAIL' | 'GENERATING' | 'SUCCESS' | 'FAIL';
   detectResult?: any;
+  tempUrls?: {
+    image?: string;
+    audio?: string;
+  };
   error?: string;
 }
 

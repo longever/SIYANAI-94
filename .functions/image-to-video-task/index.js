@@ -11,54 +11,60 @@ const app = cloudbase.init({
 // 获取 APIs 资源连接器实例
 const aliyunDashscope = app.connector('aliyun_dashscope_jbn02va');
 
-// 工具函数：获取图片 URL
-async function getImageUrl(imageUrl, imageFileId) {
+// 工具函数：将云存储文件 ID 转换为临时 URL
+async function getTempUrl(fileId) {
+  if (!fileId) return null;
+  
+  // 如果是 HTTP URL，直接返回
+  if (fileId.startsWith('http')) {
+    return fileId;
+  }
+  
+  // 如果是云存储文件 ID，获取临时 URL
+  const res = await app.getTempFileURL({
+    fileList: [fileId]
+  });
+  
+  if (!res.fileList || res.fileList.length === 0 || !res.fileList[0].tempFileURL) {
+    throw new Error(`无法获取文件临时链接: ${fileId}`);
+  }
+  
+  return res.fileList[0].tempFileURL;
+}
+
+// 工具函数：获取图片临时 URL
+async function getImageTempUrl(imageUrl, imageFileId) {
   if (imageUrl) {
-    return imageUrl;
+    return await getTempUrl(imageUrl);
   }
   
   if (imageFileId) {
-    const res = await app.getTempFileURL({
-      fileList: [imageFileId]
-    });
-    
-    if (!res.fileList || res.fileList.length === 0 || !res.fileList[0].tempFileURL) {
-      throw new Error('无法获取图片临时链接');
-    }
-    
-    return res.fileList[0].tempFileURL;
+    return await getTempUrl(imageFileId);
   }
   
   throw new Error('必须提供 imageUrl 或 imageFileId');
 }
 
-// 工具函数：获取音频 URL
-async function getAudioUrl(audioUrl, audioFileId) {
+// 工具函数：获取音频临时 URL
+async function getAudioTempUrl(audioUrl, audioFileId) {
   if (audioUrl) {
-    return audioUrl;
+    return await getTempUrl(audioUrl);
   }
   
   if (audioFileId) {
-    const res = await app.getTempFileURL({
-      fileList: [audioFileId]
-    });
-    
-    if (!res.fileList || res.fileList.length === 0 || !res.fileList[0].tempFileURL) {
-      throw new Error('无法获取音频临时链接');
-    }
-    
-    return res.fileList[0].tempFileURL;
+    return await getTempUrl(audioFileId);
   }
   
   throw new Error('必须提供 audioUrl 或 audioFileId');
 }
 
 // 图片检测阶段
-async function detectImage(imageUrl) {
+async function detectImage(imageTempUrl) {
   console.log('开始图片检测...');
+  console.log('图片临时URL:', imageTempUrl);
   
   const detectResult = await aliyunDashscope.invoke('aliyun_dashscope_emo_detect_v1', {
-    image: imageUrl
+    image: imageTempUrl
   });
   
   if (detectResult.code !== 0) {
@@ -70,12 +76,14 @@ async function detectImage(imageUrl) {
 }
 
 // 视频生成阶段
-async function generateVideo(imageUrl, audioUrl, detectResult, callbackUrl, userContext) {
+async function generateVideo(imageTempUrl, audioTempUrl, detectResult, callbackUrl, userContext) {
   console.log('开始视频生成...');
+  console.log('图片临时URL:', imageTempUrl);
+  console.log('音频临时URL:', audioTempUrl);
   
   const params = {
-    image: imageUrl,
-    audio: audioUrl,
+    image: imageTempUrl,
+    audio: audioTempUrl,
     detectResult: detectResult,
     callbackUrl,
     userContext
@@ -120,17 +128,16 @@ exports.main = async (event, context) => {
       };
     }
     
-    // 获取图片和音频 URL
-    const actualImageUrl = await getImageUrl(imageUrl, imageFileId);
-    const actualAudioUrl = await getAudioUrl(audioUrl, audioFileId);
+    // 获取图片和音频的临时 URL
+    const imageTempUrl = await getImageTempUrl(imageUrl, imageFileId);
+    const audioTempUrl = await getAudioTempUrl(audioUrl, audioFileId);
     
-    console.log('使用图片URL:', actualImageUrl);
-    console.log('使用音频URL:', actualAudioUrl);
+    console.log('成功获取临时URL');
     
     // 第一步：图片检测
     let detectResult;
     try {
-      detectResult = await detectImage(actualImageUrl);
+      detectResult = await detectImage(imageTempUrl);
     } catch (error) {
       console.error('图片检测失败:', error);
       return {
@@ -143,8 +150,8 @@ exports.main = async (event, context) => {
     let videoResult;
     try {
       videoResult = await generateVideo(
-        actualImageUrl, 
-        actualAudioUrl, 
+        imageTempUrl, 
+        audioTempUrl, 
         detectResult, 
         callbackUrl, 
         userContext
@@ -161,7 +168,11 @@ exports.main = async (event, context) => {
     const response = {
       taskId: videoResult.taskId,
       status: 'GENERATING',
-      detectResult: detectResult
+      detectResult: detectResult,
+      tempUrls: {
+        image: imageTempUrl,
+        audio: audioTempUrl
+      }
     };
     
     console.log('返回结果:', response);
