@@ -1,20 +1,30 @@
 
-    interface ImageToVideoInput {
-      imageUrl: string;
-      model: string;
-      prompt?: string;
-      userId: string;
-      callbackUrl?: string;
+    interface DetectResult {
+      code: number;
+      message: string;
+      data?: {
+        [key: string]: any;
+      };
     }
 
-    interface ImageToVideoOutput {
+    interface VideoTaskResult {
       taskId: string;
-      status: 'created' | 'running' | 'success' | 'failed';
-      message?: string;
-      result?: any;
+      [key: string]: any;
     }
 
-    interface CloudFunctionEvent extends ImageToVideoInput {}
+    interface CloudFunctionEvent {
+      imageUrl?: string;
+      imageFileId?: string;
+      callbackUrl?: string;
+      userContext?: any;
+    }
 
-    export declare function main(event: CloudFunctionEvent, context: any): Promise<ImageToVideoOutput>;
+    interface CloudFunctionResponse {
+      taskId?: string;
+      status: 'DETECTING' | 'DETECT_FAIL' | 'GENERATING' | 'SUCCESS' | 'FAIL';
+      detectResult?: any;
+      error?: string;
+    }
+
+    export declare function main(event: CloudFunctionEvent, context: any): Promise<CloudFunctionResponse>;
   

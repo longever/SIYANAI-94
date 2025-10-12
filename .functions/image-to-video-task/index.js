@@ -1,215 +1,171 @@
 
-'use strict';
+    'use strict';
 
-const cloudbase = require('@cloudbase/node-sdk');
-const { v4: uuidv4 } = require('uuid');
+    const cloudbase = require('@cloudbase/node-sdk');
 
-// 初始化云开发
-const app = cloudbase.init({
-  env: cloudbase.SYMBOL_CURRENT_ENV,
-});
-
-// 平台API配置
-const PLATFORM_CONFIGS = {
-  'tongyi-wanxiang': {
-    url: 'https://dashscope.aliyuncs.com/api/v1/services/aigc/video-generation/generation',
-    headers: {
-      'Authorization': `Bearer ${process.env.TONGYI_API_KEY || ''}`,
-      'Content-Type': 'application/json'
-    }
-  }
-};
-
-/**
- * 参数校验
- */
-function validateParams(params) {
-  const { imageUrl, model, userId } = params;
-
-  if (!imageUrl || typeof imageUrl !== 'string') {
-    throw new Error('imageUrl 不能为空且必须是字符串');
-  }
-
-  if (!model || typeof model !== 'string') {
-    throw new Error('model 不能为空且必须是字符串');
-  }
-
-  if (!userId || typeof userId !== 'string') {
-    throw new Error('userId 不能为空且必须是字符串');
-  }
-
-  if (!PLATFORM_CONFIGS[model]) {
-    throw new Error(`不支持的模型: ${model}`);
-  }
-
-  return true;
-}
-
-/**
- * 调用通义万相API
- */
-async function callTongyiWanxiangAPI(params) {
-  const { imageUrl, prompt } = params;
-  const config = PLATFORM_CONFIGS['tongyi-wanxiang'];
-
-  const requestBody = {
-    model: 'wanx2.1-t2v-turbo',
-    input: {
-      image_url: imageUrl,
-      prompt: prompt || '根据图片生成视频'
-    },
-    parameters: {
-      resolution: '720p',
-      duration: 5,
-      fps: 24
-    }
-  };
-
-  console.log('调用通义万相API，请求体:', JSON.stringify(requestBody, null, 2));
-
-  const response = await fetch(config.url, {
-    method: 'POST',
-    headers: config.headers,
-    body: JSON.stringify(requestBody),
-    timeout: 30000
-  });
-
-  if (!response.ok) {
-    throw new Error(`API调用失败: ${response.status} ${response.statusText}`);
-  }
-
-  const result = await response.json();
-  console.log('通义万相API返回:', JSON.stringify(result, null, 2));
-
-  return result;
-}
-
-/**
- * 创建任务记录
- */
-async function createTaskRecord(taskData) {
-  const models = app.models;
-
-  const task = {
-    taskId: taskData.taskId,
-    imageUrl: taskData.imageUrl,
-    model: taskData.model,
-    prompt: taskData.prompt || '',
-    userId: taskData.userId,
-    callbackUrl: taskData.callbackUrl || '',
-    status: 'created',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    result: null
-  };
-
-  console.log('创建任务记录:', task);
-
-  const result = await models.generation_tasks.create({
-    data: task
-  });
-
-  return result.data;
-}
-
-/**
- * 更新任务记录
- */
-async function updateTaskRecord(taskId, updateData) {
-  const models = app.models;
-
-  const update = {
-    ...updateData,
-    updatedAt: new Date()
-  };
-
-  console.log('更新任务记录:', { taskId, update });
-
-  const result = await models.generation_tasks.update({
-    data: update,
-    filter: {
-      where: {
-        taskId: { $eq: taskId }
-      }
-    }
-  });
-
-  return result.data;
-}
-
-/**
- * 主函数
- */
-exports.main = async (event, context) => {
-  console.log('收到请求:', JSON.stringify(event, null, 2));
-
-  try {
-    // 1. 参数校验
-    validateParams(event);
-
-    const { imageUrl, model, prompt, userId, callbackUrl } = event;
-
-    // 2. 生成任务ID
-    const taskId = uuidv4();
-    console.log('生成任务ID:', taskId);
-
-    // 3. 创建任务记录
-    await createTaskRecord({
-      taskId,
-      imageUrl,
-      model,
-      prompt,
-      userId,
-      callbackUrl
+    // 初始化云开发
+    const app = cloudbase.init({
+      env: cloudbase.SYMBOL_CURRENT_ENV
     });
 
-    // 4. 调用对应平台的API
-    let apiResult;
-    try {
-      if (model === 'tongyi-wanxiang') {
-        apiResult = await callTongyiWanxiangAPI({ imageUrl, prompt });
+    // 获取APIs资源连接器实例
+    const aliyunDashscope = app.connector('aliyun_dashscope_jbn02va');
+
+    // 工具函数：获取图片URL
+    async function getImageUrl(imageUrl, imageFileId) {
+      if (imageUrl) {
+        return imageUrl;
       }
-
-      // 5. 更新任务状态为running
-      await updateTaskRecord(taskId, {
-        status: 'running',
-        result: apiResult
-      });
-
-      console.log('任务提交成功:', taskId);
-
-      return {
-        taskId,
-        status: 'running'
-      };
-
-    } catch (apiError) {
-      // API调用失败
-      console.error('API调用失败:', apiError);
-
-      await updateTaskRecord(taskId, {
-        status: 'failed',
-        result: {
-          error: apiError.message,
-          timestamp: new Date().toISOString()
+      
+      if (imageFileId) {
+        const res = await app.getTempFileURL({
+          fileList: [imageFileId]
+        });
+        
+        if (!res.fileList || res.fileList.length === 0 || !res.fileList[0].tempFileURL) {
+          throw new Error('无法获取图片临时链接');
         }
-      });
-
-      return {
-        taskId,
-        status: 'failed',
-        message: apiError.message
-      };
+        
+        return res.fileList[0].tempFileURL;
+      }
+      
+      throw new Error('必须提供imageUrl或imageFileId');
     }
 
-  } catch (error) {
-    console.error('处理失败:', error);
+    // 工具函数：带重试的请求包装
+    async function requestWithRetry(requestFunc, maxRetries = 1) {
+      let lastError;
+      
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          const result = await Promise.race([
+            requestFunc(),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('请求超时')), 10000)
+            )
+          ]);
+          
+          return result;
+        } catch (error) {
+          lastError = error;
+          if (attempt < maxRetries) {
+            console.log(`请求失败，进行重试 ${attempt + 1}/${maxRetries}`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+      }
+      
+      throw lastError;
+    }
 
-    return {
-      taskId: null,
-      status: 'failed',
-      message: error.message
+    // 图片检测阶段
+    async function detectImage(imageUrl) {
+      console.log('开始图片检测...');
+      
+      const detectResult = await requestWithRetry(async () => {
+        const result = await aliyunDashscope.invoke('aliyun_dashscope_emo_detect_v1', {
+          image: imageUrl
+        });
+        
+        if (result.code !== 0) {
+          throw new Error(`检测失败: ${result.message || '未知错误'}`);
+        }
+        
+        return result.data;
+      });
+      
+      console.log('图片检测完成:', detectResult);
+      return detectResult;
+    }
+
+    // 视频生成阶段
+    async function generateVideo(imageUrl, detectResult, callbackUrl, userContext) {
+      console.log('开始视频生成...');
+      
+      const videoResult = await requestWithRetry(async () => {
+        const params = {
+          image: imageUrl,
+          callbackUrl,
+          userContext
+        };
+        
+        // 可选：透传检测结果
+        if (detectResult) {
+          params.detectResult = detectResult;
+        }
+        
+        const result = await aliyunDashscope.invoke('emo_v1', params);
+        
+        if (result.code !== 0) {
+          throw new Error(`视频生成失败: ${result.message || '未知错误'}`);
+        }
+        
+        return result.data;
+      });
+      
+      console.log('视频任务创建完成:', videoResult);
+      return videoResult;
+    }
+
+    exports.main = async (event, context) => {
+      try {
+        console.log('收到请求:', JSON.stringify(event, null, 2));
+        
+        // 解析输入参数
+        const { imageUrl, imageFileId, callbackUrl, userContext } = event;
+        
+        // 参数校验
+        if (!imageUrl && !imageFileId) {
+          return {
+            status: 'FAIL',
+            error: '必须提供imageUrl或imageFileId'
+          };
+        }
+        
+        // 获取图片URL
+        const actualImageUrl = await getImageUrl(imageUrl, imageFileId);
+        console.log('使用图片URL:', actualImageUrl);
+        
+        // 第一步：图片检测
+        let detectResult;
+        try {
+          detectResult = await detectImage(actualImageUrl);
+        } catch (error) {
+          console.error('图片检测失败:', error);
+          return {
+            status: 'DETECT_FAIL',
+            error: error.message
+          };
+        }
+        
+        // 第二步：视频生成
+        let videoResult;
+        try {
+          videoResult = await generateVideo(actualImageUrl, detectResult, callbackUrl, userContext);
+        } catch (error) {
+          console.error('视频生成失败:', error);
+          return {
+            status: 'FAIL',
+            error: error.message
+          };
+        }
+        
+        // 成功返回
+        const response = {
+          taskId: videoResult.taskId,
+          status: 'GENERATING',
+          detectResult: detectResult
+        };
+        
+        console.log('返回结果:', response);
+        return response;
+        
+      } catch (error) {
+        console.error('函数执行错误:', error);
+        return {
+          status: 'FAIL',
+          error: error.message || '内部错误'
+        };
+      }
     };
-  }
-};
   
