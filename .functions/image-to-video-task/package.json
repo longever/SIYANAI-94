@@ -1,11 +1,11 @@
 
-    {
-      "name": "image-to-video-task",
-      "version": "1.0.0",
-      "description": "使用APIs资源连接器实现图片转视频的云函数",
-      "main": "index.js",
-      "dependencies": {
-        "@cloudbase/node-sdk": "^3.3.7"
-      }
-    }
+{
+  "name": "image-to-video-task",
+  "version": "1.0.0",
+  "description": "使用 APIs 连接器 aliyun_dashscope_jbn02va 实现图片转视频的云函数",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.3.7"
+  }
+}
   
