@@ -15,24 +15,6 @@ try {
   throw error;
 }
 
-// 获取 APIs 资源连接器实例
-let aliyunDashscope;
-try {
-  // 修复：使用正确的连接器名称格式
-  aliyunDashscope = app.connector('aliyun_dashscope_jbn02va');
-  console.log('API连接器初始化成功');
-} catch (error) {
-  console.error('API连接器初始化失败:', error);
-  // 如果连接器不存在，尝试使用备用方式
-  try {
-    aliyunDashscope = app.connector('aliyun_dashscope');
-    console.log('使用备用连接器名称初始化成功');
-  } catch (backupError) {
-    console.error('备用连接器初始化也失败:', backupError);
-    throw error;
-  }
-}
-
 // 工具函数：将云存储文件 ID 转换为临时 URL
 async function getTempUrl(fileId) {
   if (!fileId) return null;
@@ -86,7 +68,7 @@ async function getAudioTempUrl(audioUrl, audioFileId) {
   throw new Error('必须提供 audioUrl 或 audioFileId');
 }
 
-// 图片检测阶段
+// 图片检测阶段 - 使用 callConnector
 async function detectImage(imageTempUrl) {
   console.log('开始图片检测...');
   console.log('图片临时URL:', imageTempUrl);
@@ -96,8 +78,12 @@ async function detectImage(imageTempUrl) {
   }
 
   try {
-    const detectResult = await aliyunDashscope.invoke('aliyun_dashscope_emo_detect_v1', {
-      image: imageTempUrl
+    const detectResult = await app.callConnector({
+      name: 'aliyun_dashscope_emo_detect_v1',
+      method: 'POST',
+      data: {
+        image: imageTempUrl
+      }
     });
 
     if (!detectResult) {
@@ -116,7 +102,7 @@ async function detectImage(imageTempUrl) {
   }
 }
 
-// 视频生成阶段
+// 视频生成阶段 - 使用 callConnector
 async function generateVideo(imageTempUrl, audioTempUrl, detectResult, callbackUrl, userContext) {
   console.log('开始视频生成...');
   console.log('图片临时URL:', imageTempUrl);
@@ -135,7 +121,11 @@ async function generateVideo(imageTempUrl, audioTempUrl, detectResult, callbackU
   };
 
   try {
-    const videoResult = await aliyunDashscope.invoke('emo_v1', params);
+    const videoResult = await app.callConnector({
+      name: 'emo_v1',
+      method: 'POST',
+      data: params
+    });
 
     if (!videoResult) {
       throw new Error('视频生成接口返回空结果');
@@ -257,3 +247,4 @@ exports.main = async (event, context) => {
     };
   }
 };
+  

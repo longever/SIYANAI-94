@@ -1,91 +1,121 @@
 
-# 图生视频任务云函数（云存储临时 URL 版）
+# 图生视频任务云函数（callConnector 版）
 
-## 功能说明
-该云函数已更新为支持云存储文件 ID 自动转换为临时 URL，使用 APIs 连接器 `aliyun_dashscope_jbn02va` 实现图生视频任务的完整后端流程。
+## 更新说明
+本次更新将 APIs 连接器的调用方式从 `app.connector()` 改为 `app.callConnector()`，这是云开发推荐的标准调用方式。
 
-## 主要更新
+## 主要变更
+- ✅ 使用 `app.callConnector()` 替代 `app.connector()`
+- ✅ 保持原有功能不变
+- ✅ 优化错误处理逻辑
 - ✅ 支持云存储文件 ID 自动转换为临时 URL
-- ✅ 支持 HTTP URL 和云存储文件 ID 混合使用
-- ✅ 优化错误处理和日志输出
-- ✅ 返回临时 URL 信息便于调试
+
+## 调用方式变更对比
+
+### 旧方式（已废弃）
+```javascript
+// 旧方式 - 使用 connector()
+const connector = app.connector('aliyun_dashscope_emo_detect_v1');
+const result = await connector.invoke('aliyun_dashscope_emo_detect_v1', {
+  image: imageTempUrl
+});
+```
+
+### 新方式（推荐）
+```javascript
+// 新方式 - 使用 callConnector()
+const result = await app.callConnector({
+  name: 'aliyun_dashscope_emo_detect_v1',
+  method: 'POST',
+  data: {
+    image: imageTempUrl
+  }
+});
+```
 
 ## 调用示例
 
-### 使用云存储文件 ID（推荐）
+### 小程序端调用
 ```javascript
-// 小程序端上传文件后获取 fileID
-wx.cloud.callFunction({
-  name: 'image-to-video-task',
-  data: {
-    imageFileId: 'cloud://env-name-123456/path/to/image.jpg',
-    audioFileId: 'cloud://env-name-123456/path/to/audio.mp3',
-    callbackUrl: 'https://your-callback-url.com/webhook',
-    userContext: {
-      userId: 'user123',
-      scene: 'avatar',
-      timestamp: Date.now()
-    }
-  }
-}).then(res => {
-  console.log('任务创建成功:', res.result);
-  // 输出示例:
-  // {
-  //   taskId: 'task-123456789',
-  //   status: 'GENERATING',
-  //   detectResult: { faceCount: 1, emotion: 'happy', confidence: 0.95 },
-  //   tempUrls: {
-  //     image: 'https://tmp-url-for-image.jpg',
-  //     audio: 'https://tmp-url-for-audio.mp3'
-  //   }
-  // }
-}).catch(err => {
-  console.error('任务创建失败:', err);
-});
-```
-
-### 使用 HTTP URL
-```javascript
-wx.cloud.callFunction({
-  name: 'image-to-video-task',
-  data: {
-    imageUrl: 'https://example.com/image.jpg',
-    audioUrl: 'https://example.com/audio.mp3'
-  }
-});
-```
-
-### 混合使用
-```javascript
-wx.cloud.callFunction({
-  name: 'image-to-video-task',
-  data: {
-    imageFileId: 'cloud://env-name-123456/image.jpg',  // 云存储文件
-    audioUrl: 'https://cdn.example.com/audio.mp3'       // HTTP URL
+// 上传图片和音频到云存储
+wx.cloud.uploadFile({
+  cloudPath: 'images/avatar.jpg',
+  filePath: tempImagePath,
+  success: res => {
+    const imageFileId = res.fileID;
+    
+    wx.cloud.uploadFile({
+      cloudPath: 'audios/voice.mp3',
+      filePath: tempAudioPath,
+      success: res => {
+        const audioFileId = res.fileID;
+        
+        // 调用云函数
+        wx.cloud.callFunction({
+          name: 'image-to-video-task',
+          data: {
+            imageFileId: imageFileId,
+            audioFileId: audioFileId,
+            callbackUrl: 'https://your-callback-url.com/webhook',
+            userContext: {
+              userId: 'user123',
+              scene: 'avatar',
+              timestamp: Date.now()
+            }
+          }
+        }).then(res => {
+          console.log('任务创建成功:', res.result);
+          // 获取任务ID用于后续查询
+          const taskId = res.result.taskId;
+        }).catch(err => {
+          console.error('任务创建失败:', err);
+        });
+      }
+    });
   }
 });
 ```
 
 ### 云函数间调用
 ```javascript
-const cloud = require('wx-server-sdk')
-cloud.init()
+const cloudbase = require('@cloudbase/node-sdk');
 
 exports.main = async (event, context) => {
-  const result = await cloud.callFunction({
-    name: 'image-to-video-task',
-    data: {
-      imageFileId: event.imageFileId,
-      audioFileId: event.audioFileId,
-      userContext: {
-        source: 'cloud-function',
-        requestId: context.request_id
+  const app = cloudbase.init({
+    env: cloudbase.SYMBOL_CURRENT_ENV
+  });
+
+  try {
+    const result = await app.callFunction({
+      name: 'image-to-video-task',
+      data: {
+        imageFileId: 'cloud://env-name-123456/image.jpg',
+        audioFileId: 'cloud://env-name-123456/audio.mp3',
+        userContext: {
+          source: 'cloud-function',
+          requestId: context.request_id
+        }
       }
-    }
-  })
-  
-  return result.result
-}
+    });
+    
+    return result.result;
+  } catch (error) {
+    console.error('调用失败:', error);
+    throw error;
+  }
+};
+```
+
+### 使用 HTTP URL 调用
+```javascript
+wx.cloud.callFunction({
+  name: 'image-to-video-task',
+  data: {
+    imageUrl: 'https://example.com/image.jpg',
+    audioUrl: 'https://example.com/audio.mp3',
+    callbackUrl: 'https://your-callback-url.com/webhook'
+  }
+});
 ```
 
 ## 参数说明
@@ -97,8 +127,6 @@ exports.main = async (event, context) => {
 | `audioFileId` | string | 否 | 云存储中的音频文件 ID |
 | `callbackUrl` | string | 否 | 任务完成后的回调地址 |
 | `userContext` | object | 否 | 用户自定义上下文信息 |
-
-**注意：图片和音频参数必须至少提供一种（URL 或文件 ID）**
 
 ## 返回结果
 ```json
@@ -117,19 +145,13 @@ exports.main = async (event, context) => {
 }
 ```
 
-## 错误处理
-函数会返回详细的错误信息：
+## 错误码说明
 - `FAIL` - 参数校验失败或内部错误
 - `DETECT_FAIL` - 图片检测阶段失败
 - 详细的错误消息便于调试
 
-## 使用场景
-1. **小程序端**：用户上传图片和音频后，直接使用返回的 `fileID`
-2. **Web 端**：先上传到云存储，获取 `fileID` 后调用
-3. **云函数间调用**：其他云函数可以复用此功能
-
-## 注意事项
-- 临时 URL 有效期为 2 小时，足够完成图生视频任务
-- 云存储文件需要设置正确的权限（建议设置为可读）
-- 大文件建议先上传到云存储再使用
+## 部署说明
+1. 确保云开发环境已开通 APIs 连接器
+2. 检查连接器名称是否正确（`aliyun_dashscope_emo_detect_v1` 和 `emo_v1`）
+3. 部署后可在云开发控制台测试调用
   
