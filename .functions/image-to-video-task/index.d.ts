@@ -1,36 +1,18 @@
 
-interface DetectResult {
-  code: number;
-  message: string;
-  data?: {
-    [key: string]: any;
-  };
-}
-
-interface VideoTaskResult {
+interface ImageToVideoInput {
   taskId: string;
-  [key: string]: any;
-}
-
-interface CloudFunctionEvent {
-  imageUrl?: string;
-  imageFileId?: string;
-  audioUrl?: string;
-  audioFileId?: string;
-  callbackUrl?: string;
-  userContext?: any;
+  imageUrl: string;
+  prompt: string;
+  style?: string;
+  duration?: number;
 }
 
 interface CloudFunctionResponse {
-  taskId?: string;
-  status: 'DETECTING' | 'DETECT_FAIL' | 'GENERATING' | 'SUCCESS' | 'FAIL';
-  detectResult?: any;
-  tempUrls?: {
-    image?: string;
-    audio?: string;
-  };
-  error?: string;
+  success: boolean;
+  requestId?: string;
+  errorMessage?: string;
 }
 
+interface CloudFunctionEvent extends ImageToVideoInput {}
+
 export declare function main(event: CloudFunctionEvent, context: any): Promise<CloudFunctionResponse>;
-  

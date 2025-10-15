@@ -1,11 +1,10 @@
 
 {
   "name": "image-to-video-task",
-  "version": "1.2.0",
-  "description": "使用 callConnector 调用 APIs 的图生视频云函数",
+  "version": "1.0.0",
+  "description": "Image to video task cloud function using APIs connector",
   "main": "index.js",
   "dependencies": {
     "@cloudbase/node-sdk": "^3.3.7"
   }
 }
-  
