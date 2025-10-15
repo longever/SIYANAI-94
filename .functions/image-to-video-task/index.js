@@ -9,7 +9,6 @@ exports.main = async (event, context) => {
   });
   
   const models = app.models;
-  const apis = app.apis;
 
   try {
     // 1. 参数校验
@@ -38,29 +37,49 @@ exports.main = async (event, context) => {
       };
     }
 
-    // 2. 构造请求体
-    const requestBody = {
-      model: 'wanx2.1-video-generation',
-      input: {
-        image_url: imageUrl,
+    // 2. 调用资源连接器 aliyun_dashscope_jbn02va 的 api 方法
+    const connector = app.connector('aliyun_dashscope_jbn02va');
+    
+    // 2.1 调用 aliyun_dashscope_emo_detect_v1 方法进行情感检测
+    let detectResult;
+    try {
+      detectResult = await connector.invoke('aliyun_dashscope_emo_detect_v1', {
+        image: imageUrl
+      });
+    } catch (detectError) {
+      const errorMessage = `Emotion detection failed: ${detectError.message}`;
+      
+      // 更新任务状态为 FAILED
+      await models['image-to-video-task'].update({
+        filter: {
+          where: {
+            taskId: { $eq: taskId }
+          }
+        },
+        data: {
+          status: 'FAILED',
+          error: errorMessage,
+          updatedAt: new Date()
+        }
+      });
+      
+      return {
+        success: false,
+        errorMessage
+      };
+    }
+
+    // 2.2 调用 emo_v1 方法进行视频生成
+    let videoResult;
+    try {
+      videoResult = await connector.invoke('emo_v1', {
+        image: imageUrl,
         prompt: prompt,
         ...(style && { style }),
         ...(duration && { duration })
-      }
-    };
-
-    // 3. 调用 APIs 连接器
-    const connector = apis.aliyun_dashscope_jbn02va;
-    
-    let response;
-    try {
-      response = await connector.invoke({
-        body: requestBody
-      }, {
-        timeout: 30000 // 30秒超时
       });
-    } catch (apiError) {
-      const errorMessage = `API call failed: ${apiError.message}`;
+    } catch (videoError) {
+      const errorMessage = `Video generation failed: ${videoError.message}`;
       
       // 更新任务状态为 FAILED
       await models['image-to-video-task'].update({
@@ -82,9 +101,9 @@ exports.main = async (event, context) => {
       };
     }
 
-    // 4. 处理响应
-    if (!response.data || !response.data.output || !response.data.output.task_id) {
-      const errorMessage = 'Invalid API response format';
+    // 3. 处理响应
+    if (!videoResult || !videoResult.task_id) {
+      const errorMessage = 'Invalid video generation response format';
       
       // 更新任务状态为 FAILED
       await models['image-to-video-task'].update({
@@ -106,9 +125,9 @@ exports.main = async (event, context) => {
       };
     }
 
-    const requestId = response.data.output.task_id;
+    const requestId = videoResult.task_id;
 
-    // 5. 更新任务状态为 SUBMITTED
+    // 4. 更新任务状态为 SUBMITTED
     await models['image-to-video-task'].update({
       filter: {
         where: {
@@ -118,14 +137,16 @@ exports.main = async (event, context) => {
       data: {
         status: 'SUBMITTED',
         requestId: requestId,
+        detectResult: detectResult,
         updatedAt: new Date()
       }
     });
 
-    // 6. 返回成功结果
+    // 5. 返回成功结果
     return {
       success: true,
-      requestId
+      requestId,
+      detectResult
     };
 
   } catch (error) {
@@ -157,3 +178,4 @@ exports.main = async (event, context) => {
     };
   }
 };
+  
