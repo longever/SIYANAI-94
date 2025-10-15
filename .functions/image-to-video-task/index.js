@@ -2,7 +2,6 @@
 'use strict';
 
 const cloudbase = require('@cloudbase/node-sdk');
-
 // 初始化云开发
 let app;
 try {
@@ -68,7 +67,7 @@ async function getAudioTempUrl(audioUrl, audioFileId) {
   throw new Error('必须提供 audioUrl 或 audioFileId');
 }
 
-// 图片检测阶段 - 使用 callConnector
+// 图片检测阶段 - 使用 callFunction
 async function detectImage(imageTempUrl) {
   console.log('开始图片检测...');
   console.log('图片临时URL:', imageTempUrl);
@@ -78,10 +77,10 @@ async function detectImage(imageTempUrl) {
   }
 
   try {
-    const detectResult = await app.callConnector({
-      name: 'aliyun_dashscope_emo_detect_v1',
-      method: 'POST',
+    const detectResult = await app.callFunction({
+      name: 'aliyun_dashscope_jbn02va',
       data: {
+        method: 'aliyun_dashscope_emo_detect_v1',
         image: imageTempUrl
       }
     });
@@ -102,7 +101,7 @@ async function detectImage(imageTempUrl) {
   }
 }
 
-// 视频生成阶段 - 使用 callConnector
+// 视频生成阶段 - 使用 callFunction
 async function generateVideo(imageTempUrl, audioTempUrl, detectResult, callbackUrl, userContext) {
   console.log('开始视频生成...');
   console.log('图片临时URL:', imageTempUrl);
@@ -113,6 +112,7 @@ async function generateVideo(imageTempUrl, audioTempUrl, detectResult, callbackU
   }
 
   const params = {
+    method: 'emo_v1',
     image: imageTempUrl,
     audio: audioTempUrl,
     detectResult: detectResult || {},
@@ -121,9 +121,8 @@ async function generateVideo(imageTempUrl, audioTempUrl, detectResult, callbackU
   };
 
   try {
-    const videoResult = await app.callConnector({
-      name: 'emo_v1',
-      method: 'POST',
+    const videoResult = await app.callFunction({
+      name: 'aliyun_dashscope_jbn02va',
       data: params
     });
 
@@ -247,4 +246,3 @@ exports.main = async (event, context) => {
     };
   }
 };
-  
