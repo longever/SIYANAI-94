@@ -3,25 +3,80 @@
 
 const cloudbase = require('@cloudbase/node-sdk');
 const fetch = require('node-fetch');
+const { v4: uuidv4 } = require('uuid');
 
 // 阿里云 DashScope 配置
 const DASHSCOPE_API_KEY = process.env.DASHSCOPE_API_KEY || '';
 const DASHSCOPE_BASE_URL = process.env.DASHSCOPE_BASE_URL || 'https://dashscope.aliyuncs.com/api/v1';
+const app = cloudbase.init({
+  env: cloudbase.SYMBOL_CURRENT_ENV
+});
+const models = app.models;
+
+/**
+ * 创建任务记录
+ */
+async function createTaskRecord(taskData) {
+
+  const task = {
+    taskId: taskData.taskId,
+    imageUrl: taskData.imageUrl,
+    model: taskData.model,
+    prompt: taskData.prompt || '',
+    userId: taskData.userId,
+    callbackUrl: taskData.callbackUrl || '',
+    status: 'created',
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    result: null
+  };
+
+  console.log('创建任务记录:', task);
+
+  const result = await models.generation_tasks.create({
+    data: task
+  });
+
+  return result.data;
+}
+
+/**
+ * 更新任务记录
+ */
+async function updateTaskRecord(taskId, updateData) {
+  const update = {
+    ...updateData,
+    updatedAt: Date.now()
+  };
+
+  console.log('更新任务记录:', { taskId, update });
+
+  const result = await models.generation_tasks.update({
+    data: update,
+    filter: {
+      where: {
+        taskId: { $eq: taskId }
+      }
+    }
+  });
+
+  return result.data;
+}
 
 exports.main = async (event, context) => {
-  const app = cloudbase.init({
-    env: cloudbase.SYMBOL_CURRENT_ENV
-  });
-  const models = app.models;
+
+  const taskId = uuidv4();
+  console.log('生成任务ID:', taskId);
 
 
+  console.log(event)
   try {
     // 1. 参数校验
-    const { taskId, imageUrl, audioUrl, prompt, settings } = event;
+    const { imageUrl, audioUrl, prompt, settings, userId } = event;
     const { ratio, style } = settings;
 
-    if (!taskId || !imageUrl || !audioUrl || !ratio || !style) {
-      const errorMessage = 'Missing required fields: taskId, imageUrl, prompt';
+    if (!imageUrl || !audioUrl || !ratio || !style) {
+      const errorMessage = 'Missing required fields: audioUrl, imageUrl, ratio, style';
 
       // 更新任务状态为 FAILED
       await models['generation_tasks'].update({
@@ -44,7 +99,15 @@ exports.main = async (event, context) => {
     }
 
     // 2. 调用阿里云 DashScope API
-
+    // 3. 创建任务记录
+    const model = 'emo-v1';
+    await createTaskRecord({
+      taskId,
+      imageUrl,
+      model,
+      prompt,
+      userId
+    });
     // 2.1 调用情绪检测 API
     let detectResult;
     try {
