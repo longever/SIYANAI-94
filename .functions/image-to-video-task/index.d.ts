@@ -1,33 +1,24 @@
 
-interface EmotionDetectionRequest {
-  imageUrl?: string;
-  imageBase64?: string;
+interface EmotionDetectResult {
+  emotion: string;
+  confidence: number;
   [key: string]: any;
-}
-
-interface EmotionDetectionResponse {
-  taskId: string;
-  status: 'success' | 'error';
-  data?: {
-    task_id?: string;
-    task_status?: string;
-    task_metrics?: any;
-    [key: string]: any;
-  };
-  message?: string;
-  timestamp?: string;
-  duration?: number;
 }
 
 interface CloudFunctionEvent {
-  imageUrl?: string;
-  imageBase64?: string;
-  [key: string]: any;
+  taskId: string;
+  imageUrl: string;
+  prompt: string;
+  style?: string;
+  duration?: number;
 }
 
-export declare function main(event: CloudFunctionEvent, context: any): Promise<{
-  statusCode: number;
-  headers: { [key: string]: string };
-  body: string;
-}>;
+interface CloudFunctionResult {
+  success: boolean;
+  requestId?: string;
+  detectResult?: EmotionDetectResult;
+  errorMessage?: string;
+}
+
+export declare function main(event: CloudFunctionEvent, context: any): Promise<CloudFunctionResult>;
   

@@ -2,53 +2,69 @@
 'use strict';
 
 const cloudbase = require('@cloudbase/node-sdk');
+const fetch = require('node-fetch');
+
+// 阿里云 DashScope 配置
+const DASHSCOPE_API_KEY = process.env.DASHSCOPE_API_KEY || 'your-dashscope-api-key';
+const DASHSCOPE_BASE_URL = 'https://dashscope.aliyuncs.com/api/v1';
 
 exports.main = async (event, context) => {
   const app = cloudbase.init({
     env: cloudbase.SYMBOL_CURRENT_ENV
   });
-
   const models = app.models;
-
 
   try {
     // 1. 参数校验
     const { taskId, imageUrl, prompt, style, duration } = event;
 
     if (!taskId || !imageUrl || !prompt) {
-      //   const errorMessage = 'Missing required fields: taskId, imageUrl, prompt';
+      const errorMessage = 'Missing required fields: taskId, imageUrl, prompt';
 
-      //   // 更新任务状态为 FAILED
-      //   await models['generation_tasks'].update({
-      //     filter: {
-      //       where: {
-      //         taskId: { $eq: taskId }
-      //       }
-      //     },
-      //     data: {
-      //       status: 'FAILED',
-      //       error: errorMessage,
-      //       updatedAt: Date.now()
-      //     }
-      //   });
-
-      //   return {
-      //     success: false,
-      //     errorMessage
-      //   };
-    }
-
-    // 2. 调用资源连接器 aliyun_dashscope_jbn02va 的 api 方法
-
-    // 2.1 调用 aliyun_dashscope_emo_detect_v1 方法进行情感检测 
-    try {
-
-      const detectResult = await $w.cloud.callDataSource({
-        dataSourceName: "aliyun_dashscope_jbn02va",
-        methodName: "aliyun_dashscope_emo_detect_v1",
-        params: { image: imageUrl }, // 方法入参
+      // 更新任务状态为 FAILED
+      await models['generation_tasks'].update({
+        filter: {
+          where: {
+            taskId: { $eq: taskId }
+          }
+        },
+        data: {
+          status: 'FAILED',
+          error: errorMessage,
+          updatedAt: Date.now()
+        }
       });
 
+      return {
+        success: false,
+        errorMessage
+      };
+    }
+
+    // 2. 调用阿里云 DashScope API
+
+    // 2.1 调用情绪检测 API
+    let detectResult;
+    try {
+      const detectResponse = await fetch(`${DASHSCOPE_BASE_URL}/services/aigc/image2video/emo-detect`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${DASHSCOPE_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'emo-detect-v1',
+          input: {
+            image: imageUrl
+          }
+        })
+      });
+
+      if (!detectResponse.ok) {
+        throw new Error(`HTTP ${detectResponse.status}: ${detectResponse.statusText}`);
+      }
+
+      detectResult = await detectResponse.json();
     } catch (detectError) {
       const errorMessage = `Emotion detection failed: ${detectError.message}`;
 
@@ -72,18 +88,31 @@ exports.main = async (event, context) => {
       };
     }
 
-    // 2.2 调用 emo_v1 方法进行视频生成 
+    // 2.2 调用视频生成 API
+    let videoResult;
     try {
-      const videoResult = await $w.cloud.callDataSource({
-        dataSourceName: "aliyun_dashscope_jbn02va",
-        methodName: "emo_v1",
-        params: {
-          image: imageUrl,
-          prompt: prompt,
-          ...(style && { style }),
-          ...(duration && { duration })
-        }, // 方法入参
+      const videoResponse = await fetch(`${DASHSCOPE_BASE_URL}/services/aigc/image2video/video-synthesis`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${DASHSCOPE_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'emo-v1',
+          input: {
+            image: imageUrl,
+            prompt: prompt,
+            ...(style && { style }),
+            ...(duration && { duration })
+          }
+        })
       });
+
+      if (!videoResponse.ok) {
+        throw new Error(`HTTP ${videoResponse.status}: ${videoResponse.statusText}`);
+      }
+
+      videoResult = await videoResponse.json();
     } catch (videoError) {
       const errorMessage = `Video generation failed: ${videoError.message}`;
 
@@ -108,7 +137,7 @@ exports.main = async (event, context) => {
     }
 
     // 3. 处理响应
-    if (!videoResult || !videoResult.task_id) {
+    if (!videoResult || !videoResult.output || !videoResult.output.task_id) {
       const errorMessage = 'Invalid video generation response format';
 
       // 更新任务状态为 FAILED
@@ -131,7 +160,7 @@ exports.main = async (event, context) => {
       };
     }
 
-    const requestId = videoResult.task_id;
+    const requestId = videoResult.output.task_id;
 
     // 4. 更新任务状态为 SUBMITTED
     await models['generation_tasks'].update({
@@ -143,7 +172,7 @@ exports.main = async (event, context) => {
       data: {
         status: 'SUBMITTED',
         requestId: requestId,
-        detectResult: detectResult,
+        detectResult: detectResult.output,
         updatedAt: Date.now()
       }
     });
@@ -152,7 +181,7 @@ exports.main = async (event, context) => {
     return {
       success: true,
       requestId,
-      detectResult
+      detectResult: detectResult.output
     };
 
   } catch (error) {
@@ -184,3 +213,4 @@ exports.main = async (event, context) => {
     };
   }
 };
+  

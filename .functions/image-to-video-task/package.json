@@ -1,12 +1,12 @@
 
 {
   "name": "image-to-video-task",
-  "version": "2.0.0",
-  "description": "通过 HTTP 直接调用阿里云 DashScope API 进行图片情绪检测的云函数",
+  "version": "2.1.0",
+  "description": "使用 node-fetch 直接调用阿里云 DashScope API 进行图片情绪检测与视频生成的云函数",
   "main": "index.js",
   "dependencies": {
     "@cloudbase/node-sdk": "^3.3.7",
-    "uuid": "^9.0.0"
+    "node-fetch": "^2.7.0"
   }
 }
   
