@@ -1,24 +1,18 @@
 
-interface EmotionDetectResult {
-  emotion: string;
-  confidence: number;
+interface CloudFunctionEvent {
   [key: string]: any;
 }
 
-interface CloudFunctionEvent {
-  taskId: string;
-  imageUrl: string;
-  prompt: string;
-  style?: string;
-  duration?: number;
+interface CloudFunctionContext {
+  [key: string]: any;
 }
 
 interface CloudFunctionResult {
   success: boolean;
-  requestId?: string;
-  detectResult?: EmotionDetectResult;
-  errorMessage?: string;
+  taskId: string;
+  message?: string;
+  error?: string;
+  [key: string]: any;
 }
 
-export declare function main(event: CloudFunctionEvent, context: any): Promise<CloudFunctionResult>;
-  
+export declare function main(event: CloudFunctionEvent, context: CloudFunctionContext): Promise<CloudFunctionResult>;
