@@ -5,8 +5,8 @@ const cloudbase = require('@cloudbase/node-sdk');
 const fetch = require('node-fetch');
 
 // 阿里云 DashScope 配置
-const DASHSCOPE_API_KEY = process.env.DASHSCOPE_API_KEY || 'your-dashscope-api-key';
-const DASHSCOPE_BASE_URL = 'https://dashscope.aliyuncs.com/api/v1';
+const DASHSCOPE_API_KEY = process.env.DASHSCOPE_API_KEY || '';
+const DASHSCOPE_BASE_URL = process.env.DASHSCOPE_BASE_URL || 'https://dashscope.aliyuncs.com/api/v1';
 
 exports.main = async (event, context) => {
   const app = cloudbase.init({
@@ -16,9 +16,11 @@ exports.main = async (event, context) => {
 
   try {
     // 1. 参数校验
-    const { taskId, imageUrl, prompt, style, duration } = event;
+    const { imageUrl, audioUrl, prompt, settings } = event;
+    const { ratio, style } = settings;
+    const taskId = ''; //使用uuidv4()
 
-    if (!taskId || !imageUrl || !prompt) {
+    if (!taskId || !imageUrl || !audioUrl || !ratio || !style) {
       const errorMessage = 'Missing required fields: taskId, imageUrl, prompt';
 
       // 更新任务状态为 FAILED
@@ -46,16 +48,19 @@ exports.main = async (event, context) => {
     // 2.1 调用情绪检测 API
     let detectResult;
     try {
-      const detectResponse = await fetch(`${DASHSCOPE_BASE_URL}/services/aigc/image2video/emo-detect`, {
+      const detectResponse = await fetch(`${DASHSCOPE_BASE_URL}/services/aigc/image2video/face-detect`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${DASHSCOPE_API_KEY}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'emo-detect-v1',
-          input: {
-            image: imageUrl
+          "model": 'emo-detect-v1',
+          "input": {
+            "image_url": imageUrl
+          },
+          "parameters": {
+            "ratio": ratio
           }
         })
       });
@@ -89,30 +94,42 @@ exports.main = async (event, context) => {
     }
 
     // 2.2 调用视频生成 API
+    const { check_pass, humanoid, ext_bbox, face_bbox } = detectResult.output;
+    if (!check_pass) {
+      throw new Error(`HTTP 图片检查出错`);
+    }
+    console.log("go to generate")
     let videoResult;
     try {
       const videoResponse = await fetch(`${DASHSCOPE_BASE_URL}/services/aigc/image2video/video-synthesis`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${DASHSCOPE_API_KEY}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'X-DashScope-Async': 'enable'
         },
         body: JSON.stringify({
           model: 'emo-v1',
           input: {
-            image: imageUrl,
-            prompt: prompt,
-            ...(style && { style }),
-            ...(duration && { duration })
+            "image_url": imageUrl,
+            "audio_url": audioUrl,
+            "face_bbox": face_bbox,
+            "ext_bbox": ext_bbox
+          },
+          parameters: {
+            "style_level": style
           }
         })
       });
 
+      console.log("go to generate2", videoResponse)
       if (!videoResponse.ok) {
         throw new Error(`HTTP ${videoResponse.status}: ${videoResponse.statusText}`);
       }
 
       videoResult = await videoResponse.json();
+
+      console.log("go to generate3", videoResult)
     } catch (videoError) {
       const errorMessage = `Video generation failed: ${videoError.message}`;
 
@@ -213,4 +230,3 @@ exports.main = async (event, context) => {
     };
   }
 };
-  
