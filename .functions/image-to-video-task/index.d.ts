@@ -1,20 +1,28 @@
 
-interface ImageToVideoInput {
-  taskId: string;
-  imageUrl: string;
-  prompt: string;
-  style?: string;
-  duration?: number;
-}
+    interface EmotionDetectionRequest {
+      imageUrl?: string;
+      imageBase64?: string;
+      [key: string]: any;
+    }
 
-interface CloudFunctionResponse {
-  success: boolean;
-  requestId?: string;
-  detectResult?: any;
-  errorMessage?: string;
-}
+    interface EmotionDetectionResponse {
+      taskId: string;
+      status: 'success' | 'error';
+      data?: any;
+      message?: string;
+      timestamp?: string;
+      duration?: number;
+    }
 
-interface CloudFunctionEvent extends ImageToVideoInput {}
+    interface CloudFunctionEvent {
+      imageUrl?: string;
+      imageBase64?: string;
+      [key: string]: any;
+    }
 
-export declare function main(event: CloudFunctionEvent, context: any): Promise<CloudFunctionResponse>;
+    export declare function main(event: CloudFunctionEvent, context: any): Promise<{
+      statusCode: number;
+      headers: { [key: string]: string };
+      body: string;
+    }>;
   

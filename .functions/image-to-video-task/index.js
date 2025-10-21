@@ -1,152 +1,184 @@
 
-'use strict';
+    'use strict';
 
-const cloudbase = require('@cloudbase/node-sdk');
+    const cloudbase = require('@cloudbase/node-sdk');
+    const { v4: uuidv4 } = require('uuid');
 
-exports.main = async (event, context) => {
-  const app = cloudbase.init({
-    env: cloudbase.SYMBOL_CURRENT_ENV
-  });
-
-  const db = app.database();
-  const _ = db.command;
-
-  try {
-    // 1. 参数校验
-    const { taskId, imageUrl, prompt, style, duration } = event;
-
-    if (!taskId || !imageUrl || !prompt) {
-      const errorMessage = 'Missing required fields: taskId, imageUrl, prompt';
-
-      // 更新任务状态为 FAILED
-      await db.collection('generation_tasks').where({
-        taskId: taskId
-      }).update({
-        status: 'FAILED',
-        error: errorMessage,
-        updatedAt: new Date()
-      });
-
-      return {
-        success: false,
-        errorMessage
-      };
-    }
-
-    // 2. 调用资源连接器 aliyun_dashscope_jbn02va 的 api 方法
-    const connector = app.connector('aliyun_dashscope_jbn02va');
-
-    // 2.1 调用 aliyun_dashscope_emo_detect_v1 方法进行情感检测
-    let detectResult;
-    try {
-      detectResult = await connector.invoke('aliyun_dashscope_emo_detect_v1', {
-        image: imageUrl
-      });
-    } catch (detectError) {
-      const errorMessage = `Emotion detection failed: ${detectError.message}`;
-
-      // 更新任务状态为 FAILED
-      await db.collection('generation_tasks').where({
-        taskId: taskId
-      }).update({
-        status: 'FAILED',
-        error: errorMessage,
-        updatedAt: new Date()
-      });
-
-      return {
-        success: false,
-        errorMessage
-      };
-    }
-
-    // 2.2 调用 emo_v1 方法进行视频生成
-    let videoResult;
-    try {
-      videoResult = await connector.invoke('emo_v1', {
-        image: imageUrl,
-        prompt: prompt,
-        ...(style && { style }),
-        ...(duration && { duration })
-      });
-    } catch (videoError) {
-      const errorMessage = `Video generation failed: ${videoError.message}`;
-
-      // 更新任务状态为 FAILED
-      await db.collection('generation_tasks').where({
-        taskId: taskId
-      }).update({
-        status: 'FAILED',
-        error: errorMessage,
-        updatedAt: new Date()
-      });
-
-      return {
-        success: false,
-        errorMessage
-      };
-    }
-
-    // 3. 处理响应
-    if (!videoResult || !videoResult.task_id) {
-      const errorMessage = 'Invalid video generation response format';
-
-      // 更新任务状态为 FAILED
-      await db.collection('generation_tasks').where({
-        taskId: taskId
-      }).update({
-        status: 'FAILED',
-        error: errorMessage,
-        updatedAt: new Date()
-      });
-
-      return {
-        success: false,
-        errorMessage
-      };
-    }
-
-    const requestId = videoResult.task_id;
-
-    // 4. 更新任务状态为 SUBMITTED
-    await db.collection('generation_tasks').where({
-      taskId: taskId
-    }).update({
-      status: 'SUBMITTED',
-      requestId: requestId,
-      detectResult: detectResult,
-      updatedAt: new Date()
+    const app = cloudbase.init({
+      env: cloudbase.SYMBOL_CURRENT_ENV
     });
 
-    // 5. 返回成功结果
-    return {
-      success: true,
-      requestId,
-      detectResult
+    exports.main = async (event, context) => {
+      const startTime = Date.now();
+      const taskId = uuidv4();
+      
+      try {
+        // 记录请求日志
+        console.log(`[${taskId}] 开始处理图片情绪检测任务`, {
+          event: JSON.stringify(event),
+          timestamp: new Date().toISOString()
+        });
+
+        // 1. 参数验证
+        const { imageUrl, imageBase64, ...otherParams } = event;
+        
+        if (!imageUrl && !imageBase64) {
+          const error = {
+            taskId,
+            status: 'error',
+            message: '缺少必需参数：imageUrl 或 imageBase64 必须提供其中一个'
+          };
+          console.error(`[${taskId}] 参数验证失败`, error);
+          return {
+            statusCode: 400,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(error)
+          };
+        }
+
+        // 验证图片格式
+        if (imageUrl && !isValidImageUrl(imageUrl)) {
+          const error = {
+            taskId,
+            status: 'error',
+            message: '无效的图片URL格式'
+          };
+          console.error(`[${taskId}] URL格式验证失败`, error);
+          return {
+            statusCode: 400,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(error)
+          };
+        }
+
+        if (imageBase64 && !isValidBase64Image(imageBase64)) {
+          const error = {
+            taskId,
+            status: 'error',
+            message: '无效的图片Base64格式'
+          };
+          console.error(`[${taskId}] Base64格式验证失败`, error);
+          return {
+            statusCode: 400,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(error)
+          };
+        }
+
+        // 2. 获取API连接器
+        const connector = app.connector('aliyun_dashscope_jbn02va');
+        
+        // 3. 准备调用参数
+        const apiParams = {
+          image: imageUrl || imageBase64,
+          ...otherParams
+        };
+
+        console.log(`[${taskId}] 准备调用阿里云DashScope API`, {
+          params: Object.keys(apiParams),
+          hasImageUrl: !!imageUrl,
+          hasImageBase64: !!imageBase64
+        });
+
+        // 4. 调用情绪检测API
+        let apiResponse;
+        try {
+          apiResponse = await connector.call('aliyun_dashscope_emo_detect_v1', apiParams);
+          console.log(`[${taskId}] API调用成功`, {
+            responseKeys: Object.keys(apiResponse || {}),
+            responseType: typeof apiResponse
+          });
+        } catch (apiError) {
+          console.error(`[${taskId}] API调用失败`, {
+            error: apiError.message,
+            stack: apiError.stack,
+            response: apiError.response
+          });
+          
+          return {
+            statusCode: 502,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              taskId,
+              status: 'error',
+              message: '调用情绪检测服务失败',
+              error: apiError.message || '未知错误',
+              data: apiError.response || null
+            })
+          };
+        }
+
+        // 5. 处理响应
+        const result = {
+          taskId,
+          status: 'success',
+          data: apiResponse,
+          timestamp: new Date().toISOString(),
+          duration: Date.now() - startTime
+        };
+
+        console.log(`[${taskId}] 任务处理完成`, {
+          duration: result.duration,
+          status: result.status
+        });
+
+        return {
+          statusCode: 200,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify(result)
+        };
+
+      } catch (error) {
+        console.error(`[${taskId}] 未捕获的异常`, {
+          error: error.message,
+          stack: error.stack
+        });
+        
+        return {
+          statusCode: 500,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            taskId,
+            status: 'error',
+            message: '服务器内部错误',
+            error: error.message || '未知错误'
+          })
+        };
+      }
     };
 
-  } catch (error) {
-    console.error('Function error:', error);
-
-    // 更新任务状态为 FAILED
-    if (event.taskId) {
+    // 工具函数：验证图片URL格式
+    function isValidImageUrl(url) {
+      if (typeof url !== 'string') return false;
+      
       try {
-        await db.collection('generation_tasks').where({
-          taskId: event.taskId
-        }).update({
-          status: 'FAILED',
-          error: 'Internal server error',
-          updatedAt: new Date()
-        });
-      } catch (updateError) {
-        console.error('Failed to update task status:', updateError);
+        const parsedUrl = new URL(url);
+        const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
+        const pathname = parsedUrl.pathname.toLowerCase();
+        
+        return imageExtensions.some(ext => pathname.endsWith(ext));
+      } catch {
+        return false;
       }
     }
 
-    return {
-      success: false,
-      errorMessage: 'Internal server error'
-    };
-  }
-};
+    // 工具函数：验证Base64图片格式
+    function isValidBase64Image(base64) {
+      if (typeof base64 !== 'string') return false;
+      
+      // 检查是否为有效的Base64字符串
+      const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+      const cleanBase64 = base64.split(',')[1] || base64;
+      
+      if (!base64Regex.test(cleanBase64.replace(/\s/g, ''))) {
+        return false;
+      }
+      
+      // 检查是否包含图片格式标识
+      const imagePrefixes = ['data:image/', '/9j/', 'iVBORw0KGgo']; // JPEG, PNG
+      return imagePrefixes.some(prefix => base64.includes(prefix));
+    }
   
