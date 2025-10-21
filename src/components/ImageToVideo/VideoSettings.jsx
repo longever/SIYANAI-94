@@ -28,11 +28,27 @@ export function VideoSettings({
     </div>
 
     <div>
+    <Label>画幅</Label>
+      <Select value={settings.ratio} onValueChange={value => onSettingsChange({
+        ...settings,
+        ratio: value
+      })}>
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="1:1">1:1</SelectItem>
+          <SelectItem value="3:4">3:4</SelectItem> 
+        </SelectContent>
+      </Select>
+    </div>
+
+    <div>
       <Label>帧率: {settings.fps}fps</Label>
       <Slider value={[settings.fps]} onValueChange={([value]) => onSettingsChange({
         ...settings,
         fps: value
-      })} min={24} max={60} step={1} />
+      })} min={24} max={60} step={1}/> 
     </div>
 
     <div>
@@ -71,10 +87,9 @@ export function VideoSettings({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="realistic">写实风格</SelectItem>
-          <SelectItem value="cartoon">卡通风格</SelectItem>
-          <SelectItem value="anime">动漫风格</SelectItem>
-          <SelectItem value="artistic">艺术风格</SelectItem>
+          <SelectItem value="normal">适中</SelectItem>
+          <SelectItem value="calm">平静</SelectItem>
+          <SelectItem value="active">活泼</SelectItem>
         </SelectContent>
       </Select>
     </div>}

@@ -22,11 +22,12 @@ export default function ImageVideoToVideo(props) {
   });
   const [selectedModel, setSelectedModel] = useState('tongyi-wanxiang');
   const [videoSettings, setVideoSettings] = useState({
-    resolution: '1080p',
+    resolution: '480p',
+    ratio: '3:4',
     fps: 30,
     quality: 'high',
     duration: 30,
-    style: 'realistic'
+    style: 'normal'
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [showGenerationModal, setShowGenerationModal] = useState(false);
