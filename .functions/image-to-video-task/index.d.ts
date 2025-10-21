@@ -1,18 +1,23 @@
 
-interface CloudFunctionEvent {
-  [key: string]: any;
+interface Settings {
+  ratio: string;
+  style: number;
 }
 
-interface CloudFunctionContext {
-  [key: string]: any;
+interface CloudFunctionEvent {
+  imageUrl: string;
+  audioUrl: string;
+  prompt?: string;
+  settings: Settings;
+  userId: string;
 }
 
 interface CloudFunctionResult {
   success: boolean;
-  taskId: string;
-  message?: string;
-  error?: string;
-  [key: string]: any;
+  requestId?: string;
+  detectResult?: any;
+  errorMessage?: string;
 }
 
-export declare function main(event: CloudFunctionEvent, context: CloudFunctionContext): Promise<CloudFunctionResult>;
+export declare function main(event: CloudFunctionEvent, context: any): Promise<CloudFunctionResult>;
+  

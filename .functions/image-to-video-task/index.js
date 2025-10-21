@@ -14,13 +14,40 @@ const app = cloudbase.init({
 const models = app.models;
 
 /**
+ * 将云存储地址转换为临时URL
+ * @param {string} cloudPath 云存储路径，如 cloud://env-id/path/to/file
+ * @returns {Promise<string>} 临时URL
+ */
+async function getTempFileURL(cloudPath) {
+  if (!cloudPath || !cloudPath.startsWith('cloud://')) {
+    // 如果不是云存储地址，直接返回
+    return cloudPath;
+  }
+
+  try {
+    const res = await app.getTempFileURL({
+      fileList: [cloudPath]
+    });
+    
+    if (res.fileList && res.fileList[0] && res.fileList[0].tempFileURL) {
+      return res.fileList[0].tempFileURL;
+    }
+    
+    throw new Error('Failed to get temp file URL');
+  } catch (error) {
+    console.error('获取临时URL失败:', error);
+    throw error;
+  }
+}
+
+/**
  * 创建任务记录
  */
 async function createTaskRecord(taskData) {
-
   const task = {
     taskId: taskData.taskId,
     imageUrl: taskData.imageUrl,
+    audioUrl: taskData.audioUrl,
     model: taskData.model,
     prompt: taskData.prompt || '',
     userId: taskData.userId,
@@ -64,12 +91,9 @@ async function updateTaskRecord(taskId, updateData) {
 }
 
 exports.main = async (event, context) => {
-
   const taskId = uuidv4();
   console.log('生成任务ID:', taskId);
 
-
-  console.log(event)
   try {
     // 1. 参数校验
     const { imageUrl, audioUrl, prompt, settings, userId } = event;
@@ -78,7 +102,6 @@ exports.main = async (event, context) => {
     if (!imageUrl || !audioUrl || !ratio || !style) {
       const errorMessage = 'Missing required fields: audioUrl, imageUrl, ratio, style';
 
-      // 更新任务状态为 FAILED
       await models['generation_tasks'].update({
         filter: {
           where: {
@@ -98,17 +121,47 @@ exports.main = async (event, context) => {
       };
     }
 
-    // 2. 调用阿里云 DashScope API
+    // 2. 将云存储地址转换为临时URL
+    let tempImageUrl, tempAudioUrl;
+    try {
+      tempImageUrl = await getTempFileURL(imageUrl);
+      tempAudioUrl = await getTempFileURL(audioUrl);
+      console.log('转换后的临时URL:', { tempImageUrl, tempAudioUrl });
+    } catch (urlError) {
+      const errorMessage = `Failed to convert cloud storage URLs: ${urlError.message}`;
+      
+      await models['generation_tasks'].update({
+        filter: {
+          where: {
+            taskId: { $eq: taskId }
+          }
+        },
+        data: {
+          status: 'FAILED',
+          error: errorMessage,
+          updatedAt: Date.now()
+        }
+      });
+
+      return {
+        success: false,
+        errorMessage
+      };
+    }
+
     // 3. 创建任务记录
     const model = 'emo-v1';
     await createTaskRecord({
       taskId,
-      imageUrl,
+      imageUrl: tempImageUrl,
+      audioUrl: tempAudioUrl,
       model,
       prompt,
       userId
     });
-    // 2.1 调用情绪检测 API
+
+    // 4. 调用阿里云 DashScope API
+    // 4.1 调用情绪检测 API
     let detectResult;
     try {
       const detectResponse = await fetch(`${DASHSCOPE_BASE_URL}/services/aigc/image2video/face-detect`, {
@@ -120,7 +173,7 @@ exports.main = async (event, context) => {
         body: JSON.stringify({
           "model": 'emo-detect-v1',
           "input": {
-            "image_url": imageUrl
+            "image_url": tempImageUrl
           },
           "parameters": {
             "ratio": ratio
@@ -136,7 +189,6 @@ exports.main = async (event, context) => {
     } catch (detectError) {
       const errorMessage = `Emotion detection failed: ${detectError.message}`;
 
-      // 更新任务状态为 FAILED
       await models['generation_tasks'].update({
         filter: {
           where: {
@@ -156,12 +208,12 @@ exports.main = async (event, context) => {
       };
     }
 
-    // 2.2 调用视频生成 API
+    // 4.2 调用视频生成 API
     const { check_pass, humanoid, ext_bbox, face_bbox } = detectResult.output;
     if (!check_pass) {
       throw new Error(`HTTP 图片检查出错`);
     }
-    console.log("go to generate")
+    
     let videoResult;
     try {
       const videoResponse = await fetch(`${DASHSCOPE_BASE_URL}/services/aigc/image2video/video-synthesis`, {
@@ -174,8 +226,8 @@ exports.main = async (event, context) => {
         body: JSON.stringify({
           model: 'emo-v1',
           input: {
-            "image_url": imageUrl,
-            "audio_url": audioUrl,
+            "image_url": tempImageUrl,
+            "audio_url": tempAudioUrl,
             "face_bbox": face_bbox,
             "ext_bbox": ext_bbox
           },
@@ -185,18 +237,14 @@ exports.main = async (event, context) => {
         })
       });
 
-      console.log("go to generate2", videoResponse)
       if (!videoResponse.ok) {
         throw new Error(`HTTP ${videoResponse.status}: ${videoResponse.statusText}`);
       }
 
       videoResult = await videoResponse.json();
-
-      console.log("go to generate3", videoResult)
     } catch (videoError) {
       const errorMessage = `Video generation failed: ${videoError.message}`;
 
-      // 更新任务状态为 FAILED
       await models['generation_tasks'].update({
         filter: {
           where: {
@@ -216,11 +264,10 @@ exports.main = async (event, context) => {
       };
     }
 
-    // 3. 处理响应
+    // 5. 处理响应
     if (!videoResult || !videoResult.output || !videoResult.output.task_id) {
       const errorMessage = 'Invalid video generation response format';
 
-      // 更新任务状态为 FAILED
       await models['generation_tasks'].update({
         filter: {
           where: {
@@ -242,7 +289,7 @@ exports.main = async (event, context) => {
 
     const requestId = videoResult.output.task_id;
 
-    // 4. 更新任务状态为 SUBMITTED
+    // 6. 更新任务状态为 SUBMITTED
     await models['generation_tasks'].update({
       filter: {
         where: {
@@ -257,7 +304,7 @@ exports.main = async (event, context) => {
       }
     });
 
-    // 5. 返回成功结果
+    // 7. 返回成功结果
     return {
       success: true,
       requestId,
@@ -267,7 +314,6 @@ exports.main = async (event, context) => {
   } catch (error) {
     console.error('Function error:', error);
 
-    // 更新任务状态为 FAILED
     if (event.taskId) {
       try {
         await models['generation_tasks'].update({
@@ -293,3 +339,4 @@ exports.main = async (event, context) => {
     };
   }
 };
+  
