@@ -7,17 +7,17 @@ exports.main = async (event, context) => {
   const app = cloudbase.init({
     env: cloudbase.SYMBOL_CURRENT_ENV
   });
-  
+
   const db = app.database();
   const _ = db.command;
 
   try {
     // 1. 参数校验
     const { taskId, imageUrl, prompt, style, duration } = event;
-    
+
     if (!taskId || !imageUrl || !prompt) {
       const errorMessage = 'Missing required fields: taskId, imageUrl, prompt';
-      
+
       // 更新任务状态为 FAILED
       await db.collection('generation_tasks').where({
         taskId: taskId
@@ -26,7 +26,7 @@ exports.main = async (event, context) => {
         error: errorMessage,
         updatedAt: new Date()
       });
-      
+
       return {
         success: false,
         errorMessage
@@ -35,7 +35,7 @@ exports.main = async (event, context) => {
 
     // 2. 调用资源连接器 aliyun_dashscope_jbn02va 的 api 方法
     const connector = app.connector('aliyun_dashscope_jbn02va');
-    
+
     // 2.1 调用 aliyun_dashscope_emo_detect_v1 方法进行情感检测
     let detectResult;
     try {
@@ -44,7 +44,7 @@ exports.main = async (event, context) => {
       });
     } catch (detectError) {
       const errorMessage = `Emotion detection failed: ${detectError.message}`;
-      
+
       // 更新任务状态为 FAILED
       await db.collection('generation_tasks').where({
         taskId: taskId
@@ -53,7 +53,7 @@ exports.main = async (event, context) => {
         error: errorMessage,
         updatedAt: new Date()
       });
-      
+
       return {
         success: false,
         errorMessage
@@ -71,7 +71,7 @@ exports.main = async (event, context) => {
       });
     } catch (videoError) {
       const errorMessage = `Video generation failed: ${videoError.message}`;
-      
+
       // 更新任务状态为 FAILED
       await db.collection('generation_tasks').where({
         taskId: taskId
@@ -80,7 +80,7 @@ exports.main = async (event, context) => {
         error: errorMessage,
         updatedAt: new Date()
       });
-      
+
       return {
         success: false,
         errorMessage
@@ -90,7 +90,7 @@ exports.main = async (event, context) => {
     // 3. 处理响应
     if (!videoResult || !videoResult.task_id) {
       const errorMessage = 'Invalid video generation response format';
-      
+
       // 更新任务状态为 FAILED
       await db.collection('generation_tasks').where({
         taskId: taskId
@@ -99,7 +99,7 @@ exports.main = async (event, context) => {
         error: errorMessage,
         updatedAt: new Date()
       });
-      
+
       return {
         success: false,
         errorMessage
@@ -127,7 +127,7 @@ exports.main = async (event, context) => {
 
   } catch (error) {
     console.error('Function error:', error);
-    
+
     // 更新任务状态为 FAILED
     if (event.taskId) {
       try {
@@ -142,7 +142,7 @@ exports.main = async (event, context) => {
         console.error('Failed to update task status:', updateError);
       }
     }
-    
+
     return {
       success: false,
       errorMessage: 'Internal server error'
