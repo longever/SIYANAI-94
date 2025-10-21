@@ -8,7 +8,8 @@ exports.main = async (event, context) => {
     env: cloudbase.SYMBOL_CURRENT_ENV
   });
   
-  const models = app.models;
+  const db = app.database();
+  const _ = db.command;
 
   try {
     // 1. 参数校验
@@ -18,17 +19,12 @@ exports.main = async (event, context) => {
       const errorMessage = 'Missing required fields: taskId, imageUrl, prompt';
       
       // 更新任务状态为 FAILED
-      await models['image-to-video-task'].update({
-        filter: {
-          where: {
-            taskId: { $eq: taskId }
-          }
-        },
-        data: {
-          status: 'FAILED',
-          error: errorMessage,
-          updatedAt: new Date()
-        }
+      await db.collection('generation_tasks').where({
+        taskId: taskId
+      }).update({
+        status: 'FAILED',
+        error: errorMessage,
+        updatedAt: new Date()
       });
       
       return {
@@ -50,17 +46,12 @@ exports.main = async (event, context) => {
       const errorMessage = `Emotion detection failed: ${detectError.message}`;
       
       // 更新任务状态为 FAILED
-      await models['image-to-video-task'].update({
-        filter: {
-          where: {
-            taskId: { $eq: taskId }
-          }
-        },
-        data: {
-          status: 'FAILED',
-          error: errorMessage,
-          updatedAt: new Date()
-        }
+      await db.collection('generation_tasks').where({
+        taskId: taskId
+      }).update({
+        status: 'FAILED',
+        error: errorMessage,
+        updatedAt: new Date()
       });
       
       return {
@@ -82,17 +73,12 @@ exports.main = async (event, context) => {
       const errorMessage = `Video generation failed: ${videoError.message}`;
       
       // 更新任务状态为 FAILED
-      await models['image-to-video-task'].update({
-        filter: {
-          where: {
-            taskId: { $eq: taskId }
-          }
-        },
-        data: {
-          status: 'FAILED',
-          error: errorMessage,
-          updatedAt: new Date()
-        }
+      await db.collection('generation_tasks').where({
+        taskId: taskId
+      }).update({
+        status: 'FAILED',
+        error: errorMessage,
+        updatedAt: new Date()
       });
       
       return {
@@ -106,17 +92,12 @@ exports.main = async (event, context) => {
       const errorMessage = 'Invalid video generation response format';
       
       // 更新任务状态为 FAILED
-      await models['image-to-video-task'].update({
-        filter: {
-          where: {
-            taskId: { $eq: taskId }
-          }
-        },
-        data: {
-          status: 'FAILED',
-          error: errorMessage,
-          updatedAt: new Date()
-        }
+      await db.collection('generation_tasks').where({
+        taskId: taskId
+      }).update({
+        status: 'FAILED',
+        error: errorMessage,
+        updatedAt: new Date()
       });
       
       return {
@@ -128,18 +109,13 @@ exports.main = async (event, context) => {
     const requestId = videoResult.task_id;
 
     // 4. 更新任务状态为 SUBMITTED
-    await models['image-to-video-task'].update({
-      filter: {
-        where: {
-          taskId: { $eq: taskId }
-        }
-      },
-      data: {
-        status: 'SUBMITTED',
-        requestId: requestId,
-        detectResult: detectResult,
-        updatedAt: new Date()
-      }
+    await db.collection('generation_tasks').where({
+      taskId: taskId
+    }).update({
+      status: 'SUBMITTED',
+      requestId: requestId,
+      detectResult: detectResult,
+      updatedAt: new Date()
     });
 
     // 5. 返回成功结果
@@ -155,17 +131,12 @@ exports.main = async (event, context) => {
     // 更新任务状态为 FAILED
     if (event.taskId) {
       try {
-        await models['image-to-video-task'].update({
-          filter: {
-            where: {
-              taskId: { $eq: event.taskId }
-            }
-          },
-          data: {
-            status: 'FAILED',
-            error: 'Internal server error',
-            updatedAt: new Date()
-          }
+        await db.collection('generation_tasks').where({
+          taskId: event.taskId
+        }).update({
+          status: 'FAILED',
+          error: 'Internal server error',
+          updatedAt: new Date()
         });
       } catch (updateError) {
         console.error('Failed to update task status:', updateError);
@@ -178,4 +149,3 @@ exports.main = async (event, context) => {
     };
   }
 };
-  
