@@ -66,7 +66,7 @@ export default function ImageAudioToVideo(props) {
       });
 
       // 调用云函数创建任务
-      const result = await $w.cloud.callFunction({
+      const { result } = await $w.cloud.callFunction({
         name: 'image-to-video-task',
         data: {
           imageUrl: avatarUpload.fileID,
@@ -99,7 +99,7 @@ export default function ImageAudioToVideo(props) {
   const pollTaskStatus = async taskId => {
     const interval = setInterval(async () => {
       try {
-        const { result } = await $w.cloud.callDataSource({
+        const result = await $w.cloud.callDataSource({
           dataSourceName: 'generation_tasks',
           methodName: 'wedaGetItemV2',
           params: {
