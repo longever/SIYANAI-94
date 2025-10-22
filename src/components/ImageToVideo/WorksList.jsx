@@ -68,6 +68,9 @@ export function WorksList(props) {
     toast
   } = useToast();
 
+  // 获取当前用户ID
+  const currentUserId = $w?.auth?.currentUser?.userId || 'user_123456';
+
   // 获取任务列表
   const fetchTasks = useCallback(async () => {
     try {
@@ -78,7 +81,7 @@ export function WorksList(props) {
           filter: {
             where: {
               userId: {
-                $eq: $w.auth.currentUser?.userId || 'user_123456'
+                $eq: currentUserId
               }
             }
           },
@@ -103,7 +106,7 @@ export function WorksList(props) {
     } finally {
       setLoading(false);
     }
-  }, [$w.auth.currentUser?.userId]);
+  }, [currentUserId, $w.cloud, toast]);
 
   // 轮询需要更新的任务
   const pollPendingTasks = useCallback(async () => {
