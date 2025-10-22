@@ -42,7 +42,7 @@ export default function DashboardPage(props) {
     try {
       setLoading(true);
       const db = await getDB();
-      const result = await db.collection('digital_human_videos').orderBy('created_at', 'desc').limit(50).get();
+      const result = await db.collection('generation_tasks').orderBy('created_at', 'desc').limit(50).get();
       const worksData = result.data || [];
       setWorks(worksData);
 
@@ -98,7 +98,7 @@ export default function DashboardPage(props) {
 
       // 更新数据库
       const db = await getDB();
-      await db.collection('digital_human_videos').doc(docId).update({
+      await db.collection('generation_tasks').doc(docId).update({
         status,
         video_url: videoUrl || '',
         updated_at: new Date().toISOString()
@@ -167,7 +167,7 @@ export default function DashboardPage(props) {
       if (result && result.success && result.fileID) {
         // 更新数据库中的云存储路径
         const db = await getDB();
-        const updateResult = await db.collection('digital_human_videos').doc(docId).update({
+        const updateResult = await db.collection('generation_tasks').doc(docId).update({
           cloud_video_url: result.fileID,
           updated_at: new Date().toISOString()
         });
@@ -271,7 +271,7 @@ export default function DashboardPage(props) {
 
       // 更新数据库
       const db = await getDB();
-      await db.collection('digital_human_videos').doc(work._id).update({
+      await db.collection('generation_tasks').doc(work._id).update({
         status,
         video_url: videoUrl || '',
         updated_at: new Date().toISOString()
@@ -310,7 +310,7 @@ export default function DashboardPage(props) {
     try {
       const tcb = await $w.cloud.getCloudInstance();
       const db = tcb.database();
-      await db.collection('digital_human_videos').doc(work._id).update({
+      await db.collection('generation_tasks').doc(work._id).update({
         is_published: true,
         published_at: new Date().toISOString()
       });
@@ -361,7 +361,7 @@ export default function DashboardPage(props) {
     try {
       const tcb = await $w.cloud.getCloudInstance();
       const db = tcb.database();
-      await db.collection('digital_human_videos').doc(workId).remove();
+      await db.collection('generation_tasks').doc(workId).remove();
       await fetchWorks();
       toast({
         title: "删除成功",

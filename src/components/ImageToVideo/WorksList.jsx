@@ -19,7 +19,7 @@ export function WorksList({
   const fetchWorks = async () => {
     try {
       const params = {
-        dataSourceName: 'digital_human_videos',
+        dataSourceName: 'generation_tasks',
         methodName: 'wedaGetRecordsV2',
         params: {
           filter: {
@@ -51,7 +51,7 @@ export function WorksList({
   const handleDelete = async id => {
     try {
       await $w.cloud.callDataSource({
-        dataSourceName: 'digital_human_videos',
+        dataSourceName: 'generation_tasks',
         methodName: 'wedaDeleteV2',
         params: {
           filter: {
