@@ -1,164 +1,392 @@
 // @ts-ignore;
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore;
-import { Card, CardContent, CardHeader, CardTitle, Button, Badge, useToast } from '@/components/ui';
+import { Card, CardContent, CardHeader, CardTitle, Button, Badge, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Calendar, Popover, PopoverContent, PopoverTrigger, useToast } from '@/components/ui';
 // @ts-ignore;
-import { Play, Download, Share2, Trash2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+// @ts-ignore;
+import { CalendarIcon, Download, Eye, RefreshCw, Filter, X } from 'lucide-react';
 
-export function WorksList({
-  type = 'all'
-}) {
-  const [works, setWorks] = useState([]);
+import { format } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
+import { VideoPlayerModal } from '@/components/VideoPlayerModal';
+const TASK_STATUS = {
+  SUCCESS: 'success',
+  FAILED: 'failed',
+  CANCELED: 'canceled',
+  UNKNOWN: 'unknown',
+  PENDING: 'pending',
+  RUNNING: 'running'
+};
+const STATUS_LABELS = {
+  [TASK_STATUS.SUCCESS]: '已完成',
+  [TASK_STATUS.FAILED]: '失败',
+  [TASK_STATUS.CANCELED]: '已取消',
+  [TASK_STATUS.UNKNOWN]: '未知',
+  [TASK_STATUS.PENDING]: '待处理',
+  [TASK_STATUS.RUNNING]: '处理中'
+};
+const STATUS_COLORS = {
+  [TASK_STATUS.SUCCESS]: 'bg-green-500',
+  [TASK_STATUS.FAILED]: 'bg-red-500',
+  [TASK_STATUS.CANCELED]: 'bg-gray-500',
+  [TASK_STATUS.UNKNOWN]: 'bg-yellow-500',
+  [TASK_STATUS.PENDING]: 'bg-blue-500',
+  [TASK_STATUS.RUNNING]: 'bg-purple-500'
+};
+const MODEL_TYPES = [{
+  value: 'all',
+  label: '全部模型'
+}, {
+  value: 'tongyi-wanxiang',
+  label: '通义万相'
+}, {
+  value: 'keling',
+  label: '可灵'
+}, {
+  value: 'stable-diffusion',
+  label: 'Stable Diffusion'
+}, {
+  value: 'runway',
+  label: 'Runway'
+}];
+export function WorksList(props) {
+  const {
+    $w
+  } = props;
+  const [tasks, setTasks] = useState([]);
+  const [filteredTasks, setFilteredTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedModel, setSelectedModel] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [dateRange, setDateRange] = useState({
+    from: null,
+    to: null
+  });
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [selectedVideoUrl, setSelectedVideoUrl] = useState('');
+  const [pollingTasks, setPollingTasks] = useState(new Set());
   const {
     toast
   } = useToast();
-  useEffect(() => {
-    fetchWorks();
-  }, [type]);
-  const fetchWorks = async () => {
+
+  // 获取任务列表
+  const fetchTasks = useCallback(async () => {
     try {
-      const params = {
+      const response = await $w.cloud.callDataSource({
         dataSourceName: 'generation_tasks',
         methodName: 'wedaGetRecordsV2',
         params: {
           filter: {
-            where: type === 'all' ? {} : {
-              type: {
-                $eq: type
+            where: {
+              userId: {
+                $eq: $w.auth.currentUser?.userId || 'user_123456'
               }
             }
+          },
+          select: {
+            $master: true
           },
           orderBy: [{
             createdAt: 'desc'
           }],
-          pageSize: 20,
-          pageNumber: 1
+          getCount: true
         }
-      };
-      const result = await $w.cloud.callDataSource(params);
-      setWorks(result.records || []);
+      });
+      if (response.records) {
+        setTasks(response.records);
+        setFilteredTasks(response.records);
+
+        // 检查是否有需要轮询的任务
+        const pendingTasks = response.records.filter(task => task.status === TASK_STATUS.PENDING || task.status === TASK_STATUS.RUNNING);
+        if (pendingTasks.length > 0) {
+          const newPollingTasks = new Set(pollingTasks);
+          pendingTasks.forEach(task => newPollingTasks.add(task.taskId));
+          setPollingTasks(newPollingTasks);
+        }
+      }
     } catch (error) {
       toast({
-        title: "获取作品失败",
-        description: error.message,
-        variant: "destructive"
+        title: '获取任务失败',
+        description: error.message || '无法获取任务列表',
+        variant: 'destructive'
       });
     } finally {
       setLoading(false);
     }
-  };
-  const handleDelete = async id => {
+  }, [$w.auth.currentUser?.userId, pollingTasks]);
+
+  // 轮询任务状态
+  const pollTaskStatus = useCallback(async taskId => {
     try {
-      await $w.cloud.callDataSource({
-        dataSourceName: 'generation_tasks',
-        methodName: 'wedaDeleteV2',
-        params: {
-          filter: {
-            where: {
-              _id: {
-                $eq: id
+      const response = await $w.cloud.callFunction({
+        name: 'aliyun_dashscope_jbn02va',
+        data: {
+          action: 'get_tasks_status',
+          taskId: taskId
+        }
+      });
+      if (response && response.status) {
+        // 更新任务状态
+        await $w.cloud.callDataSource({
+          dataSourceName: 'generation_tasks',
+          methodName: 'wedaUpdateV2',
+          params: {
+            data: {
+              status: response.status.toLowerCase(),
+              outputUrl: response.outputUrl || '',
+              errorMsg: response.errorMsg || ''
+            },
+            filter: {
+              where: {
+                taskId: {
+                  $eq: taskId
+                }
               }
             }
           }
+        });
+
+        // 重新获取任务列表
+        await fetchTasks();
+
+        // 如果任务完成，从轮询列表中移除
+        if (response.status !== 'PENDING' && response.status !== 'RUNNING') {
+          const newPollingTasks = new Set(pollingTasks);
+          newPollingTasks.delete(taskId);
+          setPollingTasks(newPollingTasks);
         }
+      }
+    } catch (error) {
+      console.error('轮询任务状态失败:', error);
+    }
+  }, [fetchTasks, pollingTasks]);
+
+  // 应用筛选
+  const applyFilters = useCallback(() => {
+    let filtered = [...tasks];
+
+    // 按模型类型筛选
+    if (selectedModel !== 'all') {
+      filtered = filtered.filter(task => task.modelType === selectedModel);
+    }
+
+    // 按状态筛选
+    if (selectedStatus !== 'all') {
+      filtered = filtered.filter(task => task.status === selectedStatus);
+    }
+
+    // 按日期范围筛选
+    if (dateRange.from && dateRange.to) {
+      filtered = filtered.filter(task => {
+        const taskDate = new Date(task.createdAt);
+        return taskDate >= dateRange.from && taskDate <= dateRange.to;
       });
+    }
+    setFilteredTasks(filtered);
+  }, [tasks, selectedModel, selectedStatus, dateRange]);
+
+  // 初始化加载
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
+
+  // 应用筛选器
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
+
+  // 轮询机制
+  useEffect(() => {
+    if (pollingTasks.size === 0) return;
+    const interval = setInterval(async () => {
+      for (const taskId of pollingTasks) {
+        await pollTaskStatus(taskId);
+      }
+    }, 30000); // 30秒轮询一次
+
+    return () => clearInterval(interval);
+  }, [pollingTasks, pollTaskStatus]);
+
+  // 清除筛选
+  const clearFilters = () => {
+    setSelectedModel('all');
+    setSelectedStatus('all');
+    setDateRange({
+      from: null,
+      to: null
+    });
+  };
+
+  // 预览视频
+  const handlePreview = videoUrl => {
+    if (videoUrl) {
+      setSelectedVideoUrl(videoUrl);
+      setShowVideoModal(true);
+    }
+  };
+
+  // 下载视频
+  const handleDownload = async (videoUrl, filename) => {
+    try {
+      const response = await fetch(videoUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename || 'video.mp4';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
       toast({
-        title: "删除成功",
-        description: "作品已从作品库移除"
+        title: '下载成功',
+        description: '视频已开始下载'
       });
-      fetchWorks();
     } catch (error) {
       toast({
-        title: "删除失败",
-        description: error.message,
-        variant: "destructive"
+        title: '下载失败',
+        description: error.message || '无法下载视频',
+        variant: 'destructive'
       });
     }
   };
-  const getModelLabel = model => {
-    const modelMap = {
-      'tongyi-wanxiang': '通义万相',
-      'keling': '可灵AI',
-      'sora': 'Sora',
-      'runway': 'Runway',
-      'pika': 'Pika',
-      'stable-video': 'Stable Video',
-      'luma-dream-machine': 'Luma Dream Machine',
-      'krea': 'Krea AI'
-    };
-    return modelMap[model] || model;
-  };
-  const getTypeLabel = type => {
-    const typeMap = {
-      'image-description-to-video': '图+描述',
-      'image-audio-to-video': '图+音频',
-      'video-to-video': '图+视频'
-    };
-    return typeMap[type] || type;
+
+  // 刷新任务列表
+  const handleRefresh = () => {
+    setLoading(true);
+    fetchTasks();
   };
   if (loading) {
-    return <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {[...Array(6)].map((_, i) => <Card key={i} className="animate-pulse">
-            <CardContent className="p-4">
-              <div className="aspect-video bg-gray-200 rounded mb-4"></div>
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-            </CardContent>
-          </Card>)}
+    return <div className="flex items-center justify-center h-64">
+        <RefreshCw className="h-8 w-8 animate-spin text-primary" />
       </div>;
   }
-  if (works.length === 0) {
-    return <div className="text-center py-12">
-        <div className="text-gray-400">
-          <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 16h4m10 0h4" />
-          </svg>
-          <p className="text-lg">暂无作品</p>
-          <p className="text-sm mt-2">开始创建你的第一个作品吧</p>
-        </div>
-      </div>;
-  }
-  return <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {works.map(work => <Card key={work._id} className="group">
-          <CardHeader className="p-0">
-            <div className="relative aspect-video bg-gray-100 rounded-t-lg overflow-hidden">
-              {work.thumbnailUrl ? <img src={work.thumbnailUrl} alt={work.title} className="w-full h-full object-cover" /> : <div className="flex items-center justify-center h-full text-gray-400">
-                  <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                </div>}
-              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-opacity flex items-center justify-center opacity-0 group-hover:opacity-100">
-                <Button size="sm" variant="secondary" className="mr-2">
-                  <Play className="w-4 h-4" />
-                </Button>
-              </div>
+  return <div className="space-y-6">
+      {/* 筛选栏 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>作品筛选</span>
+            <Button variant="ghost" size="sm" onClick={handleRefresh} className="h-8 w-8 p-0">
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">模型类型</label>
+              <Select value={selectedModel} onValueChange={setSelectedModel}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MODEL_TYPES.map(type => <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
-          </CardHeader>
-          <CardContent className="p-4">
-            <CardTitle className="text-lg mb-2">{work.title}</CardTitle>
-            <div className="flex items-center gap-2 mb-3">
-              <Badge variant="secondary">{getModelLabel(work.model)}</Badge>
-              <Badge variant="outline">{work.duration}s</Badge>
-              {work.type && <Badge variant="outline">{getTypeLabel(work.type)}</Badge>}
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">任务状态</label>
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部状态</SelectItem>
+                  {Object.entries(STATUS_LABELS).map(([key, label]) => <SelectItem key={key} value={key}>
+                      {label}
+                    </SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="flex items-center justify-between text-sm text-gray-500">
-              <span>{new Date(work.createdAt).toLocaleDateString()}</span>
-              <span>{work.fileSize}</span>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">日期范围</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !dateRange.from && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateRange.from ? dateRange.to ? <>
+                          {format(dateRange.from, "yyyy-MM-dd", {
+                      locale: zhCN
+                    })} -{" "}
+                          {format(dateRange.to, "yyyy-MM-dd", {
+                      locale: zhCN
+                    })}
+                        </> : format(dateRange.from, "yyyy-MM-dd", {
+                    locale: zhCN
+                  }) : <span>选择日期</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar initialFocus mode="range" defaultMonth={dateRange.from} selected={dateRange} onSelect={setDateRange} numberOfMonths={2} locale={zhCN} />
+                </PopoverContent>
+              </Popover>
             </div>
-            <div className="flex gap-2 mt-4">
-              <Button size="sm" variant="outline" className="flex-1">
-                <Download className="w-4 h-4 mr-1" />
-                下载
+
+            <div className="flex items-end">
+              <Button variant="outline" size="sm" onClick={clearFilters} className="w-full">
+                <X className="mr-2 h-4 w-4" />
+                清除筛选
               </Button>
-              <Button size="sm" variant="outline">
-                <Share2 className="w-4 h-4" />
-              </Button>
-              <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700" onClick={() => handleDelete(work._id)}>
-                <Trash2 className="w-4 h-4" />
-              </Button>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 任务列表 */}
+      {filteredTasks.length === 0 ? <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Filter className="h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">暂无符合条件的作品</p>
           </CardContent>
-        </Card>)}
+        </Card> : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredTasks.map(task => <Card key={task._id} className="overflow-hidden">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <CardTitle className="text-lg line-clamp-2">
+                    {task.inputParams?.prompt || '未命名作品'}
+                  </CardTitle>
+                  <Badge className={cn(STATUS_COLORS[task.status], "text-white")}>
+                    {STATUS_LABELS[task.status]}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="text-sm text-muted-foreground">
+                    <p>模型：{MODEL_TYPES.find(m => m.value === task.modelType)?.label || task.modelType}</p>
+                    <p>创建时间：{format(new Date(task.createdAt), "yyyy-MM-dd HH:mm", {
+                  locale: zhCN
+                })}</p>
+                    {task.inputParams?.duration && <p>时长：{task.inputParams.duration}秒</p>}
+                    {task.inputParams?.resolution && <p>分辨率：{task.inputParams.resolution}</p>}
+                  </div>
+
+                  {task.errorMsg && <p className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                      {task.errorMsg}
+                    </p>}
+
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => handlePreview(task.outputUrl)} disabled={!task.outputUrl || task.status !== TASK_STATUS.SUCCESS} className="flex-1">
+                      <Eye className="mr-2 h-4 w-4" />
+                      预览
+                    </Button>
+                    <Button size="sm" onClick={() => handleDownload(task.outputUrl, `${task.taskId}.mp4`)} disabled={!task.outputUrl || task.status !== TASK_STATUS.SUCCESS} className="flex-1">
+                      <Download className="mr-2 h-4 w-4" />
+                      下载
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>)}
+        </div>}
+
+      {/* 视频预览模态框 */}
+      <VideoPlayerModal isOpen={showVideoModal} onClose={() => setShowVideoModal(false)} videoUrl={selectedVideoUrl} />
     </div>;
 }
