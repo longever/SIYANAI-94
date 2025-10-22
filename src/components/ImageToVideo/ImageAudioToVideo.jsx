@@ -83,6 +83,13 @@ export default function ImageAudioToVideo(props) {
         setTaskId(result.taskId);
         // 开始轮询任务状态
         // pollTaskStatus(result.taskId);
+
+        setGenerationProgress(100);
+        setIsGenerating(false);
+        toast({
+          title: "任务创建成功",
+          description: "任务创建成功，请到我的作品页面查看生成结果。"
+        });
       } else {
         throw new Error(result.message || '任务创建失败');
       }
@@ -130,7 +137,7 @@ export default function ImageAudioToVideo(props) {
               url: videoUrl.fileList[0].tempFileURL,
               thumbnail: result.result.thumbnailUrl || '',
               duration: videoSettings.duration,
-              size: result.result.fileSize || '25.6 MB'
+              size: result.result.fileSize || '0 MB'
             });
             toast({
               title: "生成完成",
