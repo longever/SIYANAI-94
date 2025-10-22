@@ -237,7 +237,7 @@ export default function ImageVideoToVideo(props) {
         </TabsContent>
 
         <TabsContent value="works">
-          <WorksList type="video-to-video" />
+          <WorksList type="video-to-video"  $w={$w}/>
         </TabsContent>
       </Tabs>
 
