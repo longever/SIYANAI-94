@@ -1,15 +1,15 @@
 // @ts-ignore;
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 // @ts-ignore;
-import { Card, CardContent, CardHeader, CardTitle, Button, Badge, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Calendar, Popover, PopoverContent, PopoverTrigger, useToast } from '@/components/ui';
+import { Card, CardContent, CardHeader, CardTitle, Button, Badge, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, useToast } from '@/components/ui';
 // @ts-ignore;
 import { cn } from '@/lib/utils';
 // @ts-ignore;
 import { CalendarIcon, Download, Eye, RefreshCw, Filter, X } from 'lucide-react';
 
-import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
 import { VideoPlayerModal } from '@/components/VideoPlayerModal';
+import { usePolling } from '@/lib/usePolling';
+import { formatDate } from '@/lib/dateUtils';
 const TASK_STATUS = {
   SUCCESS: 'success',
   FAILED: 'failed',
@@ -55,7 +55,6 @@ export function WorksList(props) {
     $w
   } = props;
   const [tasks, setTasks] = useState([]);
-  const [filteredTasks, setFilteredTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedModel, setSelectedModel] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
@@ -65,7 +64,6 @@ export function WorksList(props) {
   });
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [selectedVideoUrl, setSelectedVideoUrl] = useState('');
-  const [pollingTasks, setPollingTasks] = useState(new Set());
   const {
     toast
   } = useToast();
@@ -95,15 +93,6 @@ export function WorksList(props) {
       });
       if (response.records) {
         setTasks(response.records);
-        setFilteredTasks(response.records);
-
-        // 检查是否有需要轮询的任务
-        const pendingTasks = response.records.filter(task => task.status === TASK_STATUS.PENDING || task.status === TASK_STATUS.RUNNING);
-        if (pendingTasks.length > 0) {
-          const newPollingTasks = new Set(pollingTasks);
-          pendingTasks.forEach(task => newPollingTasks.add(task.taskId));
-          setPollingTasks(newPollingTasks);
-        }
       }
     } catch (error) {
       toast({
@@ -114,28 +103,45 @@ export function WorksList(props) {
     } finally {
       setLoading(false);
     }
-  }, [$w.auth.currentUser?.userId, pollingTasks]);
+  }, [$w.auth.currentUser?.userId]);
 
-  // 轮询任务状态
-  const pollTaskStatus = useCallback(async taskId => {
+  // 轮询需要更新的任务
+  const pollPendingTasks = useCallback(async () => {
+    const pendingTasks = tasks.filter(task => task.status === TASK_STATUS.PENDING || task.status === TASK_STATUS.RUNNING);
+    if (pendingTasks.length === 0) return;
     try {
-      const response = await $w.cloud.callFunction({
-        name: 'aliyun_dashscope_jbn02va',
-        data: {
-          action: 'get_tasks_status',
-          taskId: taskId
-        }
+      // 批量查询任务状态
+      const promises = pendingTasks.map(async task => {
+        const response = await $w.cloud.callFunction({
+          name: 'aliyun_dashscope_jbn02va',
+          data: {
+            action: 'get_tasks_status',
+            taskId: task.taskId
+          }
+        });
+        return {
+          taskId: task.taskId,
+          ...response
+        };
       });
-      if (response && response.status) {
-        // 更新任务状态
-        await $w.cloud.callDataSource({
+      const results = await Promise.allSettled(promises);
+
+      // 更新完成的任务状态
+      const updates = results.filter(result => result.status === 'fulfilled' && result.value.status).map(result => {
+        const {
+          taskId,
+          status,
+          outputUrl,
+          errorMsg
+        } = result.value;
+        return $w.cloud.callDataSource({
           dataSourceName: 'generation_tasks',
           methodName: 'wedaUpdateV2',
           params: {
             data: {
-              status: response.status.toLowerCase(),
-              outputUrl: response.outputUrl || '',
-              errorMsg: response.errorMsg || ''
+              status: status.toLowerCase(),
+              outputUrl: outputUrl || '',
+              errorMsg: errorMsg || ''
             },
             filter: {
               where: {
@@ -146,24 +152,22 @@ export function WorksList(props) {
             }
           }
         });
-
-        // 重新获取任务列表
+      });
+      if (updates.length > 0) {
+        await Promise.all(updates);
         await fetchTasks();
-
-        // 如果任务完成，从轮询列表中移除
-        if (response.status !== 'PENDING' && response.status !== 'RUNNING') {
-          const newPollingTasks = new Set(pollingTasks);
-          newPollingTasks.delete(taskId);
-          setPollingTasks(newPollingTasks);
-        }
       }
     } catch (error) {
       console.error('轮询任务状态失败:', error);
     }
-  }, [fetchTasks, pollingTasks]);
+  }, [tasks, fetchTasks, $w.cloud]);
+
+  // 使用轮询 hook
+  const hasPendingTasks = useMemo(() => tasks.some(task => task.status === TASK_STATUS.PENDING || task.status === TASK_STATUS.RUNNING), [tasks]);
+  usePolling(pollPendingTasks, 30000, hasPendingTasks, [tasks]);
 
   // 应用筛选
-  const applyFilters = useCallback(() => {
+  const filteredTasks = useMemo(() => {
     let filtered = [...tasks];
 
     // 按模型类型筛选
@@ -178,35 +182,22 @@ export function WorksList(props) {
 
     // 按日期范围筛选
     if (dateRange.from && dateRange.to) {
+      const start = new Date(dateRange.from);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(dateRange.to);
+      end.setHours(23, 59, 59, 999);
       filtered = filtered.filter(task => {
         const taskDate = new Date(task.createdAt);
-        return taskDate >= dateRange.from && taskDate <= dateRange.to;
+        return taskDate >= start && taskDate <= end;
       });
     }
-    setFilteredTasks(filtered);
+    return filtered;
   }, [tasks, selectedModel, selectedStatus, dateRange]);
 
   // 初始化加载
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
-
-  // 应用筛选器
-  useEffect(() => {
-    applyFilters();
-  }, [applyFilters]);
-
-  // 轮询机制
-  useEffect(() => {
-    if (pollingTasks.size === 0) return;
-    const interval = setInterval(async () => {
-      for (const taskId of pollingTasks) {
-        await pollTaskStatus(taskId);
-      }
-    }, 30000); // 30秒轮询一次
-
-    return () => clearInterval(interval);
-  }, [pollingTasks, pollTaskStatus]);
 
   // 清除筛选
   const clearFilters = () => {
@@ -306,26 +297,10 @@ export function WorksList(props) {
 
             <div>
               <label className="text-sm font-medium mb-2 block">日期范围</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !dateRange.from && "text-muted-foreground")}>
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateRange.from ? dateRange.to ? <>
-                          {format(dateRange.from, "yyyy-MM-dd", {
-                      locale: zhCN
-                    })} -{" "}
-                          {format(dateRange.to, "yyyy-MM-dd", {
-                      locale: zhCN
-                    })}
-                        </> : format(dateRange.from, "yyyy-MM-dd", {
-                    locale: zhCN
-                  }) : <span>选择日期</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar initialFocus mode="range" defaultMonth={dateRange.from} selected={dateRange} onSelect={setDateRange} numberOfMonths={2} locale={zhCN} />
-                </PopoverContent>
-              </Popover>
+              <input type="date" value={dateRange.from ? formatDate(dateRange.from) : ''} onChange={e => setDateRange(prev => ({
+              ...prev,
+              from: e.target.value ? new Date(e.target.value) : null
+            }))} className="w-full px-3 py-2 border border-input rounded-md bg-background text-sm" />
             </div>
 
             <div className="flex items-end">
@@ -360,9 +335,7 @@ export function WorksList(props) {
                 <div className="space-y-3">
                   <div className="text-sm text-muted-foreground">
                     <p>模型：{MODEL_TYPES.find(m => m.value === task.modelType)?.label || task.modelType}</p>
-                    <p>创建时间：{format(new Date(task.createdAt), "yyyy-MM-dd HH:mm", {
-                  locale: zhCN
-                })}</p>
+                    <p>创建时间：{formatDate(task.createdAt, 'yyyy-MM-dd HH:mm')}</p>
                     {task.inputParams?.duration && <p>时长：{task.inputParams.duration}秒</p>}
                     {task.inputParams?.resolution && <p>分辨率：{task.inputParams.resolution}</p>}
                   </div>
