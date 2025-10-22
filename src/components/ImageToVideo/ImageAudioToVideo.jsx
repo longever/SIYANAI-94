@@ -78,6 +78,7 @@ export default function ImageAudioToVideo(props) {
           settings: videoSettings
         }
       });
+      console.log("result", result)
       if (result.success) {
         setTaskId(result.taskId);
         // 开始轮询任务状态
