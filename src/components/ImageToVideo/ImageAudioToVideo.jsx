@@ -99,7 +99,7 @@ export default function ImageAudioToVideo(props) {
   const pollTaskStatus = async taskId => {
     const interval = setInterval(async () => {
       try {
-        const result = await $w.cloud.callDataSource({
+        const { result } = await $w.cloud.callDataSource({
           dataSourceName: 'generation_tasks',
           methodName: 'wedaGetItemV2',
           params: {
