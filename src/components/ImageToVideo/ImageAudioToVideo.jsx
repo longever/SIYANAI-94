@@ -82,7 +82,7 @@ export default function ImageAudioToVideo(props) {
       if (result.success) {
         setTaskId(result.taskId);
         // 开始轮询任务状态
-        pollTaskStatus(result.taskId);
+        // pollTaskStatus(result.taskId);
       } else {
         throw new Error(result.message || '任务创建失败');
       }
