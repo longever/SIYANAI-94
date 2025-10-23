@@ -8,7 +8,6 @@ import { cn } from '@/lib/utils';
 import { CalendarIcon, Download, Eye, RefreshCw, Filter, X } from 'lucide-react';
 
 import { VideoPlayerModal } from '@/components/VideoPlayerModal';
-import { usePolling } from '@/lib/usePolling';
 import { formatDate } from '@/lib/dateUtils';
 const TASK_STATUS = {
   SUCCESS: 'success',
@@ -165,9 +164,16 @@ export function WorksList(props) {
     }
   }, [tasks, fetchTasks, $w.cloud]);
 
-  // 使用轮询 hook
+  // 使用 useEffect 实现轮询
   const hasPendingTasks = useMemo(() => tasks.some(task => task.status === TASK_STATUS.PENDING || task.status === TASK_STATUS.RUNNING), [tasks]);
-  usePolling(pollPendingTasks, 30000, hasPendingTasks, [tasks]);
+  useEffect(() => {
+    if (!hasPendingTasks) return;
+    const interval = setInterval(() => {
+      pollPendingTasks();
+    }, 30000); // 30秒轮询一次
+
+    return () => clearInterval(interval);
+  }, [hasPendingTasks, pollPendingTasks]);
 
   // 应用筛选
   const filteredTasks = useMemo(() => {
