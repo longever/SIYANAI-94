@@ -118,11 +118,12 @@ export function WorksList(props) {
           name: 'aliyun_dashscope_jbn02va',
           data: {
             action: 'get_tasks_status',
-            taskId: task.taskId
+            task_id: task.external_task_id
           }
         });
         return {
           taskId: task.taskId,
+          external_task_id: task.external_task_id,
           ...response
         };
       });
@@ -147,7 +148,7 @@ export function WorksList(props) {
             },
             filter: {
               where: {
-                taskId: {
+                _id: {
                   $eq: taskId
                 }
               }
