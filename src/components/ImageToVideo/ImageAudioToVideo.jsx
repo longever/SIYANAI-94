@@ -236,7 +236,7 @@ export default function ImageAudioToVideo(props) {
         </TabsContent>
 
         <TabsContent value="works">
-          <WorksList $w={$w} /> 
+          <WorksList $w={props.$w} />
         </TabsContent>
       </Tabs>
 

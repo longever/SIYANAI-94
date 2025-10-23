@@ -49,7 +49,7 @@ const MODEL_TYPES = [{
   value: 'runway',
   label: 'Runway'
 }];
-export default function WorksList(props) {
+export function WorksList(props) {
   const {
     $w
   } = props;
