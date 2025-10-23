@@ -112,7 +112,7 @@ export default function ImageAudioToVideo(props) {
           params: {
             filter: {
               where: {
-                taskId: {
+                _id: {
                   $eq: taskId
                 }
               }
@@ -177,7 +177,7 @@ export default function ImageAudioToVideo(props) {
             settings: videoSettings,
             model: selectedModel,
             type: 'image-audio-to-video',
-            taskId: taskId,
+            external_task_id: videoData.external_task_id,
             createdAt: Date.new(),
           }
         }
