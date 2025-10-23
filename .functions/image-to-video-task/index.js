@@ -2,8 +2,6 @@
 'use strict';
 
 const cloudbase = require('@cloudbase/node-sdk');
-const https = require('https');
-const url = require('url');
 const { v4: uuidv4 } = require('uuid');
 
 // 阿里云 DashScope 配置
@@ -29,70 +27,17 @@ async function getTempFileURL(cloudPath) {
     const res = await app.getTempFileURL({
       fileList: [cloudPath]
     });
-    
+
     if (res.fileList && res.fileList[0] && res.fileList[0].tempFileURL) {
       return res.fileList[0].tempFileURL;
     }
-    
+
     throw new Error('Failed to get temp file URL');
   } catch (error) {
     console.error('获取临时URL失败:', error);
     throw error;
   }
 }
-
-// // 使用内置 https 模块替代 node-fetch
-// function fetch1(urlStr, options = {}) {
-//   return new Promise((resolve, reject) => {
-//     const parsedUrl = new URL(urlStr);
-//     const requestOptions = {
-//       hostname: parsedUrl.hostname,
-//       port: parsedUrl.port || 443,
-//       path: parsedUrl.pathname + parsedUrl.search,
-//       method: options.method || 'GET',
-//       headers: options.headers || {}
-//     };
-
-//     if (options.body) {
-//       if (typeof options.body === 'object') {
-//         requestOptions.headers['Content-Type'] = 'application/json';
-//         options.body = JSON.stringify(options.body);
-//       }
-//       requestOptions.headers['Content-Length'] = Buffer.byteLength(options.body);
-//     }
-
-//     const req = https.request(requestOptions, (res) => {
-//       let data = '';
-//       res.on('data', chunk => data += chunk);
-//       res.on('end', () => {
-//         try {
-//           const json = JSON.parse(data);
-//           resolve({
-//             ok: res.statusCode >= 200 && res.statusCode < 300,
-//             status: res.statusCode,
-//             json: () => Promise.resolve(json),
-//             text: () => Promise.resolve(data)
-//           });
-//         } catch {
-//           resolve({
-//             ok: res.statusCode >= 200 && res.statusCode < 300,
-//             status: res.statusCode,
-//             json: () => Promise.reject(new Error('Invalid JSON')),
-//             text: () => Promise.resolve(data)
-//           });
-//         }
-//       });
-//     });
-
-//     req.on('error', reject);
-    
-//     if (options.body) {
-//       req.write(options.body);
-//     }
-    
-//     req.end();
-//   });
-// }
 
 /**
  * 创建任务记录
@@ -183,7 +128,7 @@ exports.main = async (event, context) => {
       console.log('转换后的临时URL:', { tempImageUrl, tempAudioUrl });
     } catch (urlError) {
       const errorMessage = `Failed to convert cloud storage URLs: ${urlError.message}`;
-      
+
       await models['generation_tasks'].update({
         filter: {
           where: {
@@ -267,9 +212,10 @@ exports.main = async (event, context) => {
     if (!check_pass) {
       throw new Error(`HTTP 图片检查出错`);
     }
-    
+
     let videoResult;
     try {
+      console.log("start to generate video")
       const videoResponse = await fetch(`${DASHSCOPE_BASE_URL}/services/aigc/image2video/video-synthesis`, {
         method: 'POST',
         headers: {
@@ -296,6 +242,8 @@ exports.main = async (event, context) => {
       }
 
       videoResult = await videoResponse.json();
+
+      console.log("end to generate video", videoResult)
     } catch (videoError) {
       const errorMessage = `Video generation failed: ${videoError.message}`;
 
@@ -353,7 +301,7 @@ exports.main = async (event, context) => {
       data: {
         status: 'SUBMITTED',
         requestId: requestId,
-        detectResult: detectResult.output,
+        videoResult: videoResult.output,
         updatedAt: Date.now()
       }
     });
@@ -362,7 +310,7 @@ exports.main = async (event, context) => {
     return {
       success: true,
       requestId,
-      detectResult: detectResult.output
+      videoResult: videoResult.output
     };
 
   } catch (error) {
@@ -393,4 +341,3 @@ exports.main = async (event, context) => {
     };
   }
 };
-  
