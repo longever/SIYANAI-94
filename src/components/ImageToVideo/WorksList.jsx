@@ -49,7 +49,7 @@ const MODEL_TYPES = [{
   value: 'runway',
   label: 'Runway'
 }];
-export function WorksList(props) {
+export default function WorksList(props) {
   const {
     $w
   } = props;
@@ -259,116 +259,116 @@ export function WorksList(props) {
   };
   if (loading) {
     return <div className="flex items-center justify-center h-64">
-        <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-      </div>;
+      <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+    </div>;
   }
   return <div className="space-y-6">
-      {/* 筛选栏 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>作品筛选</span>
-            <Button variant="ghost" size="sm" onClick={handleRefresh} className="h-8 w-8 p-0">
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">模型类型</label>
-              <Select value={selectedModel} onValueChange={setSelectedModel}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {MODEL_TYPES.map(type => <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
+    {/* 筛选栏 */}
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span>作品筛选</span>
+          <Button variant="ghost" size="sm" onClick={handleRefresh} className="h-8 w-8 p-0">
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label className="text-sm font-medium mb-2 block">模型类型</label>
+            <Select value={selectedModel} onValueChange={setSelectedModel}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {MODEL_TYPES.map(type => <SelectItem key={type.value} value={type.value}>
+                  {type.label}
+                </SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
 
-            <div>
-              <label className="text-sm font-medium mb-2 block">任务状态</label>
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部状态</SelectItem>
-                  {Object.entries(STATUS_LABELS).map(([key, label]) => <SelectItem key={key} value={key}>
-                      {label}
-                    </SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
+          <div>
+            <label className="text-sm font-medium mb-2 block">任务状态</label>
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部状态</SelectItem>
+                {Object.entries(STATUS_LABELS).map(([key, label]) => <SelectItem key={key} value={key}>
+                  {label}
+                </SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
 
-            <div>
-              <label className="text-sm font-medium mb-2 block">日期范围</label>
-              <input type="date" value={dateRange.from ? formatDate(dateRange.from) : ''} onChange={e => setDateRange(prev => ({
+          <div>
+            <label className="text-sm font-medium mb-2 block">日期范围</label>
+            <input type="date" value={dateRange.from ? formatDate(dateRange.from) : ''} onChange={e => setDateRange(prev => ({
               ...prev,
               from: e.target.value ? new Date(e.target.value) : null
             }))} className="w-full px-3 py-2 border border-input rounded-md bg-background text-sm" />
+          </div>
+
+          <div className="flex items-end">
+            <Button variant="outline" size="sm" onClick={clearFilters} className="w-full">
+              <X className="mr-2 h-4 w-4" />
+              清除筛选
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+
+    {/* 任务列表 */}
+    {filteredTasks.length === 0 ? <Card>
+      <CardContent className="flex flex-col items-center justify-center py-12">
+        <Filter className="h-12 w-12 text-muted-foreground mb-4" />
+        <p className="text-muted-foreground">暂无符合条件的作品</p>
+      </CardContent>
+    </Card> : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {filteredTasks.map(task => <Card key={task._id} className="overflow-hidden">
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between">
+            <CardTitle className="text-lg line-clamp-2">
+              {task.inputParams?.prompt || '未命名作品'}
+            </CardTitle>
+            <Badge className={cn(STATUS_COLORS[task.status], "text-white")}>
+              {STATUS_LABELS[task.status]}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="text-sm text-muted-foreground">
+              <p>模型：{MODEL_TYPES.find(m => m.value === task.modelType)?.label || task.modelType}</p>
+              <p>创建时间：{formatDate(task.createdAt, 'yyyy-MM-dd HH:mm')}</p>
+              {task.inputParams?.duration && <p>时长：{task.inputParams.duration}秒</p>}
+              {task.inputParams?.resolution && <p>分辨率：{task.inputParams.resolution}</p>}
             </div>
 
-            <div className="flex items-end">
-              <Button variant="outline" size="sm" onClick={clearFilters} className="w-full">
-                <X className="mr-2 h-4 w-4" />
-                清除筛选
+            {task.errorMsg && <p className="text-sm text-red-600 bg-red-50 p-2 rounded">
+              {task.errorMsg}
+            </p>}
+
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => handlePreview(task.outputUrl)} disabled={!task.outputUrl || task.status !== TASK_STATUS.SUCCESS} className="flex-1">
+                <Eye className="mr-2 h-4 w-4" />
+                预览
+              </Button>
+              <Button size="sm" onClick={() => handleDownload(task.outputUrl, `${task.taskId}.mp4`)} disabled={!task.outputUrl || task.status !== TASK_STATUS.SUCCESS} className="flex-1">
+                <Download className="mr-2 h-4 w-4" />
+                下载
               </Button>
             </div>
           </div>
         </CardContent>
-      </Card>
+      </Card>)}
+    </div>}
 
-      {/* 任务列表 */}
-      {filteredTasks.length === 0 ? <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Filter className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">暂无符合条件的作品</p>
-          </CardContent>
-        </Card> : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTasks.map(task => <Card key={task._id} className="overflow-hidden">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <CardTitle className="text-lg line-clamp-2">
-                    {task.inputParams?.prompt || '未命名作品'}
-                  </CardTitle>
-                  <Badge className={cn(STATUS_COLORS[task.status], "text-white")}>
-                    {STATUS_LABELS[task.status]}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="text-sm text-muted-foreground">
-                    <p>模型：{MODEL_TYPES.find(m => m.value === task.modelType)?.label || task.modelType}</p>
-                    <p>创建时间：{formatDate(task.createdAt, 'yyyy-MM-dd HH:mm')}</p>
-                    {task.inputParams?.duration && <p>时长：{task.inputParams.duration}秒</p>}
-                    {task.inputParams?.resolution && <p>分辨率：{task.inputParams.resolution}</p>}
-                  </div>
-
-                  {task.errorMsg && <p className="text-sm text-red-600 bg-red-50 p-2 rounded">
-                      {task.errorMsg}
-                    </p>}
-
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => handlePreview(task.outputUrl)} disabled={!task.outputUrl || task.status !== TASK_STATUS.SUCCESS} className="flex-1">
-                      <Eye className="mr-2 h-4 w-4" />
-                      预览
-                    </Button>
-                    <Button size="sm" onClick={() => handleDownload(task.outputUrl, `${task.taskId}.mp4`)} disabled={!task.outputUrl || task.status !== TASK_STATUS.SUCCESS} className="flex-1">
-                      <Download className="mr-2 h-4 w-4" />
-                      下载
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>)}
-        </div>}
-
-      {/* 视频预览模态框 */}
-      <VideoPlayerModal isOpen={showVideoModal} onClose={() => setShowVideoModal(false)} videoUrl={selectedVideoUrl} />
-    </div>;
+    {/* 视频预览模态框 */}
+    <VideoPlayerModal isOpen={showVideoModal} onClose={() => setShowVideoModal(false)} videoUrl={selectedVideoUrl} />
+  </div>;
 }
