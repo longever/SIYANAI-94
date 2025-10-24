@@ -130,7 +130,7 @@ export function WorksList(props) {
       const results = await Promise.allSettled(promises);
       console.log('轮询results', results)
       // 更新完成的任务状态
-      const updates = results.filter(result => result.status === 'fulfilled' && result.output).map(result => {
+      const updates = results.filter(result => result.status === 'fulfilled' && result.value?.output).map(result => {
         const {
           request_id,
           output,
