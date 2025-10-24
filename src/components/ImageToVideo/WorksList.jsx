@@ -145,7 +145,7 @@ export function WorksList(props) {
           params: {
             data: {
               status: output.task_status,
-              outputUrl: output.results?.video_url || ''
+              video_url: output.results?.video_url || ''
             },
             filter: {
               where: {
@@ -356,11 +356,11 @@ export function WorksList(props) {
             </p>}
 
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => handlePreview(task.outputUrl)} disabled={!task.outputUrl || task.status !== TASK_STATUS.SUCCEEDED} className="flex-1">
+              <Button size="sm" variant="outline" onClick={() => handlePreview(task.video_url)} disabled={!task.video_url || task.status !== TASK_STATUS.SUCCEEDED} className="flex-1">
                 <Eye className="mr-2 h-4 w-4" />
                 预览
               </Button>
-              <Button size="sm" onClick={() => handleDownload(task.outputUrl, `${task._id}.mp4`)} disabled={!task.outputUrl || task.status !== TASK_STATUS.SUCCEEDED} className="flex-1">
+              <Button size="sm" onClick={() => handleDownload(task.video_url, `${task._id}.mp4`)} disabled={!task.video_url || task.status !== TASK_STATUS.SUCCEEDED} className="flex-1">
                 <Download className="mr-2 h-4 w-4" />
                 下载
               </Button>
