@@ -122,34 +122,34 @@ export function WorksList(props) {
           }
         });
         return {
-          taskId: task._id,
+          _id: task._id,
           external_task_id: task.external_task_id,
           ...response
         };
       });
       const results = await Promise.allSettled(promises);
-
+      console.log('轮询results', results)
       // 更新完成的任务状态
       const updates = results.filter(result => result.status === 'fulfilled' && result.value.status).map(result => {
         const {
-          taskId,
-          status,
-          outputUrl,
-          errorMsg
+          request_id,
+          output,
+          usage
         } = result.value;
+
+        console.log('轮询结果result', result)
         return $w.cloud.callDataSource({
           dataSourceName: 'generation_tasks',
           methodName: 'wedaUpdateV2',
           params: {
             data: {
-              status: status.toLowerCase(),
-              outputUrl: outputUrl || '',
-              errorMsg: errorMsg || ''
+              status: output.task_status,
+              outputUrl: output.result.video_url || ''
             },
             filter: {
               where: {
                 _id: {
-                  $eq: taskId
+                  $eq: result._id
                 }
               }
             }
