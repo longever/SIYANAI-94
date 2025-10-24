@@ -125,7 +125,6 @@ export function WorksList(props) {
         return {
           _id: task._id,
           external_task_id: task.external_task_id,
-          status:task.status,
           ...response
         };
       });
@@ -134,7 +133,7 @@ export function WorksList(props) {
       //返回任务结果
       const updatedTasks = results.filter(result => result.status === 'fulfilled' && result.value?._id).map(result => ({
         ...tasks.find(t => t._id === result.value._id),
-        status: result.value.status,
+        status: result.value.result.status,
         cloudUrl: result.value.cloudUrl || ''
       }));
 
@@ -142,6 +141,7 @@ export function WorksList(props) {
       if (updatedTasks.length > 0) {
         setTasks(prevTasks => prevTasks.map(task => {
           const updated = updatedTasks.find(u => u._id === task._id);
+          updated.status = task.status;
           return updated || task;
         }));
       }
