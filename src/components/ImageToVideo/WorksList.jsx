@@ -132,10 +132,10 @@ export function WorksList(props) {
 
       // 注意：根据需求，这里不再更新任务状态到数据源
       // 仅更新本地状态以反映最新状态
-      const updatedTasks = results.filter(result => result.status === 'fulfilled' && result.value?.output).map(result => ({
+      const updatedTasks = results.filter(result => result.status === 'fulfilled' && result.value?._id).map(result => ({
         ...tasks.find(t => t._id === result.value._id),
-        status: result.value.output.task_status,
-        video_url: result.value.output.results?.video_url || ''
+        status: result.value.status,
+        cloudUrl: result.value.cloudUrl || ''
       }));
       if (updatedTasks.length > 0) {
         setTasks(prevTasks => prevTasks.map(task => {
@@ -407,11 +407,11 @@ export function WorksList(props) {
             </p>}
 
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => handlePreview(task.video_url)} disabled={!task.video_url || task.status !== TASK_STATUS.SUCCEEDED} className="flex-1">
+              <Button size="sm" variant="outline" onClick={() => handlePreview(task.cloudUrl)} disabled={!task.cloudUrl || task.status !== TASK_STATUS.SUCCEEDED} className="flex-1">
                 <Eye className="mr-2 h-4 w-4" />
                 预览
               </Button>
-              <Button size="sm" onClick={() => handleDownload(task.video_url, `${task._id}.mp4`)} disabled={!task.video_url || task.status !== TASK_STATUS.SUCCEEDED} className="flex-1">
+              <Button size="sm" onClick={() => handleDownload(task.cloudUrl, `${task._id}.mp4`)} disabled={!task.cloudUrl || task.status !== TASK_STATUS.SUCCEEDED} className="flex-1">
                 <Download className="mr-2 h-4 w-4" />
                 下载
               </Button>
