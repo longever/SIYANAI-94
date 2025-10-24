@@ -132,6 +132,7 @@ export function WorksList(props) {
       // 更新完成的任务状态
       const updates = results.filter(result => result.status === 'fulfilled' && result.value?.output).map(result => {
         const {
+          _id,
           request_id,
           output,
           usage
@@ -149,7 +150,7 @@ export function WorksList(props) {
             filter: {
               where: {
                 _id: {
-                  $eq: result._id
+                  $eq: _id
                 }
               }
             }
