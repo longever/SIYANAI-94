@@ -112,13 +112,13 @@ export function WorksList(props) {
     const pendingTasks = tasks.filter(task => task.status === TASK_STATUS.PENDING || task.status === TASK_STATUS.RUNNING);
     if (pendingTasks.length === 0) return;
     try {
-      // 批量查询任务状态
+      // 使用云函数 video-task-handler 获取任务结果
       const promises = pendingTasks.map(async task => {
-        const response = await $w.cloud.callDataSource({
-          dataSourceName: 'aliyun_dashscope_jbn02va',
-          methodName: 'get_tasks_status',
-          params: {
-            task_id: task.external_task_id
+        const response = await $w.cloud.callFunction({
+          name: 'video-task-handler',
+          data: {
+            action: 'getTaskStatus',
+            taskId: task.external_task_id
           }
         });
         return {
@@ -129,41 +129,24 @@ export function WorksList(props) {
       });
       const results = await Promise.allSettled(promises);
       console.log('轮询results', results);
-      // 更新完成的任务状态
-      const updates = results.filter(result => result.status === 'fulfilled' && result.value?.output).map(result => {
-        const {
-          _id,
-          request_id,
-          output,
-          usage
-        } = result.value;
-        console.log('轮询结果result', result);
-        return $w.cloud.callDataSource({
-          dataSourceName: 'generation_tasks',
-          methodName: 'wedaUpdateV2',
-          params: {
-            data: {
-              status: output.task_status,
-              video_url: output.results?.video_url || ''
-            },
-            filter: {
-              where: {
-                _id: {
-                  $eq: _id
-                }
-              }
-            }
-          }
-        });
-      });
-      if (updates.length > 0) {
-        await Promise.all(updates);
-        await fetchTasks();
+
+      // 注意：根据需求，这里不再更新任务状态到数据源
+      // 仅更新本地状态以反映最新状态
+      const updatedTasks = results.filter(result => result.status === 'fulfilled' && result.value?.output).map(result => ({
+        ...tasks.find(t => t._id === result.value._id),
+        status: result.value.output.task_status,
+        video_url: result.value.output.results?.video_url || ''
+      }));
+      if (updatedTasks.length > 0) {
+        setTasks(prevTasks => prevTasks.map(task => {
+          const updated = updatedTasks.find(u => u._id === task._id);
+          return updated || task;
+        }));
       }
     } catch (error) {
       console.error('轮询任务状态失败:', error);
     }
-  }, [tasks, fetchTasks, $w.cloud]);
+  }, [tasks, $w.cloud]);
 
   // 使用 useEffect 实现轮询
   const hasPendingTasks = useMemo(() => tasks.some(task => task.status === TASK_STATUS.PENDING || task.status === TASK_STATUS.RUNNING), [tasks]);
@@ -220,10 +203,35 @@ export function WorksList(props) {
   };
 
   // 预览视频
-  const handlePreview = videoUrl => {
-    if (videoUrl) {
-      setSelectedVideoUrl(videoUrl);
-      setShowVideoModal(true);
+  const handlePreview = async videoUrl => {
+    if (!videoUrl) {
+      toast({
+        title: '预览失败',
+        description: '视频链接无效',
+        variant: 'destructive'
+      });
+      return;
+    }
+    try {
+      // 将 cloudUrl 转换为临时 URL
+      const tcb = await $w.cloud.getCloudInstance();
+      const tempFileRes = await tcb.getTempFileURL({
+        fileList: [videoUrl]
+      });
+      if (tempFileRes.fileList && tempFileRes.fileList[0] && tempFileRes.fileList[0].tempFileURL) {
+        const tempUrl = tempFileRes.fileList[0].tempFileURL;
+        setSelectedVideoUrl(tempUrl);
+        setShowVideoModal(true);
+      } else {
+        throw new Error('无法获取预览链接');
+      }
+    } catch (error) {
+      console.error('预览失败:', error);
+      toast({
+        title: '预览失败',
+        description: error.message || '无法获取视频预览',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -238,7 +246,7 @@ export function WorksList(props) {
       return;
     }
     try {
-      // 使用云开发获取临时文件URL
+      // 将 cloudUrl 转换为临时 URL
       const tcb = await $w.cloud.getCloudInstance();
       const tempFileRes = await tcb.getTempFileURL({
         fileList: [videoUrl]
