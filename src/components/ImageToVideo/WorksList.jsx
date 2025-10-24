@@ -128,7 +128,7 @@ export function WorksList(props) {
         };
       });
       const results = await Promise.allSettled(promises);
-      console.log('轮询results', results)
+      console.log('轮询results', results);
       // 更新完成的任务状态
       const updates = results.filter(result => result.status === 'fulfilled' && result.value?.output).map(result => {
         const {
@@ -137,8 +137,7 @@ export function WorksList(props) {
           output,
           usage
         } = result.value;
-
-        console.log('轮询结果result', result)
+        console.log('轮询结果result', result);
         return $w.cloud.callDataSource({
           dataSourceName: 'generation_tasks',
           methodName: 'wedaUpdateV2',
@@ -230,27 +229,71 @@ export function WorksList(props) {
 
   // 下载视频
   const handleDownload = async (videoUrl, filename) => {
-    try {
-      const response = await fetch(videoUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename || 'video.mp4';
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      toast({
-        title: '下载成功',
-        description: '视频已开始下载'
-      });
-    } catch (error) {
+    if (!videoUrl) {
       toast({
         title: '下载失败',
-        description: error.message || '无法下载视频',
+        description: '视频链接无效',
         variant: 'destructive'
       });
+      return;
+    }
+    try {
+      // 使用云开发获取临时文件URL
+      const tcb = await $w.cloud.getCloudInstance();
+      const tempFileRes = await tcb.getTempFileURL({
+        fileList: [videoUrl]
+      });
+      if (tempFileRes.fileList && tempFileRes.fileList[0] && tempFileRes.fileList[0].tempFileURL) {
+        const downloadUrl = tempFileRes.fileList[0].tempFileURL;
+
+        // 创建下载链接
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = filename || 'video.mp4';
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        toast({
+          title: '下载成功',
+          description: '视频已开始下载'
+        });
+      } else {
+        throw new Error('无法获取下载链接');
+      }
+    } catch (error) {
+      console.error('下载失败:', error);
+
+      // 如果云开发方法失败，尝试直接下载
+      try {
+        const response = await fetch(videoUrl, {
+          mode: 'cors',
+          credentials: 'include'
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename || 'video.mp4';
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        toast({
+          title: '下载成功',
+          description: '视频已开始下载'
+        });
+      } catch (fallbackError) {
+        toast({
+          title: '下载失败',
+          description: fallbackError.message || '无法下载视频，请检查网络连接或稍后重试',
+          variant: 'destructive'
+        });
+      }
     }
   };
 
