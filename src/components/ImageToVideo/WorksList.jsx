@@ -142,6 +142,7 @@ export function WorksList(props) {
         setTasks(prevTasks => prevTasks.map(task => {
           const updated = updatedTasks.find(u => u._id === task._id);
           updated.status = task.status;
+          console.log('updated', updated, 'task', task)
           return updated || task;
         }));
       }
