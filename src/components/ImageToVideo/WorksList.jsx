@@ -144,7 +144,7 @@ export function WorksList(props) {
           params: {
             data: {
               status: output.task_status,
-              outputUrl: output.result.video_url || ''
+              outputUrl: output.results?.video_url || ''
             },
             filter: {
               where: {
