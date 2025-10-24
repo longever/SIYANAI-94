@@ -125,6 +125,7 @@ export function WorksList(props) {
         return {
           _id: task._id,
           external_task_id: task.external_task_id,
+          status:task.status,
           ...response
         };
       });
