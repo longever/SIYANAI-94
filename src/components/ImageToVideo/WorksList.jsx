@@ -10,15 +10,15 @@ import { CalendarIcon, Download, Eye, RefreshCw, Filter, X } from 'lucide-react'
 import { VideoPlayerModal } from '@/components/VideoPlayerModal';
 import { formatDate } from '@/lib/dateUtils';
 const TASK_STATUS = {
-  SUCCESS: 'success',
-  FAILED: 'failed',
-  CANCELED: 'canceled',
-  UNKNOWN: 'unknown',
-  PENDING: 'pending',
-  RUNNING: 'running'
+  SUCCEEDED: 'SUCCEEDED',
+  FAILED: 'FAILED',
+  CANCELED: 'CANCELED',
+  UNKNOWN: 'UNKNOWN',
+  PENDING: 'PENDING',
+  RUNNING: 'RUNNING'
 };
 const STATUS_LABELS = {
-  [TASK_STATUS.SUCCESS]: '已完成',
+  [TASK_STATUS.SUCCEEDED]: '已完成',
   [TASK_STATUS.FAILED]: '失败',
   [TASK_STATUS.CANCELED]: '已取消',
   [TASK_STATUS.UNKNOWN]: '未知',
@@ -26,7 +26,7 @@ const STATUS_LABELS = {
   [TASK_STATUS.RUNNING]: '处理中'
 };
 const STATUS_COLORS = {
-  [TASK_STATUS.SUCCESS]: 'bg-green-500',
+  [TASK_STATUS.SUCCEEDED]: 'bg-green-500',
   [TASK_STATUS.FAILED]: 'bg-red-500',
   [TASK_STATUS.CANCELED]: 'bg-gray-500',
   [TASK_STATUS.UNKNOWN]: 'bg-yellow-500',
@@ -355,11 +355,11 @@ export function WorksList(props) {
             </p>}
 
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => handlePreview(task.outputUrl)} disabled={!task.outputUrl || task.status !== TASK_STATUS.SUCCESS} className="flex-1">
+              <Button size="sm" variant="outline" onClick={() => handlePreview(task.outputUrl)} disabled={!task.outputUrl || task.status !== TASK_STATUS.SUCCEEDED} className="flex-1">
                 <Eye className="mr-2 h-4 w-4" />
                 预览
               </Button>
-              <Button size="sm" onClick={() => handleDownload(task.outputUrl, `${task.taskId}.mp4`)} disabled={!task.outputUrl || task.status !== TASK_STATUS.SUCCESS} className="flex-1">
+              <Button size="sm" onClick={() => handleDownload(task.outputUrl, `${task.taskId}.mp4`)} disabled={!task.outputUrl || task.status !== TASK_STATUS.SUCCEEDED} className="flex-1">
                 <Download className="mr-2 h-4 w-4" />
                 下载
               </Button>
