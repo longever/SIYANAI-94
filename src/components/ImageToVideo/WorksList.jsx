@@ -220,8 +220,8 @@ export function WorksList(props) {
         fileList: [videoUrl]
       });
       console.log('获取临时地址', tempFileRes)
-      if (tempFileRes.fileList && tempFileRes.fileList[0] && tempFileRes.fileList[0].tempFileURL) {
-        const tempUrl = tempFileRes.fileList[0].tempFileURL;
+      if (tempFileRes.fileList && tempFileRes.fileList[0] && tempFileRes.fileList[0].fileID) {
+        const tempUrl = tempFileRes.fileList[0].fileID;
         setSelectedVideoUrl(tempUrl);
         setShowVideoModal(true);
       } else {
@@ -253,8 +253,8 @@ export function WorksList(props) {
       const tempFileRes = await tcb.getTempFileURL({
         fileList: [videoUrl]
       });
-      if (tempFileRes.fileList && tempFileRes.fileList[0] && tempFileRes.fileList[0].tempFileURL) {
-        const downloadUrl = tempFileRes.fileList[0].tempFileURL;
+      if (tempFileRes.fileList && tempFileRes.fileList[0] && tempFileRes.fileList[0].fileID) {
+        const downloadUrl = tempFileRes.fileList[0].fileID;
 
         // 创建下载链接
         const a = document.createElement('a');
