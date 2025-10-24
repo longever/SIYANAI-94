@@ -254,8 +254,8 @@ export function WorksList(props) {
       const tempFileRes = await tcb.getTempFileURL({
         fileList: [videoUrl]
       });
-      if (tempFileRes.fileList && tempFileRes.fileList[0] && tempFileRes.fileList[0].fileID) {
-        const downloadUrl = tempFileRes.fileList[0].fileID;
+      if (tempFileRes.fileList && tempFileRes.fileList[0] && tempFileRes.fileList[0].tempFileURL) {
+        const downloadUrl = tempFileRes.fileList[0].tempFileURL;
 
         // 创建下载链接
         const a = document.createElement('a');
