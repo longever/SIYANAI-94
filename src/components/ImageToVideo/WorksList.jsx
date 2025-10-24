@@ -119,7 +119,7 @@ export function WorksList(props) {
           name: 'video-task-handler',
           data: {
             action: 'getTaskStatus',
-            taskId: task.external_task_id
+            taskId: task._id
           }
         });
         return {
