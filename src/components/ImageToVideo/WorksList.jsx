@@ -129,7 +129,6 @@ export function WorksList(props) {
         };
       });
       const results = await Promise.allSettled(promises);
-      console.log('轮询results', results);
       //返回任务结果
       const updatedTasks = results.filter(result => result.status === 'fulfilled' && result.value?._id).map(result => ({
         ...tasks.find(t => t._id === result.value._id),
@@ -137,14 +136,8 @@ export function WorksList(props) {
         cloudUrl: result.value.cloudUrl || ''
       }));
 
-      console.log('本地tasks', updatedTasks);
       if (updatedTasks.length > 0) {
-        setTasks(prevTasks => prevTasks.map(task => {
-          const updated = updatedTasks.find(u => u._id === task._id);
-          updated.status = task.status;
-          console.log('updated', updated, 'task', task)
-          return updated || task;
-        }));
+        fetchTasks();
       }
     } catch (error) {
       console.error('轮询任务状态失败:', error);
