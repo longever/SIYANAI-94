@@ -112,46 +112,50 @@ export function WorksList(props) {
     const pendingTasks = tasks.filter(task => task.status === TASK_STATUS.PENDING || task.status === TASK_STATUS.RUNNING);
     if (pendingTasks.length === 0) return;
     try {
-      // 使用资源连接器 aliyun_dashscope_jbn02va 的 get_tasks_status 方法
-      const response = await $w.cloud.callDataSource({
-        dataSourceName: 'aliyun_dashscope_jbn02va',
-        methodName: 'get_tasks_status',
-        params: {
-          task_ids: pendingTasks.map(task => task.external_task_id)
-        }
-      });
-
-      // 处理返回的任务状态
-      const taskStatusMap = new Map();
-      if (response && Array.isArray(response)) {
-        response.forEach(item => {
-          taskStatusMap.set(item.task_id, item);
+      // 批量查询任务状态
+      const promises = pendingTasks.map(async task => {
+        const response = await $w.cloud.callDataSource({
+          dataSourceName: 'aliyun_dashscope_jbn02va',
+          methodName: 'get_tasks_status',
+          params: {
+            task_id: task.external_task_id
+          }
         });
-      }
+        return {
+          taskId: task._id,
+          external_task_id: task.external_task_id,
+          ...response
+        };
+      });
+      const results = await Promise.allSettled(promises);
 
       // 更新完成的任务状态
-      const updates = pendingTasks.map(task => {
-        const statusInfo = taskStatusMap.get(task.external_task_id);
-        if (!statusInfo) return null;
+      const updates = results.filter(result => result.status === 'fulfilled' && result.value.status).map(result => {
+        const {
+          taskId,
+          status,
+          outputUrl,
+          errorMsg
+        } = result.value;
         return $w.cloud.callDataSource({
           dataSourceName: 'generation_tasks',
           methodName: 'wedaUpdateV2',
           params: {
             data: {
-              status: statusInfo.status?.toLowerCase() || task.status,
-              outputUrl: statusInfo.output_url || '',
-              errorMsg: statusInfo.error_msg || ''
+              status: status.toLowerCase(),
+              outputUrl: outputUrl || '',
+              errorMsg: errorMsg || ''
             },
             filter: {
               where: {
                 _id: {
-                  $eq: task._id
+                  $eq: taskId
                 }
               }
             }
           }
         });
-      }).filter(Boolean);
+      });
       if (updates.length > 0) {
         await Promise.all(updates);
         await fetchTasks();
@@ -355,7 +359,7 @@ export function WorksList(props) {
                 <Eye className="mr-2 h-4 w-4" />
                 预览
               </Button>
-              <Button size="sm" onClick={() => handleDownload(task.outputUrl, `${task.taskId}.mp4`)} disabled={!task.outputUrl || task.status !== TASK_STATUS.SUCCEEDED} className="flex-1">
+              <Button size="sm" onClick={() => handleDownload(task.outputUrl, `${task._id}.mp4`)} disabled={!task.outputUrl || task.status !== TASK_STATUS.SUCCEEDED} className="flex-1">
                 <Download className="mr-2 h-4 w-4" />
                 下载
               </Button>
