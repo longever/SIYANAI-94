@@ -94,6 +94,7 @@ export function WorksList(props) {
         }
       });
       if (response.records) {
+        console.log("初始获取task", response.records)
         setTasks(response.records);
       }
     } catch (error) {
@@ -129,14 +130,14 @@ export function WorksList(props) {
       });
       const results = await Promise.allSettled(promises);
       console.log('轮询results', results);
-
-      // 注意：根据需求，这里不再更新任务状态到数据源
-      // 仅更新本地状态以反映最新状态
+      //返回任务结果
       const updatedTasks = results.filter(result => result.status === 'fulfilled' && result.value?._id).map(result => ({
         ...tasks.find(t => t._id === result.value._id),
         status: result.value.status,
         cloudUrl: result.value.cloudUrl || ''
       }));
+
+      console.log('本地tasks', updatedTasks);
       if (updatedTasks.length > 0) {
         setTasks(prevTasks => prevTasks.map(task => {
           const updated = updatedTasks.find(u => u._id === task._id);
