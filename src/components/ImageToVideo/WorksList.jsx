@@ -112,50 +112,46 @@ export function WorksList(props) {
     const pendingTasks = tasks.filter(task => task.status === TASK_STATUS.PENDING || task.status === TASK_STATUS.RUNNING);
     if (pendingTasks.length === 0) return;
     try {
-      // 批量查询任务状态
-      const promises = pendingTasks.map(async task => {
-        const response = await $w.cloud.callFunction({
-          name: 'aliyun_dashscope_jbn02va',
-          data: {
-            action: 'get_tasks_status',
-            task_id: task.external_task_id
-          }
-        });
-        return {
-          taskId: task.taskId,
-          external_task_id: task.external_task_id,
-          ...response
-        };
+      // 使用资源连接器 aliyun_dashscope_jbn02va 的 get_tasks_status 方法
+      const response = await $w.cloud.callDataSource({
+        dataSourceName: 'aliyun_dashscope_jbn02va',
+        methodName: 'get_tasks_status',
+        params: {
+          task_ids: pendingTasks.map(task => task.external_task_id)
+        }
       });
-      const results = await Promise.allSettled(promises);
+
+      // 处理返回的任务状态
+      const taskStatusMap = new Map();
+      if (response && Array.isArray(response)) {
+        response.forEach(item => {
+          taskStatusMap.set(item.task_id, item);
+        });
+      }
 
       // 更新完成的任务状态
-      const updates = results.filter(result => result.status === 'fulfilled' && result.value.status).map(result => {
-        const {
-          taskId,
-          status,
-          outputUrl,
-          errorMsg
-        } = result.value;
+      const updates = pendingTasks.map(task => {
+        const statusInfo = taskStatusMap.get(task.external_task_id);
+        if (!statusInfo) return null;
         return $w.cloud.callDataSource({
           dataSourceName: 'generation_tasks',
           methodName: 'wedaUpdateV2',
           params: {
             data: {
-              status: status.toLowerCase(),
-              outputUrl: outputUrl || '',
-              errorMsg: errorMsg || ''
+              status: statusInfo.status?.toLowerCase() || task.status,
+              outputUrl: statusInfo.output_url || '',
+              errorMsg: statusInfo.error_msg || ''
             },
             filter: {
               where: {
                 _id: {
-                  $eq: taskId
+                  $eq: task._id
                 }
               }
             }
           }
         });
-      });
+      }).filter(Boolean);
       if (updates.length > 0) {
         await Promise.all(updates);
         await fetchTasks();
