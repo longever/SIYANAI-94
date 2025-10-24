@@ -220,6 +220,7 @@ export function WorksList(props) {
         fileList: [videoUrl]
       });
       console.log('获取临时地址', tempFileRes)
+      console.log('获取临时地址', tempFileRes.fileList[0].fileID)
       if (tempFileRes.fileList && tempFileRes.fileList[0] && tempFileRes.fileList[0].fileID) {
         const tempUrl = tempFileRes.fileList[0].fileID;
         setSelectedVideoUrl(tempUrl);
