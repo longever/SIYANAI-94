@@ -219,6 +219,7 @@ export function WorksList(props) {
       const tempFileRes = await tcb.getTempFileURL({
         fileList: [videoUrl]
       });
+      console.log('获取临时地址', tempFileRes)
       if (tempFileRes.fileList && tempFileRes.fileList[0] && tempFileRes.fileList[0].tempFileURL) {
         const tempUrl = tempFileRes.fileList[0].tempFileURL;
         setSelectedVideoUrl(tempUrl);
