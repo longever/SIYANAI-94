@@ -54,3 +54,4 @@ export * from './ImageToVideo/SystemSelector.jsx';
 export * from './ImageToVideo/VideoSettings.jsx';
 export * from './ImageToVideo/WorksList.jsx';
 export * from './ImageToVideo/ImageVideoToVideo.jsx';
+export * from './ImageToVideo/ImageDescriptionToVideo.jsx';
