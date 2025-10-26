@@ -4,14 +4,14 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent, CardDescription, CardHeader, CardTitle, Button, useToast, GenerationModal } from '@/components/ui';
 // @ts-ignore;
 import { Upload, Image, FileAudio, Video, Sparkles } from 'lucide-react';
- 
+
 import ImageAudioToVideo from '@/components/ImageToVideo/ImageAudioToVideo';
 import ImageVideoToVideo from '@/components/ImageToVideo/ImageVideoToVideo';
-import ImageDescriptionToVideo from '@/components/ImageToVideo/ImageDescriptionToVideo';
+import { ImageDescriptionToVideo } from '@/components/ImageToVideo/ImageDescriptionToVideo';
 
 
 // 图+描述组件
-function ImageDescriptionMode(props){
+function ImageDescriptionMode(props) {
   return <ImageDescriptionToVideo $w={props.$w} />;
 }
 
