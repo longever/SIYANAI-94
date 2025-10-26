@@ -1,0 +1,11 @@
+
+    {
+      "name": "image-prompt-to-video-task",
+      "version": "1.0.0",
+      "description": "使用万相2.5 preview模型将图片和文字描述生成视频任务",
+      "main": "index.js",
+      "dependencies": {
+        "@cloudbase/node-sdk": "^3.3.7"
+      }
+    }
+  
