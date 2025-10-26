@@ -2,342 +2,259 @@
 'use strict';
 
 const cloudbase = require('@cloudbase/node-sdk');
-const { v4: uuidv4 } = require('uuid');
+const fs = require('fs-extra');
+const path = require('path');
+const crypto = require('crypto');
 
-// 阿里云 DashScope 配置
-const DASHSCOPE_API_KEY = process.env.DASHSCOPE_API_KEY || '';
-const DASHSCOPE_BASE_URL = process.env.DASHSCOPE_BASE_URL || 'https://dashscope.aliyuncs.com/api/v1';
-const app = cloudbase.init({
-  env: cloudbase.SYMBOL_CURRENT_ENV
-});
+const app = cloudbase.init();
 const models = app.models;
+const storage = app.storage;
 
-/**
- * 将云存储地址转换为临时URL
- * @param {string} cloudPath 云存储路径，如 cloud://env-id/path/to/file
- * @returns {Promise<string>} 临时URL
- */
-async function getTempFileURL(cloudPath) {
-  if (!cloudPath || !cloudPath.startsWith('cloud://')) {
-    // 如果不是云存储地址，直接返回
-    return cloudPath;
+// AI 视频合成服务配置
+const AI_SERVICE_CONFIG = {
+  apiUrl: process.env.AI_VIDEO_API_URL || 'https://api.ti.tencentcloudapi.com',
+  secretId: process.env.AI_SECRET_ID,
+  secretKey: process.env.AI_SECRET_KEY,
+  region: process.env.AI_REGION || 'ap-beijing'
+};
+
+// 默认配置
+const DEFAULT_OPTIONS = {
+  duration: 5,
+  fps: 24,
+  resolution: [1280, 720]
+};
+
+// 创建任务记录
+async function createTaskRecord(images, options) {
+  const taskId = crypto.randomUUID();
+  
+  const task = await models['image-to-video-task'].create({
+    data: {
+      taskId,
+      images,
+      options: { ...DEFAULT_OPTIONS, ...options },
+      status: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+  });
+  
+  return task.data;
+}
+
+// 下载图片到临时目录
+async function downloadImages(images) {
+  const tempDir = path.join('/tmp', 'images-' + Date.now());
+  await fs.ensureDir(tempDir);
+  
+  const downloadPromises = images.map(async (fileId, index) => {
+    try {
+      const fileName = `image_${index}.jpg`;
+      const localPath = path.join(tempDir, fileName);
+      
+      const result = await storage.downloadFile({
+        fileID: fileId,
+        tempFilePath: localPath
+      });
+      
+      return localPath;
+    } catch (error) {
+      throw new Error(`下载图片失败: ${fileId}, ${error.message}`);
+    }
+  });
+  
+  const localPaths = await Promise.all(downloadPromises);
+  return { tempDir, localPaths };
+}
+
+// 调用 AI 视频合成服务
+async function callVideoSynthesis(localPaths, options) {
+  // 这里模拟调用 AI 服务，实际使用时替换为真实的 API 调用
+  console.log('开始调用 AI 视频合成服务...');
+  console.log('图片路径:', localPaths);
+  console.log('配置参数:', options);
+  
+  // 模拟 API 调用延迟
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  
+  // 模拟成功响应
+  const videoPath = path.join('/tmp', `output_${Date.now()}.mp4`);
+  
+  // 这里应该调用真实的 AI 服务 API
+  // 示例代码：
+  /*
+  const response = await fetch(`${AI_SERVICE_CONFIG.apiUrl}/video-synthesis`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${AI_SERVICE_CONFIG.secretId}`
+    },
+    body: JSON.stringify({
+      images: localPaths,
+      duration: options.duration,
+      fps: options.fps,
+      resolution: options.resolution
+    })
+  });
+  
+  const result = await response.json();
+  if (result.error) {
+    throw new Error(result.error);
   }
+  
+  return result.videoUrl;
+  */
+  
+  // 模拟创建空视频文件
+  await fs.writeFile(videoPath, '');
+  
+  return videoPath;
+}
 
+// 上传视频到云存储
+async function uploadVideo(localVideoPath) {
+  const fileName = `video_${Date.now()}.mp4`;
+  const cloudPath = `videos/${fileName}`;
+  
   try {
-    const res = await app.getTempFileURL({
-      fileList: [cloudPath]
+    const result = await storage.uploadFile({
+      cloudPath,
+      fileContent: fs.createReadStream(localVideoPath)
     });
-
-    if (res.fileList && res.fileList[0] && res.fileList[0].tempFileURL) {
-      return res.fileList[0].tempFileURL;
-    }
-
-    throw new Error('Failed to get temp file URL');
+    
+    return result.fileID;
   } catch (error) {
-    console.error('获取临时URL失败:', error);
-    throw error;
+    throw new Error(`上传视频失败: ${error.message}`);
   }
 }
 
-/**
- * 创建任务记录
- */
-async function createTaskRecord(taskData) {
-  const task = {
-    taskId: taskData.taskId,
-    imageUrl: taskData.imageUrl,
-    audioUrl: taskData.audioUrl,
-    model: taskData.model,
-    prompt: taskData.prompt || '',
-    userId: taskData.userId,
-    callbackUrl: taskData.callbackUrl || '',
-    status: 'created',
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-    result: null
+// 更新任务状态
+async function updateTaskStatus(taskId, status, videoFileId = null, error = null) {
+  const updateData = {
+    status,
+    updatedAt: new Date()
   };
-
-  console.log('创建任务记录:', task);
-
-  const result = await models.generation_tasks.create({
-    data: task
+  
+  if (videoFileId) {
+    updateData.videoFileId = videoFileId;
+  }
+  
+  if (error) {
+    updateData.error = error;
+  }
+  
+  await models['image-to-video-task'].update({
+    where: { taskId },
+    data: updateData
   });
-
-  return result.data;
 }
 
-/**
- * 更新任务记录
- */
-async function updateTaskRecord(taskId, updateData) {
-  const update = {
-    ...updateData,
-    updatedAt: Date.now()
-  };
-
-  console.log('更新任务记录:', { taskId, update });
-
-  const result = await models.generation_tasks.update({
-    data: update,
-    filter: {
-      where: {
-        taskId: { $eq: taskId }
+// 发送回调通知
+async function sendCallback(callbackFunction, taskData) {
+  if (!callbackFunction) return;
+  
+  try {
+    await app.callFunction({
+      name: callbackFunction,
+      data: {
+        taskId: taskData.taskId,
+        status: taskData.status,
+        videoFileId: taskData.videoFileId,
+        error: taskData.error
       }
-    }
-  });
+    });
+  } catch (error) {
+    console.error('回调通知失败:', error);
+  }
+}
 
-  return result.data;
+// 清理临时文件
+async function cleanup(tempDir) {
+  try {
+    await fs.remove(tempDir);
+  } catch (error) {
+    console.error('清理临时文件失败:', error);
+  }
 }
 
 exports.main = async (event, context) => {
-  const taskId = uuidv4();
-  console.log('生成任务ID:', taskId);
-
+  const { images, options = {}, callback } = event;
+  
   try {
-    // 1. 参数校验
-    const { imageUrl, audioUrl, prompt, settings, userId } = event;
-    const { ratio, style } = settings;
-
-    if (!imageUrl || !audioUrl || !ratio || !style) {
-      const errorMessage = 'Missing required fields: audioUrl, imageUrl, ratio, style';
-
-      await models['generation_tasks'].update({
-        filter: {
-          where: {
-            taskId: { $eq: taskId }
-          }
-        },
-        data: {
-          status: 'FAILED',
-          error: errorMessage,
-          updatedAt: Date.now()
-        }
-      });
-
-      return {
-        success: false,
-        errorMessage
-      };
+    // 参数校验
+    if (!Array.isArray(images) || images.length === 0) {
+      throw new Error('images 必须是非空数组');
     }
-
-    // 2. 将云存储地址转换为临时URL
-    let tempImageUrl, tempAudioUrl;
-    try {
-      tempImageUrl = await getTempFileURL(imageUrl);
-      tempAudioUrl = await getTempFileURL(audioUrl);
-      console.log('转换后的临时URL:', { tempImageUrl, tempAudioUrl });
-    } catch (urlError) {
-      const errorMessage = `Failed to convert cloud storage URLs: ${urlError.message}`;
-
-      await models['generation_tasks'].update({
-        filter: {
-          where: {
-            taskId: { $eq: taskId }
-          }
-        },
-        data: {
-          status: 'FAILED',
-          error: errorMessage,
-          updatedAt: Date.now()
-        }
-      });
-
-      return {
-        success: false,
-        errorMessage
-      };
-    }
-
-    // 3. 创建任务记录
-    const model = 'emo-v1';
-    await createTaskRecord({
-      taskId,
-      imageUrl: tempImageUrl,
-      audioUrl: tempAudioUrl,
-      model,
-      prompt,
-      userId
-    });
-
-    // 4. 调用阿里云 DashScope API
-    // 4.1 调用情绪检测 API
-    let detectResult;
-    try {
-      const detectResponse = await fetch(`${DASHSCOPE_BASE_URL}/services/aigc/image2video/face-detect`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${DASHSCOPE_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          "model": 'emo-detect-v1',
-          "input": {
-            "image_url": tempImageUrl
-          },
-          "parameters": {
-            "ratio": ratio
-          }
-        })
-      });
-
-      if (!detectResponse.ok) {
-        throw new Error(`HTTP ${detectResponse.status}: ${detectResponse.statusText}`);
+    
+    for (const fileId of images) {
+      if (!fileId || typeof fileId !== 'string') {
+        throw new Error('每个图片 fileID 必须是有效的字符串');
       }
-
-      detectResult = await detectResponse.json();
-    } catch (detectError) {
-      const errorMessage = `Emotion detection failed: ${detectError.message}`;
-
-      await models['generation_tasks'].update({
-        filter: {
-          where: {
-            taskId: { $eq: taskId }
-          }
-        },
-        data: {
-          status: 'FAILED',
-          error: errorMessage,
-          updatedAt: Date.now()
-        }
-      });
-
-      return {
-        success: false,
-        errorMessage
-      };
     }
-
-    // 4.2 调用视频生成 API
-    const { check_pass, humanoid, ext_bbox, face_bbox } = detectResult.output;
-    if (!check_pass) {
-      throw new Error(`HTTP 图片检查出错`);
-    }
-
-    let videoResult;
-    try {
-      console.log("start to generate video")
-      const videoResponse = await fetch(`${DASHSCOPE_BASE_URL}/services/aigc/image2video/video-synthesis`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${DASHSCOPE_API_KEY}`,
-          'Content-Type': 'application/json',
-          'X-DashScope-Async': 'enable'
-        },
-        body: JSON.stringify({
-          model: 'emo-v1',
-          input: {
-            "image_url": tempImageUrl,
-            "audio_url": tempAudioUrl,
-            "face_bbox": face_bbox,
-            "ext_bbox": ext_bbox
-          },
-          parameters: {
-            "style_level": style
-          }
-        })
-      });
-
-      if (!videoResponse.ok) {
-        throw new Error(`HTTP ${videoResponse.status}: ${videoResponse.statusText}`);
-      }
-
-      videoResult = await videoResponse.json();
-
-      console.log("end to generate video", videoResult)
-    } catch (videoError) {
-      const errorMessage = `Video generation failed: ${videoError.message}`;
-
-      await models['generation_tasks'].update({
-        filter: {
-          where: {
-            taskId: { $eq: taskId }
-          }
-        },
-        data: {
-          status: 'FAILED',
-          error: errorMessage,
-          updatedAt: Date.now()
-        }
-      });
-
-      return {
-        success: false,
-        errorMessage
-      };
-    }
-
-    // 5. 处理响应
-    if (!videoResult || !videoResult.output || !videoResult.output.task_id) {
-      const errorMessage = 'Invalid video generation response format';
-
-      await models['generation_tasks'].update({
-        filter: {
-          where: {
-            taskId: { $eq: taskId }
-          }
-        },
-        data: {
-          status: 'FAILED',
-          error: errorMessage,
-          updatedAt: Date.now()
-        }
-      });
-
-      return {
-        success: false,
-        errorMessage
-      };
-    }
-
-    const requestId = videoResult.output.task_id;
-
-    // 6. 更新任务状态为 SUBMITTED
-    await models['generation_tasks'].update({
-      filter: {
-        where: {
-          taskId: { $eq: taskId }
-        }
-      },
-      data: {
-        status: 'SUBMITTED',
-        requestId: requestId,
-        videoResult: videoResult.output,
-        updatedAt: Date.now()
-      }
-    });
-
-    // 7. 返回成功结果
-    return {
-      success: true,
-      requestId,
-      videoResult: videoResult.output
-    };
-
-  } catch (error) {
-    console.error('Function error:', error);
-
-    if (event.taskId) {
+    
+    // 创建任务记录
+    const task = await createTaskRecord(images, options);
+    const taskId = task.taskId;
+    
+    // 异步处理任务
+    (async () => {
+      let tempDir = null;
       try {
-        await models['generation_tasks'].update({
-          filter: {
-            where: {
-              taskId: { $eq: event.taskId }
-            }
-          },
-          data: {
-            status: 'FAILED',
-            error: 'Internal server error',
-            updatedAt: Date.now()
-          }
+        // 更新状态为处理中
+        await updateTaskStatus(taskId, 'processing');
+        
+        // 下载图片
+        const { tempDir: dir, localPaths } = await downloadImages(images);
+        tempDir = dir;
+        
+        // 调用 AI 视频合成
+        const videoPath = await callVideoSynthesis(localPaths, { ...DEFAULT_OPTIONS, ...options });
+        
+        // 上传视频
+        const videoFileId = await uploadVideo(videoPath);
+        
+        // 更新任务状态为成功
+        await updateTaskStatus(taskId, 'success', videoFileId);
+        
+        // 发送回调
+        await sendCallback(callback, {
+          taskId,
+          status: 'success',
+          videoFileId
         });
-      } catch (updateError) {
-        console.error('Failed to update task status:', updateError);
+        
+        // 清理临时文件
+        await cleanup(tempDir);
+        
+      } catch (error) {
+        console.error('任务处理失败:', error);
+        
+        // 更新任务状态为失败
+        await updateTaskStatus(taskId, 'failed', null, error.message);
+        
+        // 发送回调
+        await sendCallback(callback, {
+          taskId,
+          status: 'failed',
+          error: error.message
+        });
+        
+        // 清理临时文件
+        if (tempDir) {
+          await cleanup(tempDir);
+        }
       }
-    }
-
+    })();
+    
+    // 同步返回任务 ID
     return {
-      success: false,
-      errorMessage: 'Internal server error'
+      taskId,
+      status: 'pending'
     };
+    
+  } catch (error) {
+    console.error('创建任务失败:', error);
+    throw error;
   }
 };

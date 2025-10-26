@@ -1,23 +1,27 @@
 
-interface Settings {
-  ratio: string;
-  style: number;
+interface ImageToVideoOptions {
+  duration?: number;
+  fps?: number;
+  resolution?: [number, number];
+}
+
+interface ImageToVideoInput {
+  images: string[];
+  options?: ImageToVideoOptions;
+  callback?: string;
+}
+
+interface ImageToVideoOutput {
+  taskId: string;
+  status: 'pending' | 'processing' | 'success' | 'failed';
+  videoFileId?: string;
+  error?: string;
 }
 
 interface CloudFunctionEvent {
-  imageUrl: string;
-  audioUrl: string;
-  prompt?: string;
-  settings: Settings;
-  userId: string;
+  images: string[];
+  options?: ImageToVideoOptions;
+  callback?: string;
 }
 
-interface CloudFunctionResult {
-  success: boolean;
-  requestId?: string;
-  detectResult?: any;
-  errorMessage?: string;
-}
-
-export declare function main(event: CloudFunctionEvent, context: any): Promise<CloudFunctionResult>;
-  
+export declare function main(event: CloudFunctionEvent, context: any): Promise<ImageToVideoOutput>;

@@ -1,11 +1,11 @@
+
 {
   "name": "image-to-video-task",
-  "version": "1.0.1",
-  "description": "图片转视频任务处理云函数（支持云存储地址转临时URL）",
+  "version": "1.0.0",
+  "description": "图片转视频任务处理云函数",
   "main": "index.js",
   "dependencies": {
     "@cloudbase/node-sdk": "^3.3.7",
-    "node-fetch": "^3.3.2",
-    "uuid": "^9.0.0"
+    "fs-extra": "^11.1.1"
   }
 }
