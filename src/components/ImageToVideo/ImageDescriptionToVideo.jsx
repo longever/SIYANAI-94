@@ -1,7 +1,7 @@
 // @ts-ignore;
 import React, { useState } from 'react';
 // @ts-ignore;
-import { Button, Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent, CardDescription, CardHeader, CardTitle, useToast } from '@/components/ui';
+import { Button, Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent, CardDescription, CardHeader, CardTitle, useToast, Checkbox } from '@/components/ui';
 // @ts-ignore;
 import { Upload, Sparkles } from 'lucide-react';
 
@@ -12,8 +12,6 @@ import { GenerationModal } from './GenerationModal';
 import { VideoSettings } from './VideoSettings';
 import { SystemSelector } from './SystemSelector';
 import { WorksList } from './WorksList';
-
-
 export function ImageDescriptionToVideo(props) {
   const {
     $w
@@ -34,7 +32,7 @@ export function ImageDescriptionToVideo(props) {
   const [generationProgress, setGenerationProgress] = useState(0);
   const [generatedVideo, setGeneratedVideo] = useState(null);
   const [taskId, setTaskId] = useState(null);
-
+  const [useAudio, setUseAudio] = useState(false);
   const [selectedModel, setSelectedModel] = useState('tongyi-wanxiang');
   const [videoSettings, setVideoSettings] = useState({
     resolution: '480P',
@@ -64,6 +62,14 @@ export function ImageDescriptionToVideo(props) {
       });
       return;
     }
+    if (useAudio && !uploadedFiles.audio) {
+      toast({
+        title: "缺少音频",
+        description: "请上传音频文件",
+        variant: "destructive"
+      });
+      return;
+    }
     setIsGenerating(true);
     setShowGenerationModal(true);
     setGenerationProgress(0);
@@ -74,22 +80,27 @@ export function ImageDescriptionToVideo(props) {
         cloudPath: `images/${Date.now()}_${uploadedFiles.avatar.name}`,
         filePath: uploadedFiles.avatar
       });
-      const audioUpload = await tcb.uploadFile({
-        cloudPath: `audios/${Date.now()}_${uploadedFiles.audio.name}`,
-        filePath: uploadedFiles.audio
-      });
+      let audioUpload = null;
+      if (useAudio && uploadedFiles.audio) {
+        audioUpload = await tcb.uploadFile({
+          cloudPath: `audios/${Date.now()}_${uploadedFiles.audio.name}`,
+          filePath: uploadedFiles.audio
+        });
+      }
 
       // 调用云函数创建任务
-      const { result } = await $w.cloud.callFunction({
+      const {
+        result
+      } = await $w.cloud.callFunction({
         name: 'image-prompt-to-video-task',
         data: {
           imageUrl: imageUpload.fileID,
-          audioUrl: audioUpload.fileID,
+          audioUrl: useAudio && audioUpload ? audioUpload.fileID : null,
           prompt: description,
           userId: $w.auth.currentUser?.userId || 'anonymous',
           type: 'image-description-to-video',
           settings: videoSettings,
-          model: selectedModel,
+          model: selectedModel
         }
       });
       if (result.success) {
@@ -219,7 +230,17 @@ export function ImageDescriptionToVideo(props) {
             <div className="space-y-6">
               <FileUploadSection type="avatar" title="上传头像" description="支持 JPG、PNG 格式，建议尺寸 512x512" accept="image/*" onFileUpload={file => handleFileUpload('avatar', file)} uploadedFile={uploadedFiles.avatar} />
 
-              <FileUploadSection type="audio" title="上传音频" description="支持 MP3、WAV 格式，最大 50MB" accept="audio/*" onFileUpload={file => handleFileUpload('audio', file)} uploadedFile={uploadedFiles.audio} />
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="use-audio" checked={useAudio} onCheckedChange={checked => setUseAudio(!!checked)} />
+                  <label htmlFor="use-audio" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    使用音频
+                  </label>
+                </div>
+
+                {useAudio && <FileUploadSection type="audio" title="上传音频" description="支持 MP3、WAV 格式，最大 50MB" accept="audio/*" onFileUpload={file => handleFileUpload('audio', file)} uploadedFile={uploadedFiles.audio} />}
+              </div>
+
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <label className="block text-sm font-medium">图片描述</label>
@@ -236,8 +257,6 @@ export function ImageDescriptionToVideo(props) {
                 <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="请输入图片的描述文字，AI将根据描述生成视频..." className="w-full min-h-[120px] p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
               </div>
             </div>
-
-
 
             <div className="space-y-6">
               <SystemSelector selectedModel={selectedModel} onSystemChange={setSelectedModel} />
@@ -257,7 +276,7 @@ export function ImageDescriptionToVideo(props) {
           </div>
 
           <div className="flex justify-center">
-            <Button size="lg" onClick={handleGenerateVideo} disabled={!uploadedFiles.avatar || !uploadedFiles.audio || isGenerating} className="px-8">
+            <Button size="lg" onClick={handleGenerateVideo} disabled={!uploadedFiles.avatar || !description.trim() || useAudio && !uploadedFiles.audio || isGenerating} className="px-8">
               {isGenerating ? '生成中...' : '开始生成'}
             </Button>
           </div>
@@ -270,57 +289,5 @@ export function ImageDescriptionToVideo(props) {
 
       <GenerationModal open={showGenerationModal} onOpenChange={setShowGenerationModal} progress={generationProgress} isGenerating={isGenerating} generatedVideo={generatedVideo} onSave={() => generatedVideo && handleSaveToDatabase(generatedVideo)} />
     </div>
-  </div>;
-  return <div className="space-y-6">
-    <div>
-      <label className="block text-sm font-medium mb-2">上传图片</label>
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-        <div className="space-y-6">
-          <FileUploadSection type="avatar" title="上传头像" description="支持 JPG、PNG 格式，建议尺寸 512x512" accept="image/*" onFileUpload={file => handleFileUpload('avatar', file)} uploadedFile={uploadedFiles.avatar} />
-
-          <FileUploadSection type="audio" title="上传音频" description="支持 MP3、WAV 格式，最大 50MB" accept="audio/*" onFileUpload={file => handleFileUpload('audio', file)} uploadedFile={uploadedFiles.audio} />
-        </div>
-      </div>
-    </div>
-
-
-    <div>
-      <div className="flex justify-between items-center mb-2">
-        <label className="block text-sm font-medium">图片描述</label>
-        <Button variant="ghost" size="sm" onClick={() => setShowScriptGenerator(!showScriptGenerator)} className="text-blue-600 hover:text-blue-700">
-          <Sparkles className="w-4 h-4 mr-1" />
-          AI生成描述
-        </Button>
-      </div>
-
-      {showScriptGenerator && <div className="mb-4">
-        <ScriptGenerator onGenerate={handleScriptGenerated} />
-      </div>}
-
-      <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="请输入图片的描述文字，AI将根据描述生成视频..." className="w-full min-h-[120px] p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-    </div>
-
-
-    <div className="space-y-6">
-      <SystemSelector selectedModel={selectedModel} onSystemChange={setSelectedModel} />
-
-      <VideoSettings settings={videoSettings} onSettingsChange={setVideoSettings} />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>预览</CardTitle>
-          <CardDescription>预览数字人效果</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <AvatarPreview avatarFile={uploadedFiles.avatar} audioFile={uploadedFiles.audio} />
-        </CardContent>
-      </Card>
-    </div>
-
-    <Button className="w-full" disabled={!imageFile || !description.trim() || isGenerating} onClick={handleGenerateVideo}>
-      {isGenerating ? '生成中...' : '生成视频'}
-    </Button>
-
-    <GenerationModal open={showGenerationModal} onOpenChange={setShowGenerationModal} progress={generationProgress} isGenerating={isGenerating} generatedVideo={generatedVideo} onSave={() => generatedVideo && handleSaveToDatabase(generatedVideo)} />
   </div>;
 }
