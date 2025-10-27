@@ -37,7 +37,7 @@ export function ImageDescriptionToVideo(props) {
 
   const [selectedModel, setSelectedModel] = useState('tongyi-wanxiang');
   const [videoSettings, setVideoSettings] = useState({
-    resolution: '480p',
+    resolution: '480P',
     ratio: '3:4',
     fps: 30,
     quality: 'high',

@@ -131,7 +131,6 @@ exports.main = async (event, context) => {
       userId,
       project_id
     });
-    console.log("insert task id", taskId);
 
     // 4. 调用阿里云 DashScope API
     // 4.1 调用情绪检测 API
@@ -244,8 +243,7 @@ exports.main = async (event, context) => {
         errorMessage
       };
     }
-
-    const external_task_id = videoResult.output.task_id;
+c
 
     // 6. 更新任务状态为 PENDING
 
