@@ -8,8 +8,9 @@ import { Upload, Sparkles } from 'lucide-react';
 import { ScriptGenerator } from '@/components/ScriptGenerator';
 import { FileUploadSection } from './FileUploadSection';
 import { AvatarPreview } from './AvatarPreview';
-import { VideoSettings } from './VideoSettings';
 import { GenerationModal } from './GenerationModal';
+import { VideoSettings } from './VideoSettings';
+import { SystemSelector } from './SystemSelector';
 import { WorksList } from './WorksList';
 
 
