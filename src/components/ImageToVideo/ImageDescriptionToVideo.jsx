@@ -6,6 +6,8 @@ import { Button, useToast, GenerationModal } from '@/components/ui';
 import { Upload, Sparkles } from 'lucide-react';
 
 import { ScriptGenerator } from '@/components/ScriptGenerator';
+
+
 export function ImageDescriptionToVideo(props) {
   const {
     $w
@@ -14,6 +16,10 @@ export function ImageDescriptionToVideo(props) {
     toast
   } = useToast();
   const [imageFile, setImageFile] = useState(null);
+  const [uploadedFiles, setUploadedFiles] = useState({
+    avatar: null,
+    audio: null
+  });
   const [description, setDescription] = useState('');
   const [showScriptGenerator, setShowScriptGenerator] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -21,12 +27,22 @@ export function ImageDescriptionToVideo(props) {
   const [generationProgress, setGenerationProgress] = useState(0);
   const [generatedVideo, setGeneratedVideo] = useState(null);
   const [taskId, setTaskId] = useState(null);
-  const handleImageUpload = e => {
-    const file = e.target.files[0];
-    if (file) {
-      setImageFile(file);
-    }
+
+  const handleFileUpload = (type, file) => {
+    setUploadedFiles(prev => ({
+      ...prev,
+      [type]: file
+    }));
   };
+  const [selectedModel, setSelectedModel] = useState('tongyi-wanxiang');
+  const [videoSettings, setVideoSettings] = useState({
+    resolution: '480p',
+    ratio: '3:4',
+    fps: 30,
+    quality: 'high',
+    duration: 30,
+    style: 'normal'
+  });
   const handleScriptGenerated = script => {
     const generatedDescription = script.nodes.map(node => node.content).join('\n\n');
     setDescription(generatedDescription);
@@ -51,21 +67,22 @@ export function ImageDescriptionToVideo(props) {
         cloudPath: `images/${Date.now()}_${imageFile.name}`,
         filePath: imageFile
       });
+      const audioUpload = await tcb.uploadFile({
+        cloudPath: `audios/${Date.now()}_${uploadedFiles.audio.name}`,
+        filePath: uploadedFiles.audio
+      });
 
       // 调用云函数创建任务
       const result = await $w.cloud.callFunction({
         name: 'image-prompt-to-video-task',
         data: {
           imageUrl: imageUpload.fileID,
+          audioUrl: audioUpload.fileID,
           prompt: description,
-          model: 'tongyi-wanxiang',
           userId: $w.auth.currentUser?.userId || 'anonymous',
           type: 'image-description-to-video',
-          settings: {
-            resolution: '1080p',
-            duration: 10,
-            fps: 30
-          }
+          settings: videoSettings,
+          model: selectedModel,
         }
       });
       if (result.status === 'running') {
@@ -179,18 +196,14 @@ export function ImageDescriptionToVideo(props) {
     <div>
       <label className="block text-sm font-medium mb-2">上传图片</label>
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-        <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" id="image-upload" />
-        <label htmlFor="image-upload" className="cursor-pointer">
-          {imageFile ? <div className="space-y-2">
-            <img src={URL.createObjectURL(imageFile)} alt="预览" className="max-w-full h-48 object-contain mx-auto rounded" />
-            <p className="text-sm text-gray-600">{imageFile.name}</p>
-          </div> : <div className="space-y-2">
-            <Upload className="w-12 h-12 mx-auto text-gray-400" />
-            <p className="text-sm text-gray-600">点击上传图片</p>
-          </div>}
-        </label>
+        <div className="space-y-6">
+          <FileUploadSection type="avatar" title="上传头像" description="支持 JPG、PNG 格式，建议尺寸 512x512" accept="image/*" onFileUpload={file => handleFileUpload('avatar', file)} uploadedFile={uploadedFiles.avatar} />
+
+          <FileUploadSection type="audio" title="上传音频" description="支持 MP3、WAV 格式，最大 50MB" accept="audio/*" onFileUpload={file => handleFileUpload('audio', file)} uploadedFile={uploadedFiles.audio} />
+        </div>
       </div>
     </div>
+
 
     <div>
       <div className="flex justify-between items-center mb-2">
@@ -206,6 +219,23 @@ export function ImageDescriptionToVideo(props) {
       </div>}
 
       <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="请输入图片的描述文字，AI将根据描述生成视频..." className="w-full min-h-[120px] p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+    </div>
+
+
+    <div className="space-y-6">
+      <SystemSelector selectedModel={selectedModel} onSystemChange={setSelectedModel} />
+
+      <VideoSettings settings={videoSettings} onSettingsChange={setVideoSettings} />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>预览</CardTitle>
+          <CardDescription>预览数字人效果</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AvatarPreview avatarFile={uploadedFiles.avatar} audioFile={uploadedFiles.audio} />
+        </CardContent>
+      </Card>
     </div>
 
     <Button className="w-full" disabled={!imageFile || !description.trim() || isGenerating} onClick={handleGenerateVideo}>
