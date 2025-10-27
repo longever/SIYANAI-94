@@ -35,12 +35,6 @@ export function ImageDescriptionToVideo(props) {
   const [generatedVideo, setGeneratedVideo] = useState(null);
   const [taskId, setTaskId] = useState(null);
 
-  const handleFileUpload = (type, file) => {
-    setUploadedFiles(prev => ({
-      ...prev,
-      [type]: file
-    }));
-  };
   const [selectedModel, setSelectedModel] = useState('tongyi-wanxiang');
   const [videoSettings, setVideoSettings] = useState({
     resolution: '480p',
@@ -50,6 +44,12 @@ export function ImageDescriptionToVideo(props) {
     duration: 30,
     style: 'normal'
   });
+  const handleFileUpload = (type, file) => {
+    setUploadedFiles(prev => ({
+      ...prev,
+      [type]: file
+    }));
+  };
   const handleScriptGenerated = script => {
     const generatedDescription = script.nodes.map(node => node.content).join('\n\n');
     setDescription(generatedDescription);
@@ -71,8 +71,8 @@ export function ImageDescriptionToVideo(props) {
       // 上传图片到云存储
       const tcb = await $w.cloud.getCloudInstance();
       const imageUpload = await tcb.uploadFile({
-        cloudPath: `images/${Date.now()}_${uploadedFiles.video.name}`,
-        filePath: uploadedFiles.video
+        cloudPath: `images/${Date.now()}_${uploadedFiles.avatar.name}`,
+        filePath: uploadedFiles.avatar
       });
       const audioUpload = await tcb.uploadFile({
         cloudPath: `audios/${Date.now()}_${uploadedFiles.audio.name}`,
