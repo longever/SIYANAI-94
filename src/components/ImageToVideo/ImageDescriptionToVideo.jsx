@@ -25,6 +25,7 @@ export function ImageDescriptionToVideo(props) {
     avatar: null,
     audio: null
   });
+  const [activeTab, setActiveTab] = useState('create');
   const [description, setDescription] = useState('');
   const [showScriptGenerator, setShowScriptGenerator] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
