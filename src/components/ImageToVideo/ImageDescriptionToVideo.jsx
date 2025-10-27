@@ -1,11 +1,16 @@
 // @ts-ignore;
 import React, { useState } from 'react';
 // @ts-ignore;
-import { Button, useToast, GenerationModal } from '@/components/ui';
+import { Button, Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent, CardDescription, CardHeader, CardTitle, useToast } from '@/components/ui';
 // @ts-ignore;
 import { Upload, Sparkles } from 'lucide-react';
 
 import { ScriptGenerator } from '@/components/ScriptGenerator';
+import { FileUploadSection } from './FileUploadSection';
+import { AvatarPreview } from './AvatarPreview';
+import { VideoSettings } from './VideoSettings';
+import { GenerationModal } from './GenerationModal';
+import { WorksList } from './WorksList';
 
 
 export function ImageDescriptionToVideo(props) {
@@ -192,6 +197,71 @@ export function ImageDescriptionToVideo(props) {
       });
     }
   };
+  return <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
+    <div className="max-w-7xl mx-auto">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="create">创建视频</TabsTrigger>
+          <TabsTrigger value="works">我的作品</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="create" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-6">
+              <FileUploadSection type="avatar" title="上传头像" description="支持 JPG、PNG 格式，建议尺寸 512x512" accept="image/*" onFileUpload={file => handleFileUpload('avatar', file)} uploadedFile={uploadedFiles.avatar} />
+
+              <FileUploadSection type="audio" title="上传音频" description="支持 MP3、WAV 格式，最大 50MB" accept="audio/*" onFileUpload={file => handleFileUpload('audio', file)} uploadedFile={uploadedFiles.audio} />
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-medium">图片描述</label>
+                  <Button variant="ghost" size="sm" onClick={() => setShowScriptGenerator(!showScriptGenerator)} className="text-blue-600 hover:text-blue-700">
+                    <Sparkles className="w-4 h-4 mr-1" />
+                    AI生成描述
+                  </Button>
+                </div>
+
+                {showScriptGenerator && <div className="mb-4">
+                  <ScriptGenerator onGenerate={handleScriptGenerated} />
+                </div>}
+
+                <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="请输入图片的描述文字，AI将根据描述生成视频..." className="w-full min-h-[120px] p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+              </div>
+            </div>
+
+
+
+            <div className="space-y-6">
+              <SystemSelector selectedModel={selectedModel} onSystemChange={setSelectedModel} />
+
+              <VideoSettings settings={videoSettings} onSettingsChange={setVideoSettings} />
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>预览</CardTitle>
+                  <CardDescription>预览数字人效果</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <AvatarPreview avatarFile={uploadedFiles.avatar} audioFile={uploadedFiles.audio} />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <Button size="lg" onClick={handleGenerateVideo} disabled={!uploadedFiles.avatar || !uploadedFiles.audio || isGenerating} className="px-8">
+              {isGenerating ? '生成中...' : '开始生成'}
+            </Button>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="works">
+          <WorksList $w={props.$w} />
+        </TabsContent>
+      </Tabs>
+
+      <GenerationModal open={showGenerationModal} onOpenChange={setShowGenerationModal} progress={generationProgress} isGenerating={isGenerating} generatedVideo={generatedVideo} onSave={() => generatedVideo && handleSaveToDatabase(generatedVideo)} />
+    </div>
+  </div>;
   return <div className="space-y-6">
     <div>
       <label className="block text-sm font-medium mb-2">上传图片</label>
