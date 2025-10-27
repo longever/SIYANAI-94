@@ -56,7 +56,7 @@ export function ImageDescriptionToVideo(props) {
     setShowScriptGenerator(false);
   };
   const handleGenerateVideo = async () => {
-    if (!imageFile || !description.trim()) {
+    if (!uploadedFiles.avatar || !description.trim()) {
       toast({
         title: "缺少内容",
         description: "请上传图片并输入描述",
@@ -71,8 +71,8 @@ export function ImageDescriptionToVideo(props) {
       // 上传图片到云存储
       const tcb = await $w.cloud.getCloudInstance();
       const imageUpload = await tcb.uploadFile({
-        cloudPath: `images/${Date.now()}_${imageFile.name}`,
-        filePath: imageFile
+        cloudPath: `images/${Date.now()}_${uploadedFiles.video.name}`,
+        filePath: uploadedFiles.video
       });
       const audioUpload = await tcb.uploadFile({
         cloudPath: `audios/${Date.now()}_${uploadedFiles.audio.name}`,
