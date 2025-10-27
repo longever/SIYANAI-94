@@ -132,7 +132,7 @@ export function WorksList(props) {
       //返回任务结果
       const updatedTasks = results.filter(result => result.status === 'fulfilled' && result.value?._id).map(result => ({
         ...tasks.find(t => t._id === result.value._id),
-        status: result.value.result.status,
+        status: result.value?.result?.status,
         cloudUrl: result.value.cloudUrl || ''
       }));
 
