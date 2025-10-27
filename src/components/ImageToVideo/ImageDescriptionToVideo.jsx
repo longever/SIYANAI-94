@@ -80,7 +80,7 @@ export function ImageDescriptionToVideo(props) {
       });
 
       // 调用云函数创建任务
-      const result = await $w.cloud.callFunction({
+      const { result } = await $w.cloud.callFunction({
         name: 'image-prompt-to-video-task',
         data: {
           imageUrl: imageUpload.fileID,
@@ -92,10 +92,17 @@ export function ImageDescriptionToVideo(props) {
           model: selectedModel,
         }
       });
-      if (result.status === 'running') {
+      if (result.success) {
         setTaskId(result.taskId);
         // 开始轮询任务状态
-        pollTaskStatus(result.taskId);
+        // pollTaskStatus(result.taskId);
+
+        setGenerationProgress(100);
+        setIsGenerating(false);
+        toast({
+          title: "任务创建成功",
+          description: "任务创建成功，请到我的作品页面查看生成结果。"
+        });
       } else {
         throw new Error(result.message || '任务创建失败');
       }
