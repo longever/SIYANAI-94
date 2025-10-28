@@ -74,7 +74,7 @@ export default function TextToVideoPage(props) {
 
     try {
       // 调用云函数生成视频
-      const result = await $w.cloud.callFunction({
+      const { result } = await $w.cloud.callFunction({
         name: 'description-to-video',
         data: {
           prompt: prompt,
