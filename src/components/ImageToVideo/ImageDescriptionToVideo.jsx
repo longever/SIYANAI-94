@@ -216,7 +216,7 @@ export function ImageDescriptionToVideo(props) {
           </div>
 
           <div className="flex justify-center">
-            <Button size="lg" onClick={handleGenerateVideo} disabled={!uploadedFiles.avatar || !description.trim() || useAudio && !uploadedFiles.audio || isGenerating} className="px-8">
+            <Button size="lg" onClick={handleGenerateVideo} disabled={!uploadedFiles.avatar || !description.trim() || isGenerating} className="px-8">
               {isGenerating ? '生成中...' : '开始生成'}
             </Button>
           </div>

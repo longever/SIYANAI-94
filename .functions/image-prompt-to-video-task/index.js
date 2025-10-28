@@ -28,18 +28,15 @@ const MODEL = {
  * @param {string} resolution - 分辨率
  * @returns {Promise<string>} 任务ID
  */
-async function callWanxiangAPI(imageUrl, audioUrl, prompt, duration = 5, resolution = '480P') {
-  const model = (audioUrl === '') ? MODEL.WAN_I2V_FLASH : MODEL.WAN_I2V_PREVIEW;
-  const input = audioUrl === '' ?
-    {
-      img_url: imageUrl,
-      prompt: prompt
-    } :
-    {
-      img_url: imageUrl,
-      audio_url: audioUrl,
-      prompt: prompt
-    };
+async function callWanxiangAPI(imageUrl, audioUrl, useAudio, prompt, duration = 5, resolution = '480P') {
+  const model = (audioUrl === '' && !useAudio) ? MODEL.WAN_I2V_FLASH : MODEL.WAN_I2V_PREVIEW;
+  const input =
+  {
+    img_url: imageUrl,
+    prompt: prompt,
+    audio_url: audioUrl,
+    audio: useAudio
+  };
   const requestBody = {
     model,
     input,
@@ -72,7 +69,7 @@ async function callWanxiangAPI(imageUrl, audioUrl, prompt, duration = 5, resolut
       throw new Error('万相API返回格式异常，未找到task_id');
     }
 
-    return result.output.task_id;
+    return result;
   } catch (error) {
     console.error('调用万相API失败:', error);
     throw error;
@@ -92,6 +89,7 @@ async function createTaskRecord(taskData) {
     input_assets: {
       imageUrl: taskData.imageUrl,
       audioUrl: taskData.audioUrl,
+      useAudio: taskData.useAudio
     },
     model: taskData.model,
     input_text: taskData.prompt || '',
@@ -201,7 +199,7 @@ function validateInput(params) {
 exports.main = async (event, context) => {
   try {
     // 解析请求参数
-    const { imageUrl, audioUrl = '', prompt, duration = 5, resolution = '480P', userId } = event;
+    const { imageUrl, audioUrl = '', useAudio = '', prompt, duration = 5, resolution = '480P', userId } = event;
 
     // 验证输入参数
     validateInput({ imageUrl, prompt, duration, resolution, userId });
@@ -233,19 +231,32 @@ exports.main = async (event, context) => {
     }
 
     // 调用万相API创建任务
-    const videoResponse = await callWanxiangAPI(tempImageUrl, tempAudioUrl, prompt, duration, resolution);
-    if (!videoResponse.ok) {
-      throw new Error(`HTTP ${videoResponse.status}: ${videoResponse.statusText}`);
+    const videoResponse = await callWanxiangAPI(tempImageUrl, tempAudioUrl, useAudio, prompt, duration, resolution);
+
+    // 处理响应
+    if (!videoResponse || !videoResponse.output || !videoResponse.output.task_id) {
+      const errorMessage = 'Invalid video generation response format' + videoResponse;
+
+      updateTaskRecord(taskId,
+        {
+          status: 'FAILED',
+          error: errorMessage,
+          updatedAt: Date.now()
+        }
+      )
+      return {
+        success: false,
+        errorMessage
+      };
     }
 
-    const videoResult = await videoResponse.json(); // { output: { status: 'PENDING', task_id: '0001' } }; // 
-    const external_task_id = videoResult.output.task_id;
+    const external_task_id = videoResponse.output.task_id;
     // 更新任务状态为PENDING
     updateTaskRecord(taskId,
       {
         status: 'PENDING',
         external_task_id: external_task_id,
-        videoResult: videoResult.output,
+        videoResult: videoResponse.output,
         updatedAt: Date.now()
       }
     );
@@ -255,7 +266,7 @@ exports.main = async (event, context) => {
       success: true,
       taskId,
       external_task_id,
-      videoResult: videoResult.output
+      videoResult: videoResponse.output
     };
 
   } catch (error) {
