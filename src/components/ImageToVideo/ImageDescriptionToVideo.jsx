@@ -100,7 +100,8 @@ export function ImageDescriptionToVideo(props) {
           userId: $w.auth.currentUser?.userId || 'anonymous',
           type: 'image-description-to-video',
           settings: videoSettings,
-          model: selectedModel
+          model: selectedModel,
+          audio: useAudio
         }
       });
       if (result.success) {
