@@ -81,8 +81,6 @@ export default function ImageAudioToVideo(props) {
       console.log("result", result)
       if (result.success) {
         setTaskId(result.taskId);
-        // 开始轮询任务状态
-        // pollTaskStatus(result.taskId);
 
         setGenerationProgress(100);
         setIsGenerating(false);
@@ -102,65 +100,6 @@ export default function ImageAudioToVideo(props) {
       setIsGenerating(false);
       setShowGenerationModal(false);
     }
-  };
-  const pollTaskStatus = async taskId => {
-    const interval = setInterval(async () => {
-      try {
-        const result = await $w.cloud.callDataSource({
-          dataSourceName: 'generation_tasks',
-          methodName: 'wedaGetItemV2',
-          params: {
-            filter: {
-              where: {
-                _id: {
-                  $eq: taskId
-                }
-              }
-            },
-            select: {
-              $master: true
-            }
-          }
-        });
-        if (result && result.status) {
-          if (result.status === 'SUCCEEDED') {
-            clearInterval(interval);
-            setGenerationProgress(100);
-            setIsGenerating(false);
-
-            // 获取生成的视频URL
-            const tcb = await $w.cloud.getCloudInstance();
-            const videoUrl = await tcb.getTempFileURL({
-              fileList: [result.result.videoUrl]
-            });
-            setGeneratedVideo({
-              url: videoUrl.fileList[0].tempFileURL,
-              thumbnail: result.result.thumbnailUrl || '',
-              duration: videoSettings.duration,
-              size: result.result.fileSize || '0 MB'
-            });
-            toast({
-              title: "生成完成",
-              description: "视频生成成功"
-            });
-          } else if (result.status === 'FAILED' || result.status === 'CANCELED' || result.status === 'UNKNOWN') {
-            clearInterval(interval);
-            setIsGenerating(false);
-            toast({
-              title: "生成失败",
-              description: result.result?.error || '未知错误',
-              variant: "destructive"
-            });
-          } else {
-            // 更新进度
-            const progress = result.result?.progress || 0;
-            setGenerationProgress(progress);
-          }
-        }
-      } catch (error) {
-        console.error('轮询任务状态失败:', error);
-      }
-    }, 2000);
   };
   const handleSaveToDatabase = async videoData => {
     try {
