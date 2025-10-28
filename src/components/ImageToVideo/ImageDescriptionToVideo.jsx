@@ -61,15 +61,7 @@ export function ImageDescriptionToVideo(props) {
         variant: "destructive"
       });
       return;
-    }
-    // if (useAudio && !uploadedFiles.audio) {
-    //   toast({
-    //     title: "缺少音频",
-    //     description: "请上传音频文件",
-    //     variant: "destructive"
-    //   });
-    //   return;
-    // }
+    } 
     setIsGenerating(true);
     setShowGenerationModal(true);
     setGenerationProgress(0);
@@ -94,14 +86,14 @@ export function ImageDescriptionToVideo(props) {
       } = await $w.cloud.callFunction({
         name: 'image-prompt-to-video-task',
         data: {
-          imageUrl: uploadedFiles.avatar,
-          audioUrl: uploadedFiles.audio,
-          useAudio,
-          model: selectedModel,
+          imageUrl: imageUpload.fileID,
+          audioUrl: useAudio && audioUpload ? audioUpload.fileID : '',
           prompt: description,
           userId: $w.auth.currentUser?.userId || 'anonymous',
           type: 'image-description-to-video',
-          settings: videoSettings
+          settings: videoSettings,
+          model: selectedModel,
+          useAudio: useAudio
         }
       });
       if (result.success) {
@@ -125,38 +117,7 @@ export function ImageDescriptionToVideo(props) {
       setIsGenerating(false);
       setShowGenerationModal(false);
     }
-  };
-  const handleSaveToDatabase = async videoData => {
-    try {
-      const result = await $w.cloud.callDataSource({
-        dataSourceName: 'digital_human_videos',
-        methodName: 'wedaCreateV2',
-        params: {
-          data: {
-            title: `图片描述视频 - ${new Date().toLocaleString()}`,
-            videoUrl: videoData.url,
-            thumbnailUrl: videoData.thumbnail,
-            duration: 10,
-            fileSize: videoData.size,
-            prompt: description,
-            type: 'image-description-to-video',
-            taskId: taskId,
-            createdAt: Date.now()
-          }
-        }
-      });
-      toast({
-        title: "保存成功",
-        description: "视频已保存到作品库"
-      });
-    } catch (error) {
-      toast({
-        title: "保存失败",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  };
+  }; 
   return <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
     <div className="max-w-7xl mx-auto">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -178,7 +139,7 @@ export function ImageDescriptionToVideo(props) {
                   </label>
                 </div>
 
-                c
+                {useAudio && <FileUploadSection type="audio" title="上传音频" description="支持 MP3、WAV 格式，最大 50MB" accept="audio/*" onFileUpload={file => handleFileUpload('audio', file)} uploadedFile={uploadedFiles.audio} />}
               </div>
 
               <div>
@@ -227,7 +188,6 @@ export function ImageDescriptionToVideo(props) {
         </TabsContent>
       </Tabs>
 
-      {/* <GenerationModal open={showGenerationModal} onOpenChange={setShowGenerationModal} progress={generationProgress} isGenerating={isGenerating} generatedVideo={generatedVideo} onSave={() => generatedVideo && handleSaveToDatabase(generatedVideo)} /> */}
-    </div>
+      </div>
   </div>;
 }
