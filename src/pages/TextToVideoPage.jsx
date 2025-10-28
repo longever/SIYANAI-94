@@ -1,7 +1,7 @@
 // @ts-ignore;
 import React, { useState } from 'react';
 // @ts-ignore;
-import { Button, Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent, CardDescription, CardHeader, CardTitle, Textarea, useToast, Label, Input, Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
+import { Button,Music, Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent, CardDescription, CardHeader, CardTitle, Textarea, useToast, Label,Switch,Upload, Input, Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
 // @ts-ignore;
 import { Sparkles } from 'lucide-react';
 
@@ -181,7 +181,7 @@ export default function TextToVideoPage(props) {
                   </div>
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="use-audio" className="flex items-center gap-2">
+                    <Label htmlFor="use-audio" className="flex items-center gap-2">
                         <Music className="w-4 h-4" />
                         使用自定义音频
                       </Label>

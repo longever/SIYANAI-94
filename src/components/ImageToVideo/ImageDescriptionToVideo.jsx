@@ -178,7 +178,7 @@ export function ImageDescriptionToVideo(props) {
                   </label>
                 </div>
 
-                {useAudio && <FileUploadSection type="audio" title="上传音频" description="支持 MP3、WAV 格式，最大 50MB" accept="audio/*" onFileUpload={file => handleFileUpload('audio', file)} uploadedFile={uploadedFiles.audio} />}
+               c
               </div>
 
               <div>
