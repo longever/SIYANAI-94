@@ -95,7 +95,7 @@ export function ImageDescriptionToVideo(props) {
         name: 'image-prompt-to-video-task',
         data: {
           imageUrl: imageUpload.fileID,
-          audioUrl: useAudio && audioUpload ? audioUpload.fileID : null,
+          audioUrl: useAudio && audioUpload ? audioUpload.fileID : '',
           prompt: description,
           userId: $w.auth.currentUser?.userId || 'anonymous',
           type: 'image-description-to-video',
