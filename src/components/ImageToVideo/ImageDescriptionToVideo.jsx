@@ -62,14 +62,14 @@ export function ImageDescriptionToVideo(props) {
       });
       return;
     }
-    if (useAudio && !uploadedFiles.audio) {
-      toast({
-        title: "缺少音频",
-        description: "请上传音频文件",
-        variant: "destructive"
-      });
-      return;
-    }
+    // if (useAudio && !uploadedFiles.audio) {
+    //   toast({
+    //     title: "缺少音频",
+    //     description: "请上传音频文件",
+    //     variant: "destructive"
+    //   });
+    //   return;
+    // }
     setIsGenerating(true);
     setShowGenerationModal(true);
     setGenerationProgress(0);
