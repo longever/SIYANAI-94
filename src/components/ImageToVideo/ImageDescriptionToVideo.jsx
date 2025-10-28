@@ -93,7 +93,16 @@ export function ImageDescriptionToVideo(props) {
         result
       } = await $w.cloud.callFunction({
         name: 'image-prompt-to-video-task',
-        data: c
+        data: {
+          imageUrl: uploadedFiles.avatar,
+          audioUrl: uploadedFiles.audio,
+          useAudio,
+          model: selectedModel,
+          prompt: description,
+          userId: $w.auth.currentUser?.userId || 'anonymous',
+          type: 'image-description-to-video',
+          settings: videoSettings
+        }
       });
       if (result.success) {
         setTaskId(result.taskId);
@@ -169,7 +178,7 @@ export function ImageDescriptionToVideo(props) {
                   </label>
                 </div>
 
-               c
+                c
               </div>
 
               <div>
