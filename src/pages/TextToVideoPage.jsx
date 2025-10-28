@@ -106,39 +106,7 @@ export default function TextToVideoPage(props) {
       setIsGenerating(false);
     }
   };
-  const handleSaveToDatabase = async videoData => {
-    try {
-      const result = await $w.cloud.callDataSource({
-        dataSourceName: 'digital_human_videos',
-        methodName: 'wedaCreateV2',
-        params: {
-          data: {
-            title: `文本生成视频 - ${prompt.substring(0, 30)}...`,
-            videoUrl: videoData.url,
-            thumbnailUrl: videoData.thumbnail,
-            duration: videoData.duration,
-            fileSize: videoData.size,
-            settings: videoSettings,
-            model: selectedModel,
-            type: 'text-to-video',
-            prompt: prompt,
-            createdAt: Date.new()
-          }
-        }
-      });
-      toast({
-        title: "保存成功",
-        description: "视频已保存到作品库"
-      });
-      setActiveTab('works');
-    } catch (error) {
-      toast({
-        title: "保存失败",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  };
+  
   const handleScriptGenerated = script => {
     // 将生成的脚本转换为文本描述
     const generatedDescription = script.nodes.map(node => node.content).join('；');
@@ -218,19 +186,7 @@ export default function TextToVideoPage(props) {
                 </CardContent>
               </Card>
 
-              <Card className="mt-6 border-0 shadow-lg">
-                <CardHeader>
-                  <CardTitle className="text-lg">使用提示</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2 text-sm text-gray-600">
-                    <li>• 文本描述越详细，生成的视频效果越好</li>
-                    <li>• 可以添加场景、动作、情感等细节描述</li>
-                    <li>• 使用音频选项可以添加背景音乐或旁白</li>
-                    <li>• 生成时间根据文本长度和复杂度而定</li>
-                  </ul>
-                </CardContent>
-              </Card>
+              
             </div>
 
             <div className="space-y-6">
@@ -260,6 +216,19 @@ export default function TextToVideoPage(props) {
                   </div>
                 </CardContent>
               </Card>
+              <Card className="mt-6 border-0 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="text-lg">使用提示</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2 text-sm text-gray-600">
+                    <li>• 文本描述越详细，生成的视频效果越好</li>
+                    <li>• 可以添加场景、动作、情感等细节描述</li>
+                    <li>• 使用音频选项可以添加背景音乐或旁白</li>
+                    <li>• 生成时间根据文本长度和复杂度而定</li>
+                  </ul>
+                </CardContent>
+              </Card>
             </div>
           </div>
 
@@ -274,9 +243,7 @@ export default function TextToVideoPage(props) {
           <WorksList $w={props.$w} />
         </TabsContent>
       </Tabs>
-
-      {/* <GenerationModal open={showGenerationModal} onOpenChange={setShowGenerationModal} progress={generationProgress} isGenerating={isGenerating} generatedVideo={generatedVideo} onSave={() => generatedVideo && handleSaveToDatabase(generatedVideo)} /> */}
-
+ 
       <Dialog open={showScriptGenerator} onOpenChange={setShowScriptGenerator}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
