@@ -1,0 +1,12 @@
+
+    {
+      "name": "description-to-video",
+      "version": "1.0.0",
+      "description": "根据文本提示词调用通义万相API生成视频的云函数",
+      "main": "index.js",
+      "dependencies": {
+        "@cloudbase/node-sdk": "^3.3.7",
+        "axios": "^1.6.0"
+      }
+    }
+  
