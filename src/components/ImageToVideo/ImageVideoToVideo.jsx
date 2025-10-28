@@ -18,7 +18,7 @@ export default function ImageVideoToVideo(props) {
   const [activeTab, setActiveTab] = useState('create');
   const [uploadedFiles, setUploadedFiles] = useState({
     video: null,
-    reference: null
+    image: null
   });
   const [selectedModel, setSelectedModel] = useState('tongyi-wanxiang');
   const [videoSettings, setVideoSettings] = useState({
@@ -59,31 +59,35 @@ export default function ImageVideoToVideo(props) {
         cloudPath: `videos/${Date.now()}_${uploadedFiles.video.name}`,
         filePath: uploadedFiles.video
       });
-      let referenceUpload = null;
-      if (uploadedFiles.reference) {
-        referenceUpload = await tcb.uploadFile({
-          cloudPath: `references/${Date.now()}_${uploadedFiles.reference.name}`,
-          filePath: uploadedFiles.reference
+      let imageUpload = null;
+      if (uploadedFiles.image) {
+        imageUpload = await tcb.uploadFile({
+          cloudPath: `images/${Date.now()}_${uploadedFiles.image.name}`,
+          filePath: uploadedFiles.image
         });
       }
 
       // 调用云函数创建任务
-      const result = await $w.cloud.callFunction({
-        name: 'image-to-video-task',
+      const { result } = await $w.cloud.callFunction({
+        name: 'image-video-to-video',
         data: {
           videoUrl: videoUpload.fileID,
-          referenceUrl: referenceUpload?.fileID || '',
+          imageUrl: imageUpload.fileID,
           model: selectedModel,
-          prompt: `视频风格转换，风格${videoSettings.style}，分辨率${videoSettings.resolution}，帧率${videoSettings.fps}`,
           userId: $w.auth.currentUser?.userId || 'anonymous',
-          type: 'video-to-video',
+          type: 'image-video-to-video',
           settings: videoSettings
         }
       });
-      if (result.status === 'running') {
+      if (result.success) {
         setTaskId(result.taskId);
-        // 开始轮询任务状态
-        pollTaskStatus(result.taskId);
+
+        setGenerationProgress(100);
+        setIsGenerating(false);
+        toast({
+          title: "任务创建成功",
+          description: "任务创建成功，请到我的作品页面查看生成结果。"
+        });
       } else {
         throw new Error(result.message || '任务创建失败');
       }
@@ -97,98 +101,6 @@ export default function ImageVideoToVideo(props) {
       setShowGenerationModal(false);
     }
   };
-  const pollTaskStatus = async taskId => {
-    const interval = setInterval(async () => {
-      try {
-        const result = await $w.cloud.callDataSource({
-          dataSourceName: 'generation_tasks',
-          methodName: 'wedaGetItemV2',
-          params: {
-            filter: {
-              where: {
-                taskId: {
-                  $eq: taskId
-                }
-              }
-            },
-            select: {
-              $master: true
-            }
-          }
-        });
-        if (result && result.status) {
-          if (result.status === 'completed') {
-            clearInterval(interval);
-            setGenerationProgress(100);
-            setIsGenerating(false);
-
-            // 获取生成的视频URL
-            const tcb = await $w.cloud.getCloudInstance();
-            const videoUrl = await tcb.getTempFileURL({
-              fileList: [result.result.videoUrl]
-            });
-            setGeneratedVideo({
-              url: videoUrl.fileList[0].tempFileURL,
-              thumbnail: result.result.thumbnailUrl || '',
-              duration: videoSettings.duration,
-              size: result.result.fileSize || '45.2 MB'
-            });
-            toast({
-              title: "生成完成",
-              description: "视频生成成功"
-            });
-          } else if (result.status === 'failed') {
-            clearInterval(interval);
-            setIsGenerating(false);
-            toast({
-              title: "生成失败",
-              description: result.result?.error || '未知错误',
-              variant: "destructive"
-            });
-          } else {
-            // 更新进度
-            const progress = result.result?.progress || 0;
-            setGenerationProgress(progress);
-          }
-        }
-      } catch (error) {
-        console.error('轮询任务状态失败:', error);
-      }
-    }, 2000);
-  };
-  const handleSaveToDatabase = async videoData => {
-    try {
-      const result = await $w.cloud.callDataSource({
-        dataSourceName: 'digital_human_videos',
-        methodName: 'wedaCreateV2',
-        params: {
-          data: {
-            title: `视频生成 - ${new Date().toLocaleString()}`,
-            videoUrl: videoData.url,
-            thumbnailUrl: videoData.thumbnail,
-            duration: videoData.duration,
-            fileSize: videoData.size,
-            settings: videoSettings,
-            model: selectedModel,
-            type: 'video-to-video',
-            taskId: taskId,
-            createdAt: Date.new(),
-          }
-        }
-      });
-      toast({
-        title: "保存成功",
-        description: "视频已保存到作品库"
-      });
-      setActiveTab('works');
-    } catch (error) {
-      toast({
-        title: "保存失败",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  };
   return <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
     <div className="max-w-7xl mx-auto">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -200,9 +112,9 @@ export default function ImageVideoToVideo(props) {
         <TabsContent value="create" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-6">
-              <FileUploadSection type="video" title="上传视频" description="支持 MP4、MOV、AVI 格式，最大 100MB" accept="video/*" onFileUpload={file => handleFileUpload('video', file)} uploadedFile={uploadedFiles.video} />
+              <FileUploadSection type="image" title="上传图片" description="支持 JPG、PNG 格式，用于风格参考" accept="image/*" onFileUpload={file => handleFileUpload('image', file)} uploadedFile={uploadedFiles.image} />
+              <FileUploadSection type="video" title="上传参考视频" description="支持 MP4、MOV、AVI 格式，最大 100MB" accept="video/*" onFileUpload={file => handleFileUpload('video', file)} uploadedFile={uploadedFiles.video} />
 
-              <FileUploadSection type="reference" title="上传参考图（可选）" description="支持 JPG、PNG 格式，用于风格参考" accept="image/*" onFileUpload={file => handleFileUpload('reference', file)} uploadedFile={uploadedFiles.reference} />
             </div>
 
             <div className="space-y-6">
@@ -230,7 +142,7 @@ export default function ImageVideoToVideo(props) {
           </div>
 
           <div className="flex justify-center">
-            <Button size="lg" onClick={handleGenerateVideo} disabled={!uploadedFiles.video || isGenerating} className="px-8">
+            <Button size="lg" onClick={handleGenerateVideo} disabled={!uploadedFiles.video || !uploadedFiles.image || isGenerating} className="px-8">
               {isGenerating ? '生成中...' : '开始生成'}
             </Button>
           </div>
@@ -241,7 +153,6 @@ export default function ImageVideoToVideo(props) {
         </TabsContent>
       </Tabs>
 
-      <GenerationModal open={showGenerationModal} onOpenChange={setShowGenerationModal} progress={generationProgress} isGenerating={isGenerating} generatedVideo={generatedVideo} onSave={() => generatedVideo && handleSaveToDatabase(generatedVideo)} />
     </div>
   </div>;
 }
