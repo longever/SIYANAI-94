@@ -79,7 +79,11 @@ export default function TextToVideoPage(props) {
         data: {
           prompt: prompt,
           audioUrl: audioFile || '',
-          audio: useAudio
+          audio: useAudio,
+          userId: $w.auth.currentUser?.userId || 'anonymous',
+          type: 'description-to-video',
+          settings: videoSettings,
+          model: selectedModel,
         }
       });
       if (result.success) {
