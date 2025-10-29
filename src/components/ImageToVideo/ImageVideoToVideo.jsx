@@ -24,6 +24,7 @@ export default function ImageVideoToVideo(props) {
     ratio: '3:4',
     modelType: 'Animate_Move',
     duration: 30,
+    mode: 'wan-std',
     style: 'normal'
   });
   const [isGenerating, setIsGenerating] = useState(false);
