@@ -7,10 +7,8 @@ import { Upload, Sparkles } from 'lucide-react';
 
 import { ScriptGenerator } from '@/components/ScriptGenerator';
 import { FileUploadSection } from './FileUploadSection';
-import { AvatarPreview } from './AvatarPreview';
-import { GenerationModal } from './GenerationModal';
-import { VideoSettings } from './VideoSettings';
-import { SystemSelector } from './SystemSelector';
+import { AvatarPreview } from './AvatarPreview'; 
+import { VideoSettings } from './VideoSettings'; 
 import { WorksList } from './WorksList';
 export function ImageDescriptionToVideo(props) {
   const {
@@ -33,12 +31,10 @@ export function ImageDescriptionToVideo(props) {
   const [generatedVideo, setGeneratedVideo] = useState(null);
   const [taskId, setTaskId] = useState(null);
   const [useAudio, setUseAudio] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('tongyi-wanxiang');
+  const [selectedPlatforms, setSelectedPlatforms] = useState('tongyi-wanxiang');
   const [videoSettings, setVideoSettings] = useState({
     resolution: '480P',
     ratio: '3:4',
-    fps: 30,
-    quality: 'high',
     duration: 30,
     style: 'normal'
   });
@@ -61,7 +57,7 @@ export function ImageDescriptionToVideo(props) {
         variant: "destructive"
       });
       return;
-    } 
+    }
     setIsGenerating(true);
     setShowGenerationModal(true);
     setGenerationProgress(0);
@@ -92,7 +88,7 @@ export function ImageDescriptionToVideo(props) {
           userId: $w.auth.currentUser?.userId || 'anonymous',
           type: 'image-description-to-video',
           settings: videoSettings,
-          model: selectedModel,
+          model: selectedPlatforms,
           useAudio: useAudio
         }
       });
@@ -117,7 +113,7 @@ export function ImageDescriptionToVideo(props) {
       setIsGenerating(false);
       setShowGenerationModal(false);
     }
-  }; 
+  };
   return <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
     <div className="max-w-7xl mx-auto">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -160,9 +156,8 @@ export function ImageDescriptionToVideo(props) {
             </div>
 
             <div className="space-y-6">
-              <SystemSelector selectedModel={selectedModel} onSystemChange={setSelectedModel} />
+              <VideoSettings settings={videoSettings} onSettingsChange={setVideoSettings} showStyle={true} selectedPlatform={selectedPlatforms} onPlatformChange={setSelectedPlatforms} />
 
-              <VideoSettings settings={videoSettings} onSettingsChange={setVideoSettings} />
 
               <Card>
                 <CardHeader>
@@ -188,6 +183,6 @@ export function ImageDescriptionToVideo(props) {
         </TabsContent>
       </Tabs>
 
-      </div>
+    </div>
   </div>;
 }

@@ -6,7 +6,6 @@ import { Button, Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent, Ca
 import { FileUploadSection } from './FileUploadSection';
 import { AvatarPreview } from './AvatarPreview';
 import { VideoSettings } from './VideoSettings';
-import { SystemSelector } from './SystemSelector';
 import { GenerationModal } from './GenerationModal';
 import { WorksList } from './WorksList';
 export default function ImageAudioToVideo(props) {
@@ -21,12 +20,10 @@ export default function ImageAudioToVideo(props) {
     avatar: null,
     audio: null
   });
-  const [selectedModel, setSelectedModel] = useState('tongyi-wanxiang');
+  const [selectedPlatforms, setSelectedPlatforms] = useState('tongyi-wanxiang');
   const [videoSettings, setVideoSettings] = useState({
-    resolution: '480p',
+    resolution: '480P',
     ratio: '3:4',
-    fps: 30,
-    quality: 'high',
     duration: 30,
     style: 'normal'
   });
@@ -71,7 +68,7 @@ export default function ImageAudioToVideo(props) {
         data: {
           imageUrl: avatarUpload.fileID,
           audioUrl: audioUpload.fileID,
-          model: selectedModel,
+          model: selectedPlatforms,
           prompt: `生成数字人视频，分辨率${videoSettings.resolution}，帧率${videoSettings.fps}，质量${videoSettings.quality}`,
           userId: $w.auth.currentUser?.userId || 'anonymous',
           type: 'image-audio-to-video',
@@ -114,7 +111,7 @@ export default function ImageAudioToVideo(props) {
             duration: videoData.duration,
             fileSize: videoData.size,
             settings: videoSettings,
-            model: selectedModel,
+            model: selectedPlatforms,
             type: 'image-audio-to-video',
             external_task_id: videoData.external_task_id,
             createdAt: Date.new(),
@@ -151,9 +148,9 @@ export default function ImageAudioToVideo(props) {
             </div>
 
             <div className="space-y-6">
-              <SystemSelector selectedModel={selectedModel} onSystemChange={setSelectedModel} />
 
-              <VideoSettings settings={videoSettings} onSettingsChange={setVideoSettings} />
+              <VideoSettings settings={videoSettings} onSettingsChange={setVideoSettings} showStyle={true} selectedPlatform={selectedPlatforms} onPlatformChange={setSelectedPlatforms} />
+
 
               <Card>
                 <CardHeader>

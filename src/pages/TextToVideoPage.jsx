@@ -4,10 +4,8 @@ import React, { useState } from 'react';
 import { Button, Music, Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent, CardDescription, CardHeader, CardTitle, Textarea, useToast, Label, Switch, Upload, Input, Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
 // @ts-ignore;
 import { Sparkles } from 'lucide-react';
-
-import { SystemSelector } from '@/components/ImageToVideo/SystemSelector';
-import { VideoSettings } from '@/components/ImageToVideo/VideoSettings';
-import { GenerationModal } from '@/components/ImageToVideo/GenerationModal';
+ 
+import { VideoSettings } from '@/components/ImageToVideo/VideoSettings'; 
 import { WorksList } from '@/components/ImageToVideo/WorksList';
 import { ScriptGenerator } from '@/components/ScriptGenerator';
 export default function TextToVideoPage(props) {
@@ -21,18 +19,15 @@ export default function TextToVideoPage(props) {
   const [prompt, setPrompt] = useState('');
   const [useAudio, setUseAudio] = useState(false);
   const [audioFile, setAudioFile] = useState(null);
-  const [selectedModel, setSelectedModel] = useState('tongyi-wanxiang');
+  const [selectedPlatforms, setSelectedPlatforms] = useState('tongyi-wanxiang');
   const [videoSettings, setVideoSettings] = useState({
     resolution: '480P',
-    fps: 30,
-    quality: 'high',
     duration: 5,
     style: 'realistic'
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [showGenerationModal, setShowGenerationModal] = useState(false);
-  const [generationProgress, setGenerationProgress] = useState(0);
-  const [generatedVideo, setGeneratedVideo] = useState(null);
+  const [generationProgress, setGenerationProgress] = useState(0); 
   const [showScriptGenerator, setShowScriptGenerator] = useState(false);
 
   const handleAudioToggle = checked => {
@@ -83,7 +78,7 @@ export default function TextToVideoPage(props) {
           userId: $w.auth.currentUser?.userId || 'anonymous',
           type: 'description-to-video',
           settings: videoSettings,
-          model: selectedModel,
+          model: selectedPlatforms,
         }
       });
       if (result.success) {
@@ -106,7 +101,7 @@ export default function TextToVideoPage(props) {
       setIsGenerating(false);
     }
   };
-  
+
   const handleScriptGenerated = script => {
     // 将生成的脚本转换为文本描述
     const generatedDescription = script.nodes.map(node => node.content).join('；');
@@ -182,15 +177,15 @@ export default function TextToVideoPage(props) {
                   <CardDescription>调整视频生成参数</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <VideoSettings settings={videoSettings} onSettingsChange={setVideoSettings} showStyle={true} />
+                  <VideoSettings settings={videoSettings} onSettingsChange={setVideoSettings} showStyle={true} selectedPlatform={selectedPlatforms} onPlatformChange={setSelectedPlatforms} />
+
                 </CardContent>
               </Card>
 
-              
+
             </div>
 
             <div className="space-y-6">
-              <SystemSelector selectedModel={selectedModel} onSystemChange={setSelectedModel} />
 
               <Card>
                 <CardHeader>
@@ -243,7 +238,7 @@ export default function TextToVideoPage(props) {
           <WorksList $w={props.$w} />
         </TabsContent>
       </Tabs>
- 
+
       <Dialog open={showScriptGenerator} onOpenChange={setShowScriptGenerator}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>

@@ -5,8 +5,6 @@ import { Button, Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent, Ca
 
 import { FileUploadSection } from './FileUploadSection';
 import { VideoSettings } from './VideoSettings';
-import { SystemSelector } from './SystemSelector';
-import { GenerationModal } from './GenerationModal';
 import { WorksList } from './WorksList';
 export default function ImageVideoToVideo(props) {
   const {
@@ -20,13 +18,12 @@ export default function ImageVideoToVideo(props) {
     video: null,
     image: null
   });
-  const [selectedModel, setSelectedModel] = useState('tongyi-wanxiang');
-  const [modelType, setModelType] = useState('animate-anyone-gen2');
+  const [selectedPlatforms, setSelectedPlatforms] = useState('tongyi-wanxiang');
+  const [modelType, setModelType] = useState('Animate_Move');
   const [videoSettings, setVideoSettings] = useState({
-    resolution: '480p',
+    resolution: '480P',
     ratio: '3:4',
-    fps: 30,
-    quality: 'high',
+    modelType: 'Animate_Move',
     duration: 30,
     style: 'normal'
   });
@@ -76,8 +73,8 @@ export default function ImageVideoToVideo(props) {
         data: {
           videoUrl: videoUpload.fileID,
           imageUrl: imageUpload.fileID,
-          model: selectedModel,
-          modelType: selectedModel === 'tongyi-wanxiang' ? modelType : undefined,
+          model: selectedPlatforms,
+          modelType: selectedPlatforms === 'tongyi-wanxiang' ? modelType : undefined,
           userId: $w.auth.currentUser?.userId || 'anonymous',
           type: 'image-video-to-video',
           settings: videoSettings
@@ -120,29 +117,7 @@ export default function ImageVideoToVideo(props) {
             </div>
 
             <div className="space-y-6">
-              <SystemSelector selectedModel={selectedModel} onSystemChange={setSelectedModel} />
-
-              {selectedModel === 'tongyi-wanxiang' && <Card>
-                  <CardHeader>
-                    <CardTitle>模型类型</CardTitle>
-                    <CardDescription>选择通义万相的模型类型</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Select value={modelType} onValueChange={setModelType}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="选择模型类型" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="animate-anyone-gen2">Animate_Anyone</SelectItem>
-                        <SelectItem value="wan2.2-animate-mix">Animate_Mix</SelectItem>
-                        <SelectItem value="wan2.2-animate-move">Animate_Move</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </CardContent>
-                </Card>}
-
-              <VideoSettings settings={videoSettings} onSettingsChange={setVideoSettings} showStyle={true} />
-
+              c
               <Card>
                 <CardHeader>
                   <CardTitle>预览</CardTitle>
