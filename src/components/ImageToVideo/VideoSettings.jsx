@@ -49,7 +49,7 @@ export function VideoSettings({
         </SelectContent>
       </Select>
     </div>;
-    {selectedModel === 'tongyi-wanxiang' && <Card>
+    {selectedPlatform === 'tongyi-wanxiang' && <Card>
       <CardHeader>
         <CardTitle>视频生成模型</CardTitle>
         <CardDescription>选择通义万相的视频生成模型</CardDescription>
