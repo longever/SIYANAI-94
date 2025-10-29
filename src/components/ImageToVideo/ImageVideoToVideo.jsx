@@ -116,7 +116,8 @@ export default function ImageVideoToVideo(props) {
             </div>
 
             <div className="space-y-6">
-              c
+              <VideoSettings settings={videoSettings} onSettingsChange={setVideoSettings} showStyle={true} selectedPlatform={selectedPlatforms} onPlatformChange={setSelectedPlatforms} />
+
               <Card>
                 <CardHeader>
                   <CardTitle>预览</CardTitle>

@@ -178,5 +178,5 @@ export default function ImageAudioToVideo(props) {
 
       <GenerationModal open={showGenerationModal} onOpenChange={setShowGenerationModal} progress={generationProgress} isGenerating={isGenerating} generatedVideo={generatedVideo} onSave={() => generatedVideo && handleSaveToDatabase(generatedVideo)} />
     </div>
-  </div>;
+  </div>
 }
