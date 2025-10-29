@@ -142,5 +142,5 @@ export function VideoSettings({
         </SelectContent>
       </Select>
     </div>}
-  </div>;
+  </div>
 }
