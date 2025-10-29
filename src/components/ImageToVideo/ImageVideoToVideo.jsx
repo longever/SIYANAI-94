@@ -19,7 +19,6 @@ export default function ImageVideoToVideo(props) {
     image: null
   });
   const [selectedPlatforms, setSelectedPlatforms] = useState('tongyi-wanxiang');
-  const [modelType, setModelType] = useState('Animate_Move');
   const [videoSettings, setVideoSettings] = useState({
     resolution: '480P',
     ratio: '3:4',
@@ -71,10 +70,9 @@ export default function ImageVideoToVideo(props) {
       } = await $w.cloud.callFunction({
         name: 'image-video-to-video',
         data: {
+          platform: selectedPlatforms,
           videoUrl: videoUpload.fileID,
           imageUrl: imageUpload.fileID,
-          model: selectedPlatforms,
-          modelType: selectedPlatforms === 'tongyi-wanxiang' ? modelType : undefined,
           userId: $w.auth.currentUser?.userId || 'anonymous',
           type: 'image-video-to-video',
           settings: videoSettings

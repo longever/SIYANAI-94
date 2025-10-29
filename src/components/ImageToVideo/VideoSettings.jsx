@@ -52,7 +52,10 @@ export function VideoSettings({
     {selectedPlatform === 'tongyi-wanxiang' &&
       <div>
         <Label>视频生成模型</Label>
-        <Select value={modelType} onValueChange={setModelType}>
+        <Select value={settings.modelType} onValueChange={value => onSettingsChange({
+          ...settings,
+          modelType: value
+        })}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="选择视频生成模型" />
           </SelectTrigger>
@@ -63,6 +66,24 @@ export function VideoSettings({
           </SelectContent>
         </Select>
       </div>
+    }
+    {modelType === 'Animate_Mix' &&
+      <div>
+        <Label>模式选择</Label>
+        <Select value={settings.mode} onValueChange={value => onSettingsChange({
+          ...settings,
+          mode: value
+        })}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="模式选择" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="wan-std">标准模式</SelectItem>
+            <SelectItem value="wan-pro">专业模式</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
     }
     <div>
       <Label>分辨率</Label>
@@ -96,32 +117,6 @@ export function VideoSettings({
         </SelectContent>
       </Select>
     </div>
-
-    {/* <div>
-      <Label>帧率: {settings.fps}fps</Label>
-      <Slider value={[settings.fps]} onValueChange={([value]) => onSettingsChange({
-        ...settings,
-        fps: value
-      })} min={24} max={60} step={1} />
-    </div>
-
-    <div>
-      <Label>视频质量</Label>
-      <Select value={settings.quality} onValueChange={value => onSettingsChange({
-        ...settings,
-        quality: value
-      })}>
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="low">低质量 (快速)</SelectItem>
-          <SelectItem value="medium">中等质量</SelectItem>
-          <SelectItem value="high">高质量</SelectItem>
-          <SelectItem value="ultra">超高质量 (慢速)</SelectItem>
-        </SelectContent>
-      </Select>
-    </div> */}
 
     <div>
       <Label>时长: {settings.duration}秒</Label>
