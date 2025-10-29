@@ -1,7 +1,7 @@
 // @ts-ignore;
 import React, { useState } from 'react';
 // @ts-ignore;
-import { Button, Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent, CardDescription, CardHeader, CardTitle, useToast } from '@/components/ui';
+import { Button, Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent, CardDescription, CardHeader, CardTitle, useToast, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
 
 import { FileUploadSection } from './FileUploadSection';
 import { VideoSettings } from './VideoSettings';
@@ -21,6 +21,7 @@ export default function ImageVideoToVideo(props) {
     image: null
   });
   const [selectedModel, setSelectedModel] = useState('tongyi-wanxiang');
+  const [modelType, setModelType] = useState('animate-anyone-gen2');
   const [videoSettings, setVideoSettings] = useState({
     resolution: '480p',
     ratio: '3:4',
@@ -68,12 +69,15 @@ export default function ImageVideoToVideo(props) {
       }
 
       // 调用云函数创建任务
-      const { result } = await $w.cloud.callFunction({
+      const {
+        result
+      } = await $w.cloud.callFunction({
         name: 'image-video-to-video',
         data: {
           videoUrl: videoUpload.fileID,
           imageUrl: imageUpload.fileID,
           model: selectedModel,
+          modelType: selectedModel === 'tongyi-wanxiang' ? modelType : undefined,
           userId: $w.auth.currentUser?.userId || 'anonymous',
           type: 'image-video-to-video',
           settings: videoSettings
@@ -81,7 +85,6 @@ export default function ImageVideoToVideo(props) {
       });
       if (result.success) {
         setTaskId(result.taskId);
-
         setGenerationProgress(100);
         setIsGenerating(false);
         toast({
@@ -114,11 +117,29 @@ export default function ImageVideoToVideo(props) {
             <div className="space-y-6">
               <FileUploadSection type="image" title="上传图片" description="支持 JPG、PNG 格式，用于风格参考" accept="image/*" onFileUpload={file => handleFileUpload('image', file)} uploadedFile={uploadedFiles.image} />
               <FileUploadSection type="video" title="上传参考视频" description="支持 MP4、MOV、AVI 格式，最大 100MB" accept="video/*" onFileUpload={file => handleFileUpload('video', file)} uploadedFile={uploadedFiles.video} />
-
             </div>
 
             <div className="space-y-6">
               <SystemSelector selectedModel={selectedModel} onSystemChange={setSelectedModel} />
+
+              {selectedModel === 'tongyi-wanxiang' && <Card>
+                  <CardHeader>
+                    <CardTitle>模型类型</CardTitle>
+                    <CardDescription>选择通义万相的模型类型</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Select value={modelType} onValueChange={setModelType}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="选择模型类型" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="animate-anyone-gen2">Animate_Anyone</SelectItem>
+                        <SelectItem value="wan2.2-animate-mix">Animate_Mix</SelectItem>
+                        <SelectItem value="wan2.2-animate-move">Animate_Move</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </CardContent>
+                </Card>}
 
               <VideoSettings settings={videoSettings} onSettingsChange={setVideoSettings} showStyle={true} />
 
@@ -152,7 +173,6 @@ export default function ImageVideoToVideo(props) {
           <WorksList $w={$w} />
         </TabsContent>
       </Tabs>
-
     </div>
   </div>;
 }
