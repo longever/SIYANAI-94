@@ -37,10 +37,10 @@ export function VideoSettings({
   }];
   return <div className="space-y-4">
     <div>
-      <Label>选择视频生成模型</Label>
+      <Label>选择平台</Label>
       <Select value={selectedPlatform} onValueChange={onPlatformChange}>
         <SelectTrigger className="w-full">
-          <SelectValue placeholder="请选择视频生成模型" />
+          <SelectValue placeholder="请选择平台" />
         </SelectTrigger>
         <SelectContent>
           {platforms.map(platform => <SelectItem key={platform.value} value={platform.value}>
@@ -49,12 +49,9 @@ export function VideoSettings({
         </SelectContent>
       </Select>
     </div>;
-    {selectedPlatform === 'tongyi-wanxiang' && <Card>
-      <CardHeader>
-        <CardTitle>视频生成模型</CardTitle>
-        <CardDescription>选择通义万相的视频生成模型</CardDescription>
-      </CardHeader>
-      <CardContent>
+    {selectedPlatform === 'tongyi-wanxiang' &&
+      <div>
+        <Label>视频生成模型</Label>
         <Select value={modelType} onValueChange={setModelType}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="选择视频生成模型" />
@@ -65,8 +62,8 @@ export function VideoSettings({
             <SelectItem value="Animate_Move">图生动作</SelectItem>
           </SelectContent>
         </Select>
-      </CardContent>
-    </Card>}
+      </div>
+    }
     <div>
       <Label>分辨率</Label>
       <Select value={settings.resolution} onValueChange={value => onSettingsChange({
