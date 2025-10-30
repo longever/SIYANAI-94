@@ -67,7 +67,7 @@ export function VideoSettings({
         </Select>
       </div>
     }
-    {settings.modelType === 'Animate_Mix' &&
+    {(settings.modelType === 'Animate_Mix' || settings.modelType === 'Animate_Move') &&
       <div>
         <Label>模式选择</Label>
         <Select value={settings.mode} onValueChange={value => onSettingsChange({
