@@ -69,7 +69,7 @@ export default function ImageVideoToVideo(props) {
       const {
         result
       } = await $w.cloud.callFunction({
-        name: 'image-video-to-video',
+        name: 'ai-video-creator',//'image-video-to-video',
         data: {
           platform: selectedPlatforms,
           videoUrl: videoUpload.fileID,
