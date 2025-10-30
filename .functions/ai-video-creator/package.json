@@ -1,0 +1,10 @@
+
+{
+  "name": "ai-video-creator",
+  "version": "1.0.0",
+  "description": "AI视频创作云函数，支持多种模型类型和图片检测",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^3.3.7"
+  }
+}
