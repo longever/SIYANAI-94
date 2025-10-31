@@ -1,9 +1,12 @@
 // @ts-ignore;
 import React from 'react';
 // @ts-ignore;
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Label, Card, CardContent, CardHeader, CardTitle, Slider, Switch } from '@/components/ui';
+import { Card, CardContent, CardHeader, CardTitle, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Slider, Switch, Input } from '@/components/ui';
+// @ts-ignore;
+import { cn } from '@/lib/utils';
 
-const modelOptions = [{
+// 定义视频生成模型选项变量
+const MODEL_OPTIONS = [{
   value: 'WAN_2_5_I2V_PREVIEW',
   label: '图文生视频（支持音频）'
 }, {
@@ -37,9 +40,10 @@ const modelOptions = [{
   value: 'Animate_Anyone',
   label: '舞动人像（图+视频）'
 }];
-export default function VideoSettings({
+export function VideoSettings({
   settings,
-  onSettingsChange
+  onSettingsChange,
+  className
 }) {
   const handleSettingChange = (key, value) => {
     onSettingsChange({
@@ -47,19 +51,19 @@ export default function VideoSettings({
       [key]: value
     });
   };
-  return <Card className="w-full">
+  return <Card className={cn("w-full", className)}>
       <CardHeader>
         <CardTitle>视频设置</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">
-          <Label htmlFor="model">视频生成模型</Label>
+          <Label htmlFor="model">生成模型</Label>
           <Select value={settings.model} onValueChange={value => handleSettingChange('model', value)}>
             <SelectTrigger id="model">
-              <SelectValue placeholder="选择视频生成模型" />
+              <SelectValue placeholder="选择生成模型" />
             </SelectTrigger>
             <SelectContent>
-              {modelOptions.map(option => <SelectItem key={option.value} value={option.value}>
+              {MODEL_OPTIONS.map(option => <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>)}
             </SelectContent>
@@ -67,13 +71,15 @@ export default function VideoSettings({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="duration">视频时长（秒）</Label>
+          <Label htmlFor="duration">视频时长 (秒)</Label>
           <Slider id="duration" min={1} max={30} step={1} value={[settings.duration]} onValueChange={([value]) => handleSettingChange('duration', value)} />
-          <div className="text-sm text-muted-foreground">{settings.duration} 秒</div>
+          <div className="text-sm text-muted-foreground text-center">
+            {settings.duration} 秒
+          </div>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="fps">帧率</Label>
+          <Label htmlFor="fps">帧率 (FPS)</Label>
           <Select value={settings.fps.toString()} onValueChange={value => handleSettingChange('fps', parseInt(value))}>
             <SelectTrigger id="fps">
               <SelectValue />
@@ -95,11 +101,37 @@ export default function VideoSettings({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="480p">480p</SelectItem>
-              <SelectItem value="720p">720p</SelectItem>
-              <SelectItem value="1080p">1080p</SelectItem>
+              <SelectItem value="480p">480p (SD)</SelectItem>
+              <SelectItem value="720p">720p (HD)</SelectItem>
+              <SelectItem value="1080p">1080p (Full HD)</SelectItem>
+              <SelectItem value="1440p">1440p (2K)</SelectItem>
+              <SelectItem value="2160p">2160p (4K)</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="aspectRatio">宽高比</Label>
+          <Select value={settings.aspectRatio} onValueChange={value => handleSettingChange('aspectRatio', value)}>
+            <SelectTrigger id="aspectRatio">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="16:9">16:9 (宽屏)</SelectItem>
+              <SelectItem value="9:16">9:16 (竖屏)</SelectItem>
+              <SelectItem value="1:1">1:1 (正方形)</SelectItem>
+              <SelectItem value="4:3">4:3 (标准)</SelectItem>
+              <SelectItem value="21:9">21:9 (超宽屏)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="seed">随机种子</Label>
+          <Input id="seed" type="number" value={settings.seed} onChange={e => handleSettingChange('seed', parseInt(e.target.value) || 0)} placeholder="留空使用随机种子" />
+          <div className="text-xs text-muted-foreground">
+            相同的种子会生成相似的结果
+          </div>
         </div>
 
         <div className="flex items-center justify-between">
