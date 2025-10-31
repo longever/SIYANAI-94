@@ -15,8 +15,8 @@ export function VideoSettings({
   const MODELTYPE_OPTIONS = [
     { value: 'WAN_2_5_I2V_PREVIEW', label: '图文生视频（支持音频）' },
     { value: 'WAN_2_2_I2V_FLASH', label: '图文生视频（无音频）' },
-    { value: 'WAN_2_2_T2V_PLUS', label: '文生视频（支持音频）' },
-    { value: 'WAN_2_5_T2V_PREVIEW', label: '文生视频（无音频）' },
+    { value: 'WAN_2_5_T2V_PREVIEW', label: '文生视频（支持音频）' },
+    { value: 'WAN_2_2_T2V_PLUS', label: '文生视频（无音频）' },
     { value: 'LivePortrait', label: '声动人像1（图+音频）' },
     { value: 'WAN_EMO_V1', label: '声动人像2（图+音频）' },
     { value: 'WAN_2_2_S2V', label: '声动人像3（图+音频）' },
