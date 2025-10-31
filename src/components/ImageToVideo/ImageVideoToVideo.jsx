@@ -6,6 +6,7 @@ import { Button, Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent, Ca
 import { FileUploadSection } from './FileUploadSection';
 import { VideoSettings } from './VideoSettings';
 import { WorksList } from './WorksList';
+import { FUNCTION_IMAGE_VIDEO_TO_VIDEO } from '@/configs/index';
 export default function ImageVideoToVideo(props) {
   const {
     $w
@@ -69,7 +70,7 @@ export default function ImageVideoToVideo(props) {
       const {
         result
       } = await $w.cloud.callFunction({
-        name: 'ai-video-creator',//'image-video-to-video',
+        name: FUNCTION_IMAGE_VIDEO_TO_VIDEO,
         data: {
           platform: selectedPlatforms,
           videoUrl: videoUpload.fileID,

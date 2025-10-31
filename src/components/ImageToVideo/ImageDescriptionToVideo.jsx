@@ -10,6 +10,7 @@ import { FileUploadSection } from './FileUploadSection';
 import { AvatarPreview } from './AvatarPreview'; 
 import { VideoSettings } from './VideoSettings'; 
 import { WorksList } from './WorksList';
+import {FUNCTION_IMAGE_DESCRIPTION_TO_VIDEO } from '@/configs'
 export function ImageDescriptionToVideo(props) {
   const {
     $w
@@ -80,7 +81,7 @@ export function ImageDescriptionToVideo(props) {
       const {
         result
       } = await $w.cloud.callFunction({
-        name: 'image-prompt-to-video-task',
+        name: FUNCTION_IMAGE_DESCRIPTION_TO_VIDEO,
         data: {
           imageUrl: imageUpload.fileID,
           audioUrl: useAudio && audioUpload ? audioUpload.fileID : '',

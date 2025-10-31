@@ -8,6 +8,7 @@ import { Sparkles } from 'lucide-react';
 import { VideoSettings } from '@/components/ImageToVideo/VideoSettings'; 
 import { WorksList } from '@/components/ImageToVideo/WorksList';
 import { ScriptGenerator } from '@/components/ScriptGenerator';
+import { FUNCTION_TEXT_TO_VIDEO } from '@/configs';
 export default function TextToVideoPage(props) {
   const {
     $w
@@ -70,7 +71,7 @@ export default function TextToVideoPage(props) {
     try {
       // 调用云函数生成视频
       const { result } = await $w.cloud.callFunction({
-        name: 'description-to-video',
+        name:FUNCTION_TEXT_TO_VIDEO,  
         data: {
           prompt: prompt,
           audioUrl: audioFile || '',

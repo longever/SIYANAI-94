@@ -5,9 +5,9 @@ import { Button, Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent, Ca
 
 import { FileUploadSection } from './FileUploadSection';
 import { AvatarPreview } from './AvatarPreview';
-import { VideoSettings } from './VideoSettings';
-import { GenerationModal } from './GenerationModal';
+import { VideoSettings } from './VideoSettings'; 
 import { WorksList } from './WorksList';
+import { FUNCTION_IMAGE_AUDIO_TO_VIDEO } from '@/configs';
 export default function ImageAudioToVideo(props) {
   const {
     $w
@@ -29,8 +29,7 @@ export default function ImageAudioToVideo(props) {
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [showGenerationModal, setShowGenerationModal] = useState(false);
-  const [generationProgress, setGenerationProgress] = useState(0);
-  const [generatedVideo, setGeneratedVideo] = useState(null);
+  const [generationProgress, setGenerationProgress] = useState(0); 
   const [taskId, setTaskId] = useState(null);
   const handleFileUpload = (type, file) => {
     setUploadedFiles(prev => ({
@@ -64,7 +63,7 @@ export default function ImageAudioToVideo(props) {
 
       // 调用云函数创建任务
       const { result } = await $w.cloud.callFunction({
-        name: 'image-to-video-task',
+        name: FUNCTION_IMAGE_AUDIO_TO_VIDEO,
         data: {
           imageUrl: avatarUpload.fileID,
           audioUrl: audioUpload.fileID,
@@ -97,40 +96,7 @@ export default function ImageAudioToVideo(props) {
       setIsGenerating(false);
       setShowGenerationModal(false);
     }
-  };
-  const handleSaveToDatabase = async videoData => {
-    try {
-      const result = await $w.cloud.callDataSource({
-        dataSourceName: 'digital_human_videos',
-        methodName: 'wedaCreateV2',
-        params: {
-          data: {
-            title: `数字人视频 - ${new Date().toLocaleString()}`,
-            videoUrl: videoData.url,
-            thumbnailUrl: videoData.thumbnail,
-            duration: videoData.duration,
-            fileSize: videoData.size,
-            settings: videoSettings,
-            model: selectedPlatforms,
-            type: 'image-audio-to-video',
-            external_task_id: videoData.external_task_id,
-            createdAt: Date.new(),
-          }
-        }
-      });
-      toast({
-        title: "保存成功",
-        description: "视频已保存到作品库"
-      });
-      setActiveTab('works');
-    } catch (error) {
-      toast({
-        title: "保存失败",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  };
+  }; 
   return <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
     <div className="max-w-7xl mx-auto">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -176,7 +142,6 @@ export default function ImageAudioToVideo(props) {
         </TabsContent>
       </Tabs>
 
-      <GenerationModal open={showGenerationModal} onOpenChange={setShowGenerationModal} progress={generationProgress} isGenerating={isGenerating} generatedVideo={generatedVideo} onSave={() => generatedVideo && handleSaveToDatabase(generatedVideo)} />
     </div>
   </div>
 }
