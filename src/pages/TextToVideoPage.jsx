@@ -4,11 +4,11 @@ import React, { useState } from 'react';
 import { Button, Music, Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent, CardDescription, CardHeader, CardTitle, Textarea, useToast, Label, Switch, Upload, Input, Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
 // @ts-ignore;
 import { Sparkles } from 'lucide-react';
- 
-import { VideoSettings } from '@/components/ImageToVideo/VideoSettings'; 
+
+import { VideoSettings } from '@/components/ImageToVideo/VideoSettings';
 import { WorksList } from '@/components/ImageToVideo/WorksList';
 import { ScriptGenerator } from '@/components/ScriptGenerator';
-import { FUNCTION_TEXT_TO_VIDEO } from '@/configs/index';
+import { FUNCTION_TEXT_TO_VIDEO } from '.././configs/myConfigs';
 export default function TextToVideoPage(props) {
   const {
     $w
@@ -28,7 +28,7 @@ export default function TextToVideoPage(props) {
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [showGenerationModal, setShowGenerationModal] = useState(false);
-  const [generationProgress, setGenerationProgress] = useState(0); 
+  const [generationProgress, setGenerationProgress] = useState(0);
   const [showScriptGenerator, setShowScriptGenerator] = useState(false);
 
   const handleAudioToggle = checked => {
@@ -71,7 +71,7 @@ export default function TextToVideoPage(props) {
     try {
       // 调用云函数生成视频
       const { result } = await $w.cloud.callFunction({
-        name:FUNCTION_TEXT_TO_VIDEO,  
+        name: FUNCTION_TEXT_TO_VIDEO,
         data: {
           prompt: prompt,
           audioUrl: audioFile || '',

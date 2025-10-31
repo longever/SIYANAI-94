@@ -5,9 +5,9 @@ import { Button, Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent, Ca
 
 import { FileUploadSection } from './FileUploadSection';
 import { AvatarPreview } from './AvatarPreview';
-import { VideoSettings } from './VideoSettings'; 
+import { VideoSettings } from './VideoSettings';
 import { WorksList } from './WorksList';
-import { FUNCTION_IMAGE_AUDIO_TO_VIDEO } from '@/configs/index';
+import { FUNCTION_IMAGE_AUDIO_TO_VIDEO } from '../././configs/myConfigs';
 export default function ImageAudioToVideo(props) {
   const {
     $w
@@ -29,7 +29,7 @@ export default function ImageAudioToVideo(props) {
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [showGenerationModal, setShowGenerationModal] = useState(false);
-  const [generationProgress, setGenerationProgress] = useState(0); 
+  const [generationProgress, setGenerationProgress] = useState(0);
   const [taskId, setTaskId] = useState(null);
   const handleFileUpload = (type, file) => {
     setUploadedFiles(prev => ({
@@ -96,7 +96,7 @@ export default function ImageAudioToVideo(props) {
       setIsGenerating(false);
       setShowGenerationModal(false);
     }
-  }; 
+  };
   return <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
     <div className="max-w-7xl mx-auto">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
