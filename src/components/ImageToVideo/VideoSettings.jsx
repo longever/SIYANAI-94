@@ -59,9 +59,14 @@ export function VideoSettings({
           <SelectTrigger className="w-full">
             <SelectValue placeholder="选择视频生成模型" />
           </SelectTrigger>
+
           <SelectContent>
             <SelectItem value="Animate_Anyone">舞动人像AnimateAnyone</SelectItem>
             <SelectItem value="Animate_Mix">视频换人模型</SelectItem>
+            <SelectItem value="Animate_Move">图生动作</SelectItem>
+            <SelectItem value="Animate_Move">图生动作</SelectItem>
+            <SelectItem value="Animate_Move">图生动作</SelectItem>
+            <SelectItem value="Animate_Move">图生动作</SelectItem>
             <SelectItem value="Animate_Move">图生动作</SelectItem>
           </SelectContent>
         </Select>
