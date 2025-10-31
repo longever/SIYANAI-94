@@ -55,3 +55,7 @@ export * from './ImageToVideo/VideoSettings.jsx';
 export * from './ImageToVideo/WorksList.jsx';
 export * from './ImageToVideo/ImageVideoToVideo.jsx';
 export * from './ImageToVideo/ImageDescriptionToVideo.jsx';
+export * from './pro/NodeCard.jsx';
+export * from './pro/NodeList.jsx';
+export * from './pro/NodeActions.jsx';
+export * from './pro/TemplateSelector.jsx';
