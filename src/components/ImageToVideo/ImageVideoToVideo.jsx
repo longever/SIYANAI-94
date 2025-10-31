@@ -6,7 +6,7 @@ import { Button, Tabs, TabsContent, TabsList, TabsTrigger, Card, CardContent, Ca
 import { FileUploadSection } from './FileUploadSection';
 import { VideoSettings } from './VideoSettings';
 import { WorksList } from './WorksList';
-import { FUNCTION_IMAGE_VIDEO_TO_VIDEO } from '@/configs';
+import { FUNCTION_IMAGE_VIDEO_TO_VIDEO } from '@/configs/index';
 export default function ImageVideoToVideo(props) {
   const {
     $w
