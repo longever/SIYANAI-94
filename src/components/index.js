@@ -8,8 +8,6 @@ export * from './DigitalHumanPreview.jsx';
 export * from './DriveModeSelector.jsx';
 export * from './EnhancedAssetLibrary.jsx';
 export * from './ExportConfigPanel.jsx';
-export * from './ExportPreview.jsx';
-export * from './ExportSettings.jsx';
 export * from './FAQSection.jsx';
 export * from './FieldSelector.jsx';
 export * from './FormatSettings.jsx';

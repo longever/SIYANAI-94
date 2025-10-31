@@ -9,8 +9,7 @@ import { BasicNodeCard } from '@/components/NodeCard';
 import { ProNodeCard } from '@/components/pro/NodeCard';
 import { NodeList } from '@/components/pro/NodeList';
 import { TemplateSelector } from '@/components/pro/TemplateSelector';
-import { AssetLibrary } from '@/components/ProAssetLibrary';
-import { ExportPreview } from '@/components/ExportPreview';
+import { AssetLibrary } from '@/components/ProAssetLibrary'; 
 export default function VideoCreatorPro(props) {
   const {
     $w
@@ -296,11 +295,7 @@ export default function VideoCreatorPro(props) {
           })} onDelete={deleteNode} mode={node.type} />)}
               </div>
             </div>
-
-            {/* Right Panel */}
-            <div className="w-96 bg-white border-l">
-              <ExportPreview nodes={nodes} />
-            </div>
+ 
           </div>
 
           {/* Asset Library Dialog */}
