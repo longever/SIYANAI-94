@@ -67,7 +67,7 @@ export default function ImageAudioToVideo(props) {
         data: {
           imageUrl: avatarUpload.fileID,
           audioUrl: audioUpload.fileID,
-          model: selectedPlatforms,
+          platform: selectedPlatforms,
           prompt: `生成数字人视频，分辨率${videoSettings.resolution}，帧率${videoSettings.fps}，质量${videoSettings.quality}`,
           userId: $w.auth.currentUser?.userId || 'anonymous',
           type: 'image-audio-to-video',

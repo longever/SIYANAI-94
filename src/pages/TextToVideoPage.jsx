@@ -79,7 +79,7 @@ export default function TextToVideoPage(props) {
           userId: $w.auth.currentUser?.userId || 'anonymous',
           type: 'description-to-video',
           settings: videoSettings,
-          model: selectedPlatforms,
+          platform: selectedPlatforms,
         }
       });
       if (result.success) {

@@ -85,11 +85,11 @@ export function ImageDescriptionToVideo(props) {
         data: {
           imageUrl: imageUpload.fileID,
           audioUrl: useAudio && audioUpload ? audioUpload.fileID : '',
-          prompt: description, 
+          prompt: description,
           userId: $w.auth.currentUser?.userId || 'anonymous',
           type: 'image-description-to-video',
           settings: videoSettings,
-          model: selectedPlatforms,
+          platfrom: selectedPlatforms,
           useAudio: useAudio
         }
       });
