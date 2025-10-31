@@ -5,8 +5,7 @@ import { Card, CardHeader, CardContent, Button, Badge, Collapsible, CollapsibleC
 // @ts-ignore;
 import { ChevronDown, ChevronUp, Copy, Trash2, Sparkles, Image, Mic, Film } from 'lucide-react';
 
-import { NodeConfigPanel } from './NodeConfigPanel';
-import { NodeActions } from './NodeActions';
+import { VideoSettings } from '@/components/ImageToVideo/VideoSettings';
 export function VideoNode({
   node,
   isExpanded,
@@ -29,12 +28,28 @@ export function VideoNode({
   };
   const getProviderName = provider => {
     const providers = {
-      tongyi: '阿里云通义万相',
+      tongyi: '通义万相',
       digital_human: '数字人API',
       minmax: 'MinMax',
       keling: '可灵'
     };
     return providers[provider] || provider;
+  };
+
+  // 处理设置更新
+  const handleSettingsChange = newSettings => {
+    onUpdate(node.id, {
+      ...node,
+      settings: newSettings
+    });
+  };
+
+  // 处理平台变更
+  const handlePlatformChange = newPlatform => {
+    onUpdate(node.id, {
+      ...node,
+      provider: newPlatform
+    });
   };
   return <Collapsible open={isExpanded} onOpenChange={onToggle}>
       <Card className="mb-4">
@@ -49,7 +64,12 @@ export function VideoNode({
             </div>
 
             <div className="flex items-center space-x-2">
-              <NodeActions onDuplicate={() => onDuplicate(node.id)} onDelete={() => onDelete(node.id)} />
+              <Button variant="ghost" size="sm" onClick={() => onDuplicate(node.id)}>
+                <Copy className="w-3 h-3" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => onDelete(node.id)}>
+                <Trash2 className="w-3 h-3" />
+              </Button>
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" size="sm">
                   {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
@@ -61,7 +81,7 @@ export function VideoNode({
 
         <CollapsibleContent>
           <CardContent className="space-y-4">
-            <NodeConfigPanel node={node} onUpdate={updates => onUpdate(node.id, updates)} />
+            <VideoSettings settings={node.settings || {}} onSettingsChange={handleSettingsChange} selectedPlatform={node.provider || 'tongyi-wanxiang'} onPlatformChange={handlePlatformChange} showStyle={true} />
           </CardContent>
         </CollapsibleContent>
       </Card>
