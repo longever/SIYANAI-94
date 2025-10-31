@@ -1,5 +1,4 @@
 export * from './ActionExpressionPanel.jsx';
-export * from './AdvancedTimeline.jsx';
 export * from './AvatarSelector.jsx';
 export * from './BackgroundSelector.jsx';
 export * from './BatchExportQueue.jsx';
