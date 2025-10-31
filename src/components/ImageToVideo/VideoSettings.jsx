@@ -66,24 +66,24 @@ export function VideoSettings({
     </div>;
     {selectedPlatform === 'tongyi-wanxiang' &&
       <div>
-        <Label>视频生成模型</Label> 
+        <Label>视频生成模型</Label>
         <Select
-            value={settings.model}
-            onValueChange={(value) => onSettingsChange({
-              ...settings,
-              modelType: value
-            })}>
-            <SelectTrigger id="modelType">
-              <SelectValue placeholder="选择生成模型" />
-            </SelectTrigger>
-            <SelectContent>
-              {MODELTYPE_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          value={settings.modelType}
+          onValueChange={(value) => onSettingsChange({
+            ...settings,
+            modelType: value
+          })}>
+          <SelectTrigger id="modelType">
+            <SelectValue placeholder="选择生成模型" />
+          </SelectTrigger>
+          <SelectContent>
+            {MODELTYPE_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     }
     {(settings.modelType === 'Animate_Mix' || settings.modelType === 'Animate_Move') &&
