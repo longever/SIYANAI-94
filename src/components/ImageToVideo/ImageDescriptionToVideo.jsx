@@ -10,7 +10,7 @@ import { FileUploadSection } from './FileUploadSection';
 import { AvatarPreview } from './AvatarPreview';
 import { VideoSettings } from './VideoSettings';
 import { WorksList } from './WorksList';
-import { FUNCTION_IMAGE_DESCRIPTION_TO_VIDEO } from '../././configs/myConfigs';
+import { FUNCTION_IMAGE_DESCRIPTION_TO_VIDEO } from '.././configs/index';
 export function ImageDescriptionToVideo(props) {
   const {
     $w

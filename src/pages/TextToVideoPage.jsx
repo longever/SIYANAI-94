@@ -8,7 +8,7 @@ import { Sparkles } from 'lucide-react';
 import { VideoSettings } from '@/components/ImageToVideo/VideoSettings';
 import { WorksList } from '@/components/ImageToVideo/WorksList';
 import { ScriptGenerator } from '@/components/ScriptGenerator';
-import { FUNCTION_TEXT_TO_VIDEO } from '.././configs/myConfigs';
+import { FUNCTION_TEXT_TO_VIDEO } from '@/components/configs/index';
 export default function TextToVideoPage(props) {
   const {
     $w
