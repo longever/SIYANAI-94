@@ -63,7 +63,7 @@ export function VideoSettings({
           </SelectItem>)}
         </SelectContent>
       </Select>
-    </div>;
+    </div>
     {selectedPlatform === 'tongyi-wanxiang' &&
       <div>
         <Label>视频生成模型</Label>
