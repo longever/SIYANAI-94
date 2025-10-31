@@ -47,3 +47,7 @@ export * from './ImageToVideo/VideoSettings.jsx';
 export * from './ImageToVideo/WorksList.jsx';
 export * from './ImageToVideo/ImageVideoToVideo.jsx';
 export * from './ImageToVideo/ImageDescriptionToVideo.jsx';
+export * from './pro/VideoNode.jsx';
+export * from './pro/NodeConfigPanel.jsx';
+export * from './pro/NodeActions.jsx';
+export * from './pro/NodeAssets.jsx';

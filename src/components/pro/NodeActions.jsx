@@ -3,23 +3,18 @@ import React from 'react';
 // @ts-ignore;
 import { Button } from '@/components/ui';
 // @ts-ignore;
-import { Plus, Sparkles, Image, Mic } from 'lucide-react';
+import { Copy, Trash2 } from 'lucide-react';
 
 export function NodeActions({
-  onAddNode
+  onDuplicate,
+  onDelete
 }) {
-  return <div className="space-y-2">
-      <Button onClick={() => onAddNode('text2video')} className="w-full justify-start" variant="outline">
-        <Sparkles className="w-4 h-4 mr-2" />
-        添加文生视频节点
+  return <div className="flex items-center space-x-2">
+      <Button variant="ghost" size="sm" onClick={onDuplicate} title="复制节点">
+        <Copy className="w-3 h-3" />
       </Button>
-      <Button onClick={() => onAddNode('image2video')} className="w-full justify-start" variant="outline">
-        <Image className="w-4 h-4 mr-2" />
-        添加图生视频节点
-      </Button>
-      <Button onClick={() => onAddNode('digital_human')} className="w-full justify-start" variant="outline">
-        <Mic className="w-4 h-4 mr-2" />
-        添加数字人节点
+      <Button variant="ghost" size="sm" onClick={onDelete} title="删除节点">
+        <Trash2 className="w-3 h-3" />
       </Button>
     </div>;
 }
