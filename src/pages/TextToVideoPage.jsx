@@ -24,7 +24,8 @@ export default function TextToVideoPage(props) {
   const [videoSettings, setVideoSettings] = useState({
     resolution: '480P',
     duration: 5,
-    style: 'realistic'
+    style: 'realistic',
+    audio: false,
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [showGenerationModal, setShowGenerationModal] = useState(false);
@@ -75,10 +76,9 @@ export default function TextToVideoPage(props) {
         data: {
           prompt: prompt,
           audioUrl: audioFile || '',
-          audio: useAudio,
           userId: $w.auth.currentUser?.userId || 'anonymous',
           type: 'description-to-video',
-          settings: videoSettings,
+          settings: { ...videoSettings, audio: useAudio },
           platform: selectedPlatforms,
         }
       });

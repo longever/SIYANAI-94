@@ -88,9 +88,8 @@ export function ImageDescriptionToVideo(props) {
           prompt: description,
           userId: $w.auth.currentUser?.userId || 'anonymous',
           type: 'image-description-to-video',
-          settings: videoSettings,
+          settings: { ...videoSettings, audio: useAudio },
           platfrom: selectedPlatforms,
-          useAudio: useAudio
         }
       });
       if (result.success) {
