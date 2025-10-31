@@ -5,7 +5,7 @@ import { Card, CardContent, Button } from '@/components/ui';
 // @ts-ignore;
 import { Trash2, Copy, Move } from 'lucide-react';
 
-export function NodeCard({
+export function BasicNodeCard({
   node,
   isSelected,
   onSelect,
@@ -66,32 +66,32 @@ export function NodeCard({
     top: node.position.y,
     transform: isDragging ? 'scale(1.05)' : 'scale(1)'
   }} onClick={() => onSelect(node)} onMouseDown={handleMouseDown}>
-      <CardContent className="p-3">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center space-x-2">
-            <span className="text-lg">{getNodeIcon()}</span>
-            <span className="text-sm font-medium truncate">
-              {node.data.name || node.type}
-            </span>
-          </div>
-          
-          <div className="node-controls flex space-x-1">
-            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-red-500/20" onClick={e => {
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center space-x-2">
+                <span className="text-lg">{getNodeIcon()}</span>
+                <span className="text-sm font-medium truncate">
+                  {node.data.name || node.type}
+                </span>
+              </div>
+              
+              <div className="node-controls flex space-x-1">
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-red-500/20" onClick={e => {
             e.stopPropagation();
             onDelete(node.id);
           }}>
-              <Trash2 className="w-3 h-3" />
-            </Button>
-          </div>
-        </div>
+                  <Trash2 className="w-3 h-3" />
+                </Button>
+              </div>
+            </div>
 
-        <div className="text-xs text-gray-400">
-          时长: {node.data.duration || 5}s
-        </div>
-        
-        {node.data.content && <div className="mt-1 text-xs text-gray-500 truncate">
-            {node.data.content.substring(0, 30)}...
-          </div>}
-      </CardContent>
-    </Card>;
+            <div className="text-xs text-gray-400">
+              时长: {node.data.duration || 5}s
+            </div>
+            
+            {node.data.content && <div className="mt-1 text-xs text-gray-500 truncate">
+                {node.data.content.substring(0, 30)}...
+              </div>}
+          </CardContent>
+        </Card>;
 }

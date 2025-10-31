@@ -1,67 +1,96 @@
 // @ts-ignore;
 import React, { useState, useEffect } from 'react';
 // @ts-ignore;
-import { Card, CardContent, CardHeader, CardTitle, Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Tabs, TabsContent, TabsList, TabsTrigger, ScrollArea, Collapsible, CollapsibleContent, CollapsibleTrigger, Badge, Slider, Textarea, useToast } from '@/components/ui';
+import { Card, CardContent, Button, Tabs, TabsContent, TabsList, TabsTrigger, Dialog, DialogContent, DialogHeader, DialogTitle, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, useToast } from '@/components/ui';
 // @ts-ignore;
-import { Plus, Trash2, Settings, Play, Pause, Download, Upload, ChevronDown, ChevronUp, Clock, Film, Image, Mic, Sparkles, Save, Eye, EyeOff, Move, Copy } from 'lucide-react';
+import { Plus, Play, Save, Download, Share2, Settings, Trash2, Copy, ChevronUp, ChevronDown } from 'lucide-react';
 
-import { ScriptGenerator } from '@/components/ScriptGenerator';
-import { AssetLibrary } from '@/components/AssetLibrary';
-import { NodeConfigurationModal } from '@/components/NodeConfigurationModal';
+import { BasicNodeCard } from '@/components/NodeCard';
+import { ProNodeCard } from '@/components/pro/NodeCard';
 import { NodeList } from '@/components/pro/NodeList';
-import { NodeActions } from '@/components/pro/NodeActions';
 import { TemplateSelector } from '@/components/pro/TemplateSelector';
-export default function CreatePage(props) {
+import { AssetLibrary } from '@/components/ProAssetLibrary';
+import { ExportPreview } from '@/components/ExportPreview';
+export default function VideoCreatorPro(props) {
   const {
     $w
   } = props;
-  const [videoName, setVideoName] = useState('未命名视频');
-  const [totalDuration, setTotalDuration] = useState(60);
-  const [nodes, setNodes] = useState([]);
-  const [selectedNode, setSelectedNode] = useState(null);
-  const [selectedTemplate, setSelectedTemplate] = useState(null);
-  const [templates, setTemplates] = useState([]);
-  const [showAssetLibrary, setShowAssetLibrary] = useState(false);
-  const [assetLibraryTarget, setAssetLibraryTarget] = useState(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [expandedNodes, setExpandedNodes] = useState({});
   const {
     toast
   } = useToast();
-
-  // 加载脚本模板
+  const [nodes, setNodes] = useState([]);
+  const [selectedNode, setSelectedNode] = useState(null);
+  const [expandedNodes, setExpandedNodes] = useState(new Set());
+  const [showAssetLibrary, setShowAssetLibrary] = useState(false);
+  const [assetSelectTarget, setAssetSelectTarget] = useState(null);
+  const [projectName, setProjectName] = useState('未命名项目');
+  const [activeTab, setActiveTab] = useState('nodes');
+  const [templates, setTemplates] = useState([]);
   useEffect(() => {
+    loadProject();
     loadTemplates();
   }, []);
+  const loadProject = async () => {
+    try {
+      const result = await $w.cloud.callDataSource({
+        dataSourceName: 'generation_tasks',
+        methodName: 'wedaGetRecordsV2',
+        params: {
+          filter: {
+            where: {
+              type: {
+                $eq: 'pro_project'
+              },
+              status: {
+                $eq: 'draft'
+              }
+            }
+          },
+          orderBy: [{
+            createdAt: 'desc'
+          }],
+          pageSize: 1
+        }
+      });
+      if (result.records.length > 0) {
+        const project = result.records[0];
+        setProjectName(project.name || '未命名项目');
+        setNodes(project.nodes || []);
+      }
+    } catch (error) {
+      console.error('加载项目失败:', error);
+    }
+  };
   const loadTemplates = async () => {
     try {
       const result = await $w.cloud.callDataSource({
-        dataSourceName: 'script_template',
+        dataSourceName: 'generation_tasks',
         methodName: 'wedaGetRecordsV2',
         params: {
-          select: {
-            $master: true
-          },
-          getCount: true
+          filter: {
+            where: {
+              type: {
+                $eq: 'template'
+              }
+            }
+          }
         }
       });
-      setTemplates(result.records || []);
+      setTemplates(result.records);
     } catch (error) {
       console.error('加载模板失败:', error);
     }
   };
-
-  // 添加新节点
-  const addNode = (type = 'text2video', position = nodes.length) => {
+  const addNode = (type = 'text2video') => {
     const newNode = {
-      id: `node-${Date.now()}`,
-      type: type,
-      title: `节点 ${nodes.length + 1}`,
+      id: `node_${Date.now()}`,
+      type,
+      title: `新节点 ${nodes.length + 1}`,
       content: '',
       duration: 5,
       provider: 'tongyi',
       shotType: 'medium',
-      transition: 'fade',
+      transition: 'none',
       colorStyle: 'natural',
       assets: {
         image: null,
@@ -69,109 +98,45 @@ export default function CreatePage(props) {
         subtitle: null
       },
       customParams: {},
-      position: position,
-      isExpanded: true
+      position: {
+        x: 50,
+        y: 50 + nodes.length * 100
+      },
+      order: nodes.length
     };
-    const newNodes = [...nodes];
-    newNodes.splice(position, 0, newNode);
-    setNodes(newNodes);
-    setSelectedNode(newNode);
+    setNodes([...nodes, newNode]);
   };
-
-  // 删除节点
+  const updateNode = (nodeId, updates) => {
+    setNodes(nodes.map(node => node.id === nodeId ? {
+      ...node,
+      ...updates
+    } : node));
+  };
   const deleteNode = nodeId => {
-    setNodes(nodes.filter(n => n.id !== nodeId));
+    setNodes(nodes.filter(node => node.id !== nodeId));
     if (selectedNode?.id === nodeId) {
       setSelectedNode(null);
     }
   };
-
-  // 更新节点
-  const updateNode = (nodeId, updates) => {
-    setNodes(nodes.map(n => n.id === nodeId ? {
-      ...n,
-      ...updates
-    } : n));
-    if (selectedNode?.id === nodeId) {
-      setSelectedNode({
-        ...selectedNode,
-        ...updates
-      });
-    }
-  };
-
-  // 移动节点
-  const moveNode = (fromIndex, toIndex) => {
-    const newNodes = [...nodes];
-    const [movedNode] = newNodes.splice(fromIndex, 1);
-    newNodes.splice(toIndex, 0, movedNode);
-    setNodes(newNodes);
-  };
-
-  // 复制节点
   const duplicateNode = nodeId => {
-    const node = nodes.find(n => n.id === nodeId);
-    if (node) {
+    const originalNode = nodes.find(n => n.id === nodeId);
+    if (originalNode) {
       const newNode = {
-        ...node,
-        id: `node-${Date.now()}`,
-        title: `${node.title} 副本`,
-        position: node.position + 1
+        ...originalNode,
+        id: `node_${Date.now()}`,
+        title: `${originalNode.title} 副本`,
+        order: nodes.length,
+        position: {
+          x: originalNode.position.x + 20,
+          y: originalNode.position.y + 20
+        }
       };
-      const newNodes = [...nodes];
-      newNodes.splice(node.position + 1, 0, newNode);
-      setNodes(newNodes);
+      setNodes([...nodes, newNode]);
     }
   };
-
-  // 选择模板
-  const selectTemplate = async template => {
-    setSelectedTemplate(template);
-    if (template.nodes) {
-      const newNodes = template.nodes.map((node, index) => ({
-        ...node,
-        id: `node-${Date.now()}-${index}`,
-        position: index
-      }));
-      setNodes(newNodes);
-      toast({
-        title: "模板已应用",
-        description: `已加载 ${template.name} 模板，共 ${newNodes.length} 个节点`
-      });
-    }
-  };
-
-  // 生成脚本
-  const handleScriptGenerate = segments => {
-    const newNodes = segments.map((segment, index) => ({
-      id: segment.id,
-      type: segment.type,
-      title: segment.title,
-      content: segment.description,
-      duration: segment.duration,
-      provider: segment.provider,
-      shotType: segment.cameraAngle,
-      transition: segment.transition,
-      colorStyle: segment.colorStyle,
-      assets: segment.assets,
-      customParams: {},
-      position: index
-    }));
-    setNodes(newNodes);
-    toast({
-      title: "脚本已生成",
-      description: `已生成 ${newNodes.length} 个节点`
-    });
-  };
-
-  // 选择素材
-  const handleAssetSelect = target => {
-    setAssetLibraryTarget(target);
-    setShowAssetLibrary(true);
-  };
-  const handleAssetChoose = asset => {
-    if (assetLibraryTarget) {
-      const [nodeId, assetType] = assetLibraryTarget.split('-');
+  const handleAssetSelect = asset => {
+    if (assetSelectTarget) {
+      const [nodeId, assetType] = assetSelectTarget.split('-');
       updateNode(nodeId, {
         assets: {
           ...nodes.find(n => n.id === nodeId)?.assets,
@@ -179,143 +144,173 @@ export default function CreatePage(props) {
         }
       });
       setShowAssetLibrary(false);
-      setAssetLibraryTarget(null);
+      setAssetSelectTarget(null);
     }
   };
-
-  // 生成视频
-  const generateVideo = async () => {
-    if (nodes.length === 0) {
-      toast({
-        title: "无法生成",
-        description: "请先添加视频节点",
-        variant: "destructive"
-      });
-      return;
-    }
-    setIsGenerating(true);
+  const saveProject = async () => {
     try {
-      const result = await $w.cloud.callFunction({
-        name: 'generateVideo',
-        data: {
-          videoName,
-          totalDuration,
-          nodes: nodes.map(node => ({
-            ...node,
-            assets: Object.fromEntries(Object.entries(node.assets).filter(([_, v]) => v !== null))
-          }))
+      const projectData = {
+        name: projectName,
+        type: 'pro_project',
+        status: 'draft',
+        nodes: nodes,
+        updatedAt: new Date()
+      };
+      await $w.cloud.callDataSource({
+        dataSourceName: 'generation_tasks',
+        methodName: 'wedaUpsertV2',
+        params: {
+          filter: {
+            where: {
+              type: {
+                $eq: 'pro_project'
+              },
+              status: {
+                $eq: 'draft'
+              }
+            }
+          },
+          update: projectData,
+          create: projectData
         }
       });
       toast({
-        title: "视频生成成功",
-        description: "视频正在后台处理中，请稍后查看"
-      });
-
-      // 跳转到导出分享页面
-      $w.utils.navigateTo({
-        pageId: 'export-share',
-        params: {
-          projectId: result.projectId
-        }
+        title: '保存成功',
+        description: '项目已保存到云端'
       });
     } catch (error) {
       toast({
-        title: "生成失败",
-        description: error.message || "视频生成过程中出现错误",
-        variant: "destructive"
+        title: '保存失败',
+        description: error.message,
+        variant: 'destructive'
       });
-    } finally {
-      setIsGenerating(false);
     }
   };
-
-  // 计算总时长
-  useEffect(() => {
-    const total = nodes.reduce((sum, node) => sum + (node.duration || 5), 0);
-    setTotalDuration(total);
-  }, [nodes]);
-
-  // 切换节点展开状态
-  const toggleNode = nodeId => {
-    setExpandedNodes(prev => ({
-      ...prev,
-      [nodeId]: !prev[nodeId]
-    }));
+  const generateVideo = async () => {
+    if (nodes.length === 0) {
+      toast({
+        title: '无法生成',
+        description: '请先添加至少一个节点',
+        variant: 'destructive'
+      });
+      return;
+    }
+    try {
+      const result = await $w.cloud.callFunction({
+        name: 'ai-engine-service',
+        data: {
+          action: 'generateProVideo',
+          nodes: nodes,
+          projectName: projectName
+        }
+      });
+      toast({
+        title: '开始生成',
+        description: '视频正在后台生成中，请稍后查看'
+      });
+    } catch (error) {
+      toast({
+        title: '生成失败',
+        description: error.message,
+        variant: 'destructive'
+      });
+    }
   };
-  return <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* 顶部控制栏 */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Input value={videoName} onChange={e => setVideoName(e.target.value)} className="w-64 font-semibold" placeholder="输入视频名称" />
-            <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-              <Clock className="w-4 h-4" />
-              <span>总时长: {totalDuration}秒</span>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Button variant="outline" onClick={() => $w.utils.navigateBack()}>
-              返回
-            </Button>
-            <Button onClick={generateVideo} disabled={isGenerating || nodes.length === 0} className="bg-blue-600 hover:bg-blue-700">
-              {isGenerating ? <>
-                  <Sparkles className="w-4 h-4 mr-2 animate-spin" />
-                  生成中...
-                </> : <>
+  const toggleNodeExpansion = nodeId => {
+    const newExpanded = new Set(expandedNodes);
+    if (newExpanded.has(nodeId)) {
+      newExpanded.delete(nodeId);
+    } else {
+      newExpanded.add(nodeId);
+    }
+    setExpandedNodes(newExpanded);
+  };
+  return <div className="h-screen flex flex-col bg-gray-50">
+          {/* Header */}
+          <div className="bg-white border-b px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <h1 className="text-2xl font-bold">专业视频创作器</h1>
+                <Input value={projectName} onChange={e => setProjectName(e.target.value)} className="w-64" placeholder="项目名称" />
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Button variant="outline" onClick={saveProject}>
+                  <Save className="w-4 h-4 mr-2" />
+                  保存项目
+                </Button>
+                <Button onClick={generateVideo} disabled={nodes.length === 0}>
                   <Play className="w-4 h-4 mr-2" />
-                  生成视频
-                </>}
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex h-[calc(100vh-73px)]">
-        {/* 左侧脚本和模板区 */}
-        <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto">
-          <div className="p-4 space-y-4">
-            {/* 脚本模板选择 */}
-            <TemplateSelector templates={templates} selectedTemplate={selectedTemplate} onSelectTemplate={selectTemplate} />
-
-            {/* 智能脚本生成器 */}
-            <ScriptGenerator onGenerate={handleScriptGenerate} />
-
-            {/* 节点操作 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">节点操作</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <NodeActions onAddNode={addNode} />
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/* 中间节点编辑区 */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-4xl mx-auto">
-            <NodeList nodes={nodes} expandedNodes={expandedNodes} onToggleNode={toggleNode} onUpdateNode={updateNode} onDeleteNode={deleteNode} onDuplicateNode={duplicateNode} onAssetSelect={handleAssetSelect} />
-          </div>
-        </div>
-
-        {/* 右侧素材库 */}
-        {showAssetLibrary && <div className="w-96 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <h3 className="font-semibold">素材库</h3>
-              <Button variant="ghost" size="sm" onClick={() => {
-            setShowAssetLibrary(false);
-            setAssetLibraryTarget(null);
-          }}>
-                <EyeOff className="w-4 h-4" />
-              </Button>
+                  开始生成
+                </Button>
+              </div>
             </div>
-            <AssetLibrary onAssetSelect={handleAssetChoose} $w={$w} />
-          </div>}
-      </div>
+          </div>
 
-      {/* 节点配置模态框 */}
-      {selectedNode && <NodeConfigurationModal node={selectedNode} isOpen={!!selectedNode} onClose={() => setSelectedNode(null)} onUpdate={updateNode} />}
-    </div>;
+          <div className="flex-1 flex">
+            {/* Sidebar */}
+            <div className="w-80 bg-white border-r flex flex-col">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
+                <TabsList className="w-full">
+                  <TabsTrigger value="nodes" className="flex-1">节点列表</TabsTrigger>
+                  <TabsTrigger value="templates" className="flex-1">模板库</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="nodes" className="flex-1 overflow-y-auto p-4">
+                  <div className="space-y-4">
+                    <Button onClick={() => addNode()} className="w-full">
+                      <Plus className="w-4 h-4 mr-2" />
+                      添加节点
+                    </Button>
+                    
+                    <NodeList nodes={nodes} expandedNodes={expandedNodes} onToggle={toggleNodeExpansion} onUpdate={updateNode} onDelete={deleteNode} onDuplicate={duplicateNode} onAssetSelect={target => {
+                setAssetSelectTarget(target);
+                setShowAssetLibrary(true);
+              }} />
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="templates" className="flex-1 overflow-y-auto p-4">
+                  <TemplateSelector templates={templates} onSelectTemplate={template => {
+              setNodes(template.nodes || []);
+              setProjectName(template.name || '模板项目');
+            }} />
+                </TabsContent>
+              </Tabs>
+            </div>
+
+            {/* Main Canvas */}
+            <div className="flex-1 relative bg-gray-100">
+              <div className="absolute inset-0 overflow-auto">
+                {nodes.map(node => <BasicNodeCard key={node.id} node={{
+            id: node.id,
+            type: node.type,
+            data: {
+              name: node.title,
+              duration: node.duration,
+              content: node.content
+            },
+            position: node.position
+          }} isSelected={selectedNode?.id === node.id} onSelect={setSelectedNode} onDrag={(nodeId, position) => updateNode(nodeId, {
+            position
+          })} onDelete={deleteNode} mode={node.type} />)}
+              </div>
+            </div>
+
+            {/* Right Panel */}
+            <div className="w-96 bg-white border-l">
+              <ExportPreview nodes={nodes} />
+            </div>
+          </div>
+
+          {/* Asset Library Dialog */}
+          <Dialog open={showAssetLibrary} onOpenChange={setShowAssetLibrary}>
+            <DialogContent className="max-w-4xl max-h-[80vh]">
+              <DialogHeader>
+                <DialogTitle>选择素材</DialogTitle>
+              </DialogHeader>
+              <AssetLibrary onSelectAsset={handleAssetSelect} assetType={assetSelectTarget?.split('-')[1] || 'image'} />
+            </DialogContent>
+          </Dialog>
+        </div>;
 }
